@@ -109,8 +109,24 @@ final class DialogMenuServiceTest {
                 "set-cost:player_warp:base:xp-levels:10",
                 "set-cost:player_warp:base:xp-points:100",
                 "set-cost:player_warp:base:xp-points:500",
+                "show-cost-editor:player_warp:base:money",
+                "show-cost-editor:player_warp:base:xp-levels",
+                "show-cost-editor:player_warp:base:xp-points",
                 "delete:player_warp:base"
         );
+    }
+
+    @Test
+    void customCostMenuIncludesAmountInputAndSubmitAction() {
+        UUID owner = UUID.randomUUID();
+        DialogMenuService service = new DialogMenuService();
+
+        DialogMenuModel model = service.customCostMenu(location(owner, "player_warp"), "money");
+
+        assertThat(model.title()).isEqualTo("Custom Money Cost");
+        assertThat(model.inputs()).extracting(DialogInputModel::key).containsExactly("amount");
+        assertThat(model.actions()).extracting(DialogActionModel::key)
+                .containsExactly("set-cost-input:player_warp:base:money");
     }
 
     private static TeleportLocation location(UUID owner) {

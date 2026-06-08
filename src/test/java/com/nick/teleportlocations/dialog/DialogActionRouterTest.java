@@ -160,6 +160,58 @@ final class DialogActionRouterTest {
         assertThat(fixture.shops.resolveVisibleShop(owner, "tools").orElseThrow().cost()).isEqualTo(CostSpec.free());
     }
 
+    @Test
+    void customCostEditorActionShowsInputMenuForOwner() {
+        Fixture fixture = Fixture.create();
+        UUID owner = UUID.randomUUID();
+        fixture.warps.setWarp(owner, "market", position(), true);
+
+        DialogActionRouteResult result = fixture.router.route(owner, "show-cost-editor:player_warp:market:money");
+
+        assertThat(result.status()).isEqualTo(DialogActionRouteResult.Status.SHOW_MENU);
+        assertThat(result.menu()).isPresent();
+        assertThat(result.menu().orElseThrow().inputs()).extracting(DialogInputModel::key).containsExactly("amount");
+    }
+
+    @Test
+    void customCostInputActionUpdatesCostFromDialogAmount() {
+        Fixture fixture = Fixture.create();
+        UUID owner = UUID.randomUUID();
+        fixture.warps.setWarp(owner, "market", position(), true);
+
+        DialogActionRouteResult result = fixture.router.route(
+                owner,
+                "set-cost-input:player_warp:market:money",
+                key -> "amount".equals(key) ? 72.5f : null
+        );
+
+        assertThat(result.status()).isEqualTo(DialogActionRouteResult.Status.MESSAGE);
+        assertThat(fixture.warps.ownerWarps(owner).getFirst().cost()).isEqualTo(CostSpec.money(72.5));
+    }
+
+    @Test
+    void customCostInputRejectsShopAndMissingAmount() {
+        Fixture fixture = Fixture.create();
+        UUID owner = UUID.randomUUID();
+        fixture.shops.setShop(owner, "tools", position(), true);
+        fixture.warps.setWarp(owner, "market", position(), true);
+
+        DialogActionRouteResult shopResult = fixture.router.route(
+                owner,
+                "set-cost-input:shop:tools:money",
+                key -> "amount".equals(key) ? 50.0f : null
+        );
+        DialogActionRouteResult missingAmountResult = fixture.router.route(
+                owner,
+                "set-cost-input:player_warp:market:money",
+                key -> null
+        );
+
+        assertThat(shopResult.status()).isEqualTo(DialogActionRouteResult.Status.UNKNOWN_ACTION);
+        assertThat(missingAmountResult.status()).isEqualTo(DialogActionRouteResult.Status.UNKNOWN_ACTION);
+        assertThat(fixture.shops.resolveVisibleShop(owner, "tools").orElseThrow().cost()).isEqualTo(CostSpec.free());
+    }
+
     private static SavedPosition position() {
         return new SavedPosition(UUID.randomUUID(), "world", 1.0, 64.0, 2.0, 90.0f, 0.0f);
     }

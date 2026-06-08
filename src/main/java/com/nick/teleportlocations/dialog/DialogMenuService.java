@@ -88,9 +88,32 @@ public final class DialogMenuService {
             actions.add(new DialogActionModel("set-cost:player_warp:" + location.normalizedName() + ":xp-levels:10", "10 Levels"));
             actions.add(new DialogActionModel("set-cost:player_warp:" + location.normalizedName() + ":xp-points:100", "100 XP"));
             actions.add(new DialogActionModel("set-cost:player_warp:" + location.normalizedName() + ":xp-points:500", "500 XP"));
+            actions.add(new DialogActionModel("show-cost-editor:player_warp:" + location.normalizedName() + ":money", "Custom Money"));
+            actions.add(new DialogActionModel("show-cost-editor:player_warp:" + location.normalizedName() + ":xp-levels", "Custom Levels"));
+            actions.add(new DialogActionModel("show-cost-editor:player_warp:" + location.normalizedName() + ":xp-points", "Custom XP"));
         }
         actions.add(new DialogActionModel("delete:" + location.category() + ":" + location.normalizedName(), "Delete"));
         return new DialogMenuModel("Edit " + title(location.category()), List.copyOf(lines), List.copyOf(actions));
+    }
+
+    public DialogMenuModel customCostMenu(TeleportLocation location, String costType) {
+        String title = "Custom " + title(costType) + " Cost";
+        List<String> lines = List.of("Name: " + location.name());
+        List<DialogActionModel> actions = List.of(new DialogActionModel(
+                "set-cost-input:" + location.category() + ":" + location.normalizedName() + ":" + costType,
+                "Apply"
+        ));
+        List<DialogInputModel> inputs = List.of(costInput(costType));
+        return new DialogMenuModel(title, lines, actions, inputs);
+    }
+
+    private DialogInputModel costInput(String costType) {
+        return switch (costType) {
+            case "money" -> new DialogInputModel("amount", "Amount", 0.0f, 100000.0f, 1.0f, 10.0f, "$%.0f");
+            case "xp-levels" -> new DialogInputModel("amount", "Levels", 0.0f, 1000.0f, 1.0f, 5.0f, "%.0f levels");
+            case "xp-points" -> new DialogInputModel("amount", "XP Points", 0.0f, 100000.0f, 1.0f, 100.0f, "%.0f XP");
+            default -> new DialogInputModel("amount", "Amount", 0.0f, 100000.0f, 1.0f, 0.0f, "%.0f");
+        };
     }
 
     private String title(String value) {

@@ -41,6 +41,10 @@ public final class DialogActionRouter {
     }
 
     public DialogActionRouteResult route(UUID viewerId, String actionKey) {
+        return route(viewerId, actionKey, DialogInputValues.empty());
+    }
+
+    public DialogActionRouteResult route(UUID viewerId, String actionKey, DialogInputValues inputValues) {
         String[] parts = actionKey.split(":");
         if (parts.length < 3) {
             return DialogActionRouteResult.unknownAction();
@@ -57,6 +61,12 @@ public final class DialogActionRouter {
                     : DialogActionRouteResult.unknownAction();
             case "set-cost" -> parts.length == 5
                     ? setPlayerWarpCost(viewerId, parts[1], parts[2], parts[3], parts[4])
+                    : DialogActionRouteResult.unknownAction();
+            case "show-cost-editor" -> parts.length == 4
+                    ? showPlayerWarpCostEditor(viewerId, parts[1], parts[2], parts[3])
+                    : DialogActionRouteResult.unknownAction();
+            case "set-cost-input" -> parts.length == 4
+                    ? setPlayerWarpCostFromInput(viewerId, parts[1], parts[2], parts[3], inputValues)
                     : DialogActionRouteResult.unknownAction();
             default -> DialogActionRouteResult.unknownAction();
         };
@@ -142,6 +152,33 @@ public final class DialogActionRouter {
         }
     }
 
+    private DialogActionRouteResult showPlayerWarpCostEditor(UUID viewerId, String category, String name, String costType) {
+        if (!"player_warp".equals(category) || !supportsCustomCost(costType)) {
+            return DialogActionRouteResult.unknownAction();
+        }
+        Optional<TeleportLocation> location = warps.resolveVisibleWarp(viewerId, name);
+        if (location.isEmpty()) {
+            return DialogActionRouteResult.notFound();
+        }
+        TeleportLocation resolved = location.orElseThrow();
+        if (resolved.owner().playerIdOptional().filter(viewerId::equals).isEmpty()) {
+            return DialogActionRouteResult.accessDenied();
+        }
+        return DialogActionRouteResult.showMenu(menus.customCostMenu(resolved, costType));
+    }
+
+    private DialogActionRouteResult setPlayerWarpCostFromInput(UUID viewerId, String category, String name, String costType, DialogInputValues inputValues) {
+        Float amount = inputValues.getFloat("amount");
+        if (amount == null) {
+            return DialogActionRouteResult.unknownAction();
+        }
+        return setPlayerWarpCost(viewerId, category, name, costType, amount.toString());
+    }
+
+    private boolean supportsCustomCost(String costType) {
+        return "money".equals(costType) || "xp-levels".equals(costType) || "xp-points".equals(costType);
+    }
+
     private CostSpec parseCost(String type, String amount) {
         return switch (type) {
             case "free" -> CostSpec.free();
@@ -161,7 +198,7 @@ public final class DialogActionRouter {
     }
 
     private int positiveInt(String value) {
-        int amount = Integer.parseInt(value);
+        int amount = Math.round(Float.parseFloat(value));
         if (amount < 0) {
             throw new IllegalArgumentException("Cost cannot be negative");
         }
