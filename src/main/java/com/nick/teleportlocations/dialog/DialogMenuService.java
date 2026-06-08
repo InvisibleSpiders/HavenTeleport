@@ -12,9 +12,9 @@ public final class DialogMenuService {
         for (TeleportLocation home : homes) {
             String marker = home.mainHome() ? "Main" : "Home";
             lines.add(marker + ": " + home.name());
-            actions.add(new DialogActionModel("teleport:" + home.normalizedName(), "Teleport"));
+            actions.add(new DialogActionModel("teleport:home:" + home.normalizedName(), "Teleport"));
             if (home.owner().playerIdOptional().filter(viewerId::equals).isPresent()) {
-                actions.add(new DialogActionModel("edit:" + home.normalizedName(), "Edit"));
+                actions.add(new DialogActionModel("edit:home:" + home.normalizedName(), "Edit"));
             }
         }
         return new DialogMenuModel("Homes", List.copyOf(lines), List.copyOf(actions));
@@ -25,9 +25,9 @@ public final class DialogMenuService {
         List<DialogActionModel> actions = new ArrayList<>();
         for (TeleportLocation warp : warps) {
             lines.add("Warp: " + warp.name());
-            actions.add(new DialogActionModel("teleport:" + warp.normalizedName(), "Teleport"));
+            actions.add(new DialogActionModel("teleport:player_warp:" + warp.normalizedName(), "Teleport"));
             if (warp.owner().playerIdOptional().filter(viewerId::equals).isPresent()) {
-                actions.add(new DialogActionModel("edit:" + warp.normalizedName(), "Edit"));
+                actions.add(new DialogActionModel("edit:player_warp:" + warp.normalizedName(), "Edit"));
             }
         }
         return new DialogMenuModel("Player Warps", List.copyOf(lines), List.copyOf(actions));
@@ -38,11 +38,33 @@ public final class DialogMenuService {
         List<DialogActionModel> actions = new ArrayList<>();
         for (TeleportLocation shop : shops) {
             lines.add("Shop: " + shop.name());
-            actions.add(new DialogActionModel("teleport:" + shop.normalizedName(), "Teleport"));
+            actions.add(new DialogActionModel("teleport:shop:" + shop.normalizedName(), "Teleport"));
             if (shop.owner().playerIdOptional().filter(viewerId::equals).isPresent()) {
-                actions.add(new DialogActionModel("edit:" + shop.normalizedName(), "Edit"));
+                actions.add(new DialogActionModel("edit:shop:" + shop.normalizedName(), "Edit"));
             }
         }
         return new DialogMenuModel("Shop Warps", List.copyOf(lines), List.copyOf(actions));
+    }
+
+    public DialogMenuModel editMenu(TeleportLocation location) {
+        List<String> lines = new ArrayList<>();
+        lines.add("Name: " + location.name());
+        lines.add("Access: " + title(location.accessMode().name()));
+        lines.add("Visibility: " + title(location.visibilityMode().name()));
+        lines.add("Cost: " + title(location.cost().type().name()));
+        return new DialogMenuModel("Edit " + title(location.category()), List.copyOf(lines), List.of());
+    }
+
+    private String title(String value) {
+        String normalized = value.toLowerCase().replace('_', ' ');
+        String[] words = normalized.split(" ");
+        StringBuilder builder = new StringBuilder();
+        for (String word : words) {
+            if (!builder.isEmpty()) {
+                builder.append(' ');
+            }
+            builder.append(Character.toUpperCase(word.charAt(0))).append(word.substring(1));
+        }
+        return builder.toString();
     }
 }

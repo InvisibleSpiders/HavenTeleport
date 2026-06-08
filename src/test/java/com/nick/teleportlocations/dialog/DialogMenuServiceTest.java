@@ -22,7 +22,7 @@ final class DialogMenuServiceTest {
         DialogMenuModel model = service.homesMenu(owner, List.of(location(owner)));
 
         assertThat(model.title()).isEqualTo("Homes");
-        assertThat(model.actions()).extracting(DialogActionModel::key).contains("teleport:base", "edit:base");
+        assertThat(model.actions()).extracting(DialogActionModel::key).contains("teleport:home:base", "edit:home:base");
     }
 
     @Test
@@ -34,7 +34,7 @@ final class DialogMenuServiceTest {
 
         assertThat(model.title()).isEqualTo("Player Warps");
         assertThat(model.lines()).contains("Warp: base");
-        assertThat(model.actions()).extracting(DialogActionModel::key).contains("teleport:base", "edit:base");
+        assertThat(model.actions()).extracting(DialogActionModel::key).contains("teleport:player_warp:base", "edit:player_warp:base");
     }
 
     @Test
@@ -46,7 +46,18 @@ final class DialogMenuServiceTest {
 
         assertThat(model.title()).isEqualTo("Shop Warps");
         assertThat(model.lines()).contains("Shop: base");
-        assertThat(model.actions()).extracting(DialogActionModel::key).contains("teleport:base", "edit:base");
+        assertThat(model.actions()).extracting(DialogActionModel::key).contains("teleport:shop:base", "edit:shop:base");
+    }
+
+    @Test
+    void editMenuShowsShopInvariantAsFixedState() {
+        UUID owner = UUID.randomUUID();
+        DialogMenuService service = new DialogMenuService();
+
+        DialogMenuModel model = service.editMenu(location(owner, "shop"));
+
+        assertThat(model.title()).isEqualTo("Edit Shop");
+        assertThat(model.lines()).contains("Access: Public", "Visibility: Listed", "Cost: Free");
     }
 
     private static TeleportLocation location(UUID owner) {

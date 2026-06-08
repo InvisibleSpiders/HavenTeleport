@@ -3,6 +3,8 @@ package com.nick.teleportlocations;
 import com.nick.teleportlocations.command.AdminTeleportCommand;
 import com.nick.teleportlocations.command.BukkitPlayerLookup;
 import com.nick.teleportlocations.command.PlayerLocationCommand;
+import com.nick.teleportlocations.dialog.DialogActionExecutor;
+import com.nick.teleportlocations.dialog.DialogActionRouter;
 import com.nick.teleportlocations.claim.BukkitLandClaimsGateway;
 import com.nick.teleportlocations.dialog.DialogMenuService;
 import com.nick.teleportlocations.dialog.PaperDialogPresenter;
@@ -54,14 +56,24 @@ public final class TeleportLocationsPlugin extends JavaPlugin {
                 services.limitService(),
                 new BukkitPlayerLookup()
         ));
+        DialogMenuService dialogMenus = new DialogMenuService();
+        PaperDialogPresenter presenter = new PaperDialogPresenter();
+        DialogActionRouter dialogActions = new DialogActionRouter(
+                services.homeService(),
+                services.playerWarpService(),
+                services.shopWarpService(),
+                services.outpostService(),
+                dialogMenus
+        );
+        presenter.setActionHandler(new DialogActionExecutor(dialogActions, presenter));
         PlayerLocationCommand playerCommand = new PlayerLocationCommand(
                 services.homeService(),
                 services.playerWarpService(),
                 services.shopWarpService(),
                 services.outpostService(),
                 services.spawnService(),
-                new DialogMenuService(),
-                new PaperDialogPresenter()
+                dialogMenus,
+                presenter
         );
         getCommand("home").setExecutor(playerCommand);
         getCommand("homes").setExecutor(playerCommand);
