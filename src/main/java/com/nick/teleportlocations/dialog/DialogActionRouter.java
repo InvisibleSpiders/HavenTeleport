@@ -7,6 +7,7 @@ import com.nick.teleportlocations.outpost.OutpostService;
 import com.nick.teleportlocations.outpost.OutpostResult;
 import com.nick.teleportlocations.shop.ShopWarpService;
 import com.nick.teleportlocations.shop.ShopWarpResult;
+import com.nick.teleportlocations.serverwarp.ServerWarpService;
 import com.nick.teleportlocations.warp.PlayerWarpService;
 import com.nick.teleportlocations.warp.PlayerWarpResult;
 import java.util.Optional;
@@ -17,6 +18,7 @@ public final class DialogActionRouter {
     private final PlayerWarpService warps;
     private final ShopWarpService shops;
     private final OutpostService outposts;
+    private final ServerWarpService serverWarps;
     private final DialogMenuService menus;
 
     public DialogActionRouter(
@@ -24,12 +26,14 @@ public final class DialogActionRouter {
             PlayerWarpService warps,
             ShopWarpService shops,
             OutpostService outposts,
+            ServerWarpService serverWarps,
             DialogMenuService menus
     ) {
         this.homes = homes;
         this.warps = warps;
         this.shops = shops;
         this.outposts = outposts;
+        this.serverWarps = serverWarps;
         this.menus = menus;
     }
 
@@ -112,6 +116,7 @@ public final class DialogActionRouter {
         return switch (category) {
             case "home" -> homes.resolveHome(viewerId, name);
             case "player_warp" -> warps.resolveVisibleWarp(viewerId, name);
+            case "server_warp" -> serverWarps.resolveVisibleWarp(name);
             case "shop" -> shops.resolveVisibleShop(viewerId, name);
             case "outpost" -> outposts.resolveOutpost(viewerId, name);
             default -> Optional.empty();

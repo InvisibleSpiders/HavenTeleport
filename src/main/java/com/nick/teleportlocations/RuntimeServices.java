@@ -12,6 +12,7 @@ import com.nick.teleportlocations.limit.LimitRepository;
 import com.nick.teleportlocations.limit.LimitService;
 import com.nick.teleportlocations.location.LocationService;
 import com.nick.teleportlocations.outpost.OutpostService;
+import com.nick.teleportlocations.serverwarp.ServerWarpService;
 import com.nick.teleportlocations.shop.ShopWarpService;
 import com.nick.teleportlocations.spawn.SpawnPolicy;
 import com.nick.teleportlocations.spawn.SpawnPolicyService;
@@ -42,6 +43,7 @@ public record RuntimeServices(
         PlayerWarpService playerWarpService,
         ShopWarpService shopWarpService,
         OutpostService outpostService,
+        ServerWarpService serverWarpService,
         SpawnPolicyService spawnPolicyService,
         SpawnService spawnService
 ) implements AutoCloseable {
@@ -61,6 +63,7 @@ public record RuntimeServices(
         Objects.requireNonNull(playerWarpService, "playerWarpService");
         Objects.requireNonNull(shopWarpService, "shopWarpService");
         Objects.requireNonNull(outpostService, "outpostService");
+        Objects.requireNonNull(serverWarpService, "serverWarpService");
         Objects.requireNonNull(spawnPolicyService, "spawnPolicyService");
         Objects.requireNonNull(spawnService, "spawnService");
     }
@@ -90,6 +93,7 @@ public record RuntimeServices(
         PlayerWarpService playerWarpService = new PlayerWarpService(locationService, limitService, creationPolicyService);
         ShopWarpService shopWarpService = new ShopWarpService(locationService, limitService, creationPolicyService);
         OutpostService outpostService = new OutpostService(locationService, limitService, creationPolicyService);
+        ServerWarpService serverWarpService = new ServerWarpService(locationService);
         SpawnPolicyService spawnPolicyService = new SpawnPolicyService(spawnPolicy(config));
         SpawnService spawnService = new SpawnService(locationService, homeService);
         return new RuntimeServices(
@@ -105,6 +109,7 @@ public record RuntimeServices(
                 playerWarpService,
                 shopWarpService,
                 outpostService,
+                serverWarpService,
                 spawnPolicyService,
                 spawnService
         );

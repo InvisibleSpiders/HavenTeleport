@@ -16,14 +16,18 @@ import com.nick.teleportlocations.limit.LimitService;
 import com.nick.teleportlocations.location.AccessMode;
 import com.nick.teleportlocations.location.LocationService;
 import com.nick.teleportlocations.location.VisibilityMode;
+import com.nick.teleportlocations.serverwarp.ServerWarpService;
 import com.nick.teleportlocations.spawn.SpawnService;
 import com.nick.teleportlocations.storage.InMemoryLocationRepository;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import org.bukkit.Location;
+import org.bukkit.World;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
 import org.junit.jupiter.api.Test;
 
 final class AdminTeleportCommandTest {
@@ -64,6 +68,19 @@ final class AdminTeleportCommandTest {
         assertThat(fixture.limits.resolveLimit(playerId, "home")).isEqualTo(3);
     }
 
+    @Test
+    void adminCanSetAndDeleteServerWarp() {
+        UUID playerId = UUID.randomUUID();
+        Fixture fixture = Fixture.create("Nova", playerId);
+        Player sender = adminPlayerAt(location("world"));
+
+        fixture.command.onCommand(sender, command("ht"), "ht", new String[] {"admin", "serverwarp", "set", "market"});
+        assertThat(fixture.serverWarps.visibleWarps()).extracting("name").containsExactly("market");
+
+        fixture.command.onCommand(sender, command("ht"), "ht", new String[] {"admin", "serverwarp", "delete", "market"});
+        assertThat(fixture.serverWarps.visibleWarps()).isEmpty();
+    }
+
     private static CommandSender adminSender() {
         CommandSender sender = mock(CommandSender.class);
         when(sender.hasPermission("teleportlocations.admin.limits")).thenReturn(true);
@@ -76,7 +93,33 @@ final class AdminTeleportCommandTest {
         return command;
     }
 
-    private record Fixture(AdminTeleportCommand command, LimitService limits) {
+    private static Player adminPlayerAt(Location location) {
+        Player player = mock(Player.class);
+        when(player.hasPermission("teleportlocations.admin.serverwarp")).thenReturn(true);
+        when(player.getLocation()).thenReturn(location);
+        return player;
+    }
+
+    private static Location location(String worldName) {
+        Location location = mock(Location.class);
+        World world = world(worldName);
+        when(location.getWorld()).thenReturn(world);
+        when(location.getX()).thenReturn(1.0);
+        when(location.getY()).thenReturn(64.0);
+        when(location.getZ()).thenReturn(2.0);
+        when(location.getYaw()).thenReturn(90.0f);
+        when(location.getPitch()).thenReturn(10.0f);
+        return location;
+    }
+
+    private static World world(String name) {
+        World world = mock(World.class);
+        when(world.getUID()).thenReturn(UUID.randomUUID());
+        when(world.getName()).thenReturn(name);
+        return world;
+    }
+
+    private record Fixture(AdminTeleportCommand command, LimitService limits, ServerWarpService serverWarps) {
         private static Fixture create(String playerName, UUID playerId) {
             LimitService limitService = new LimitService(categories(), new InMemoryLimitRepository());
             LocationService locationService = new LocationService(new InMemoryLocationRepository(), () -> Instant.EPOCH);
@@ -87,8 +130,9 @@ final class AdminTeleportCommandTest {
             );
             HomeService homeService = new HomeService(locationService, limitService, creationPolicy);
             SpawnService spawnService = new SpawnService(locationService, homeService);
+            ServerWarpService serverWarpService = new ServerWarpService(locationService);
             PlayerLookup lookup = name -> playerName.equalsIgnoreCase(name) ? Optional.of(playerId) : Optional.empty();
-            return new Fixture(new AdminTeleportCommand(spawnService, limitService, lookup), limitService);
+            return new Fixture(new AdminTeleportCommand(spawnService, limitService, serverWarpService, lookup), limitService, serverWarpService);
         }
     }
 

@@ -13,6 +13,7 @@ import com.nick.teleportlocations.limit.LimitService;
 import com.nick.teleportlocations.location.LocationService;
 import com.nick.teleportlocations.location.SavedPosition;
 import com.nick.teleportlocations.outpost.OutpostService;
+import com.nick.teleportlocations.serverwarp.ServerWarpService;
 import com.nick.teleportlocations.shop.ShopWarpService;
 import com.nick.teleportlocations.storage.InMemoryLocationRepository;
 import com.nick.teleportlocations.warp.PlayerWarpService;
@@ -59,6 +60,18 @@ final class DialogActionRouterTest {
     }
 
     @Test
+    void routesServerWarpTeleportActionToResolvedLocation() {
+        Fixture fixture = Fixture.create();
+        fixture.serverWarps.setWarp("spawn", position());
+
+        DialogActionRouteResult result = fixture.router.route(UUID.randomUUID(), "teleport:server_warp:spawn");
+
+        assertThat(result.status()).isEqualTo(DialogActionRouteResult.Status.TELEPORT);
+        assertThat(result.location()).isPresent();
+        assertThat(result.location().orElseThrow().name()).isEqualTo("spawn");
+    }
+
+    @Test
     void setMainHomeActionUpdatesTheSelectedHome() {
         Fixture fixture = Fixture.create();
         UUID owner = UUID.randomUUID();
@@ -92,7 +105,8 @@ final class DialogActionRouterTest {
             HomeService homes,
             PlayerWarpService warps,
             ShopWarpService shops,
-            OutpostService outposts
+            OutpostService outposts,
+            ServerWarpService serverWarps
     ) {
         private static Fixture create() {
             PluginConfig config = ConfigLoader.fromResources();
@@ -108,13 +122,15 @@ final class DialogActionRouterTest {
             PlayerWarpService warpService = new PlayerWarpService(locationService, limitService, creationPolicy);
             ShopWarpService shopService = new ShopWarpService(locationService, limitService, creationPolicy);
             OutpostService outpostService = new OutpostService(locationService, limitService, creationPolicy);
+            ServerWarpService serverWarpService = new ServerWarpService(locationService);
             DialogMenuService menus = new DialogMenuService();
             return new Fixture(
-                    new DialogActionRouter(homeService, warpService, shopService, outpostService, menus),
+                    new DialogActionRouter(homeService, warpService, shopService, outpostService, serverWarpService, menus),
                     homeService,
                     warpService,
                     shopService,
-                    outpostService
+                    outpostService,
+                    serverWarpService
             );
         }
     }

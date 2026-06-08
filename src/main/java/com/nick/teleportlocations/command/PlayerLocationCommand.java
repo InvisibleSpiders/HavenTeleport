@@ -8,6 +8,7 @@ import com.nick.teleportlocations.home.HomeService;
 import com.nick.teleportlocations.location.TeleportLocation;
 import com.nick.teleportlocations.outpost.OutpostResult;
 import com.nick.teleportlocations.outpost.OutpostService;
+import com.nick.teleportlocations.serverwarp.ServerWarpService;
 import com.nick.teleportlocations.shop.ShopWarpResult;
 import com.nick.teleportlocations.shop.ShopWarpService;
 import com.nick.teleportlocations.spawn.SpawnService;
@@ -28,15 +29,17 @@ public final class PlayerLocationCommand implements CommandExecutor {
     private final PlayerWarpService warps;
     private final ShopWarpService shops;
     private final OutpostService outposts;
+    private final ServerWarpService serverWarps;
     private final SpawnService spawn;
     private final DialogMenuService dialogs;
     private final PaperDialogPresenter presenter;
 
-    public PlayerLocationCommand(HomeService homes, PlayerWarpService warps, ShopWarpService shops, OutpostService outposts, SpawnService spawn, DialogMenuService dialogs, PaperDialogPresenter presenter) {
+    public PlayerLocationCommand(HomeService homes, PlayerWarpService warps, ShopWarpService shops, OutpostService outposts, ServerWarpService serverWarps, SpawnService spawn, DialogMenuService dialogs, PaperDialogPresenter presenter) {
         this.homes = homes;
         this.warps = warps;
         this.shops = shops;
         this.outposts = outposts;
+        this.serverWarps = serverWarps;
         this.spawn = spawn;
         this.dialogs = dialogs;
         this.presenter = presenter;
@@ -59,7 +62,11 @@ public final class PlayerLocationCommand implements CommandExecutor {
             case "setwarp" -> setWarp(player, args);
             case "warp" -> teleportWarp(player, args);
             case "delwarp" -> deleteWarp(player, args);
-            case "warps" -> presenter.show(player, dialogs.playerWarpsMenu(player.getUniqueId(), warps.visibleWarps(player.getUniqueId())));
+            case "warps" -> presenter.show(player, dialogs.warpsMenu(
+                    player.getUniqueId(),
+                    serverWarps.visibleWarps(),
+                    warps.visibleWarps(player.getUniqueId())
+            ));
             case "setshop" -> setShop(player, args);
             case "delshop" -> deleteShop(player, args);
             case "shops" -> presenter.show(player, dialogs.shopWarpsMenu(player.getUniqueId(), shops.visibleShops(player.getUniqueId())));
@@ -137,7 +144,8 @@ public final class PlayerLocationCommand implements CommandExecutor {
             player.sendMessage(Component.text("Usage: /warp <name>", NamedTextColor.YELLOW));
             return;
         }
-        Optional<TeleportLocation> warp = warps.resolveVisibleWarp(player.getUniqueId(), args[0]);
+        Optional<TeleportLocation> warp = serverWarps.resolveVisibleWarp(args[0])
+                .or(() -> warps.resolveVisibleWarp(player.getUniqueId(), args[0]));
         if (warp.isEmpty()) {
             player.sendMessage(Component.text("Warp not found.", NamedTextColor.RED));
             return;

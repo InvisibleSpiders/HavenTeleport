@@ -2,6 +2,8 @@ package com.nick.teleportlocations.command;
 
 import com.nick.teleportlocations.bukkit.BukkitLocations;
 import com.nick.teleportlocations.limit.LimitService;
+import com.nick.teleportlocations.serverwarp.ServerWarpResult;
+import com.nick.teleportlocations.serverwarp.ServerWarpService;
 import com.nick.teleportlocations.spawn.SpawnResult;
 import com.nick.teleportlocations.spawn.SpawnService;
 import java.util.Locale;
@@ -17,11 +19,13 @@ import org.bukkit.entity.Player;
 public final class AdminTeleportCommand implements CommandExecutor {
     private final SpawnService spawn;
     private final LimitService limits;
+    private final ServerWarpService serverWarps;
     private final PlayerLookup players;
 
-    public AdminTeleportCommand(SpawnService spawn, LimitService limits, PlayerLookup players) {
+    public AdminTeleportCommand(SpawnService spawn, LimitService limits, ServerWarpService serverWarps, PlayerLookup players) {
         this.spawn = spawn;
         this.limits = limits;
+        this.serverWarps = serverWarps;
         this.players = players;
     }
 
@@ -33,6 +37,10 @@ public final class AdminTeleportCommand implements CommandExecutor {
         }
         if (isSetSpawn(args)) {
             setSpawn(sender);
+            return true;
+        }
+        if (isServerWarpCommand(args)) {
+            handleServerWarp(sender, args);
             return true;
         }
         sender.sendMessage(Component.text(CommandMessages.adminUsage(), NamedTextColor.YELLOW));
@@ -52,6 +60,12 @@ public final class AdminTeleportCommand implements CommandExecutor {
         return args.length == 2
                 && "admin".equals(args[0].toLowerCase(Locale.ROOT))
                 && "setspawn".equals(args[1].toLowerCase(Locale.ROOT));
+    }
+
+    private boolean isServerWarpCommand(String[] args) {
+        return args.length >= 3
+                && "admin".equals(args[0].toLowerCase(Locale.ROOT))
+                && "serverwarp".equals(args[1].toLowerCase(Locale.ROOT));
     }
 
     private void setSpawn(CommandSender sender) {
@@ -117,6 +131,59 @@ public final class AdminTeleportCommand implements CommandExecutor {
 
         int limit = limits.resolveLimit(playerId.orElseThrow(), category);
         sender.sendMessage(Component.text("Limit for " + args[3] + " in " + category + " is now " + limit + ".", NamedTextColor.GREEN));
+    }
+
+    private void handleServerWarp(CommandSender sender, String[] args) {
+        if (!sender.hasPermission("teleportlocations.admin.serverwarp")) {
+            sender.sendMessage(Component.text("You do not have permission to edit server warps.", NamedTextColor.RED));
+            return;
+        }
+
+        String action = args[2].toLowerCase(Locale.ROOT);
+        switch (action) {
+            case "set" -> setServerWarp(sender, args);
+            case "delete" -> deleteServerWarp(sender, args);
+            case "list" -> listServerWarps(sender);
+            default -> sender.sendMessage(Component.text("Usage: /ht admin serverwarp <set|delete|list> [name]", NamedTextColor.YELLOW));
+        }
+    }
+
+    private void setServerWarp(CommandSender sender, String[] args) {
+        if (args.length < 4) {
+            sender.sendMessage(Component.text("Usage: /ht admin serverwarp set <name>", NamedTextColor.YELLOW));
+            return;
+        }
+        if (!(sender instanceof Player player)) {
+            sender.sendMessage(Component.text("Only players can set server warps.", NamedTextColor.RED));
+            return;
+        }
+        ServerWarpResult result = serverWarps.setWarp(args[3], BukkitLocations.save(player.getLocation()));
+        switch (result.status()) {
+            case CREATED -> player.sendMessage(Component.text("Server warp " + args[3] + " set.", NamedTextColor.GREEN));
+            case UPDATED -> player.sendMessage(Component.text("Server warp " + args[3] + " updated.", NamedTextColor.GREEN));
+            case DELETED, NOT_FOUND -> player.sendMessage(Component.text("Server warp " + args[3] + " could not be saved.", NamedTextColor.RED));
+        }
+    }
+
+    private void deleteServerWarp(CommandSender sender, String[] args) {
+        if (args.length < 4) {
+            sender.sendMessage(Component.text("Usage: /ht admin serverwarp delete <name>", NamedTextColor.YELLOW));
+            return;
+        }
+        ServerWarpResult result = serverWarps.deleteWarp(args[3]);
+        switch (result.status()) {
+            case DELETED -> sender.sendMessage(Component.text("Server warp " + args[3] + " deleted.", NamedTextColor.GREEN));
+            case NOT_FOUND -> sender.sendMessage(Component.text("Server warp " + args[3] + " was not found.", NamedTextColor.RED));
+            case CREATED, UPDATED -> sender.sendMessage(Component.text("Server warp " + args[3] + " could not be deleted.", NamedTextColor.RED));
+        }
+    }
+
+    private void listServerWarps(CommandSender sender) {
+        String names = serverWarps.visibleWarps().stream()
+                .map(location -> location.name())
+                .reduce((left, right) -> left + ", " + right)
+                .orElse("none");
+        sender.sendMessage(Component.text("Server warps: " + names + ".", NamedTextColor.GREEN));
     }
 
     private Optional<Integer> parseAmount(String input) {

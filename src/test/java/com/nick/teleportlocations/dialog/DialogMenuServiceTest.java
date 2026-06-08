@@ -38,6 +38,19 @@ final class DialogMenuServiceTest {
     }
 
     @Test
+    void warpsMenuIncludesServerAndPlayerWarpActions() {
+        UUID owner = UUID.randomUUID();
+        DialogMenuService service = new DialogMenuService();
+
+        DialogMenuModel model = service.warpsMenu(owner, List.of(serverLocation()), List.of(location(owner, "player_warp")));
+
+        assertThat(model.title()).isEqualTo("Warps");
+        assertThat(model.lines()).contains("Server: spawn", "Player: base");
+        assertThat(model.actions()).extracting(DialogActionModel::key)
+                .contains("teleport:server_warp:spawn", "teleport:player_warp:base", "edit:player_warp:base");
+    }
+
+    @Test
     void shopWarpsMenuIncludesTeleportAndOwnerEditAction() {
         UUID owner = UUID.randomUUID();
         DialogMenuService service = new DialogMenuService();
@@ -97,6 +110,21 @@ final class DialogMenuServiceTest {
                 VisibilityMode.HIDDEN,
                 CostSpec.free(),
                 "home".equals(category),
+                Instant.EPOCH
+        );
+    }
+
+    private static TeleportLocation serverLocation() {
+        return TeleportLocation.create(
+                UUID.randomUUID(),
+                "server_warp",
+                OwnerRef.server(),
+                "spawn",
+                new SavedPosition(UUID.randomUUID(), "world", 0.0, 64.0, 0.0, 0.0f, 0.0f),
+                AccessMode.PUBLIC,
+                VisibilityMode.LISTED,
+                CostSpec.free(),
+                false,
                 Instant.EPOCH
         );
     }

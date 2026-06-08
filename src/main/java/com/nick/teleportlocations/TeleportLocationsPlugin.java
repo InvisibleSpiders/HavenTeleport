@@ -54,6 +54,7 @@ public final class TeleportLocationsPlugin extends JavaPlugin {
         getCommand("ht").setExecutor(new AdminTeleportCommand(
                 services.spawnService(),
                 services.limitService(),
+                services.serverWarpService(),
                 new BukkitPlayerLookup()
         ));
         DialogMenuService dialogMenus = new DialogMenuService();
@@ -63,6 +64,7 @@ public final class TeleportLocationsPlugin extends JavaPlugin {
                 services.playerWarpService(),
                 services.shopWarpService(),
                 services.outpostService(),
+                services.serverWarpService(),
                 dialogMenus
         );
         presenter.setActionHandler(new DialogActionExecutor(dialogActions, presenter));
@@ -71,6 +73,7 @@ public final class TeleportLocationsPlugin extends JavaPlugin {
                 services.playerWarpService(),
                 services.shopWarpService(),
                 services.outpostService(),
+                services.serverWarpService(),
                 services.spawnService(),
                 dialogMenus,
                 presenter

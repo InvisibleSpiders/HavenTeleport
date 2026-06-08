@@ -18,6 +18,7 @@ import com.nick.teleportlocations.limit.LimitService;
 import com.nick.teleportlocations.location.LocationService;
 import com.nick.teleportlocations.location.SavedPosition;
 import com.nick.teleportlocations.outpost.OutpostService;
+import com.nick.teleportlocations.serverwarp.ServerWarpService;
 import com.nick.teleportlocations.shop.ShopWarpService;
 import com.nick.teleportlocations.spawn.SpawnService;
 import com.nick.teleportlocations.storage.InMemoryLocationRepository;
@@ -139,6 +140,7 @@ final class PlayerLocationCommandTest {
             PlayerWarpService warpService = new PlayerWarpService(locationService, limitService, creationPolicy);
             ShopWarpService shopService = new ShopWarpService(locationService, limitService, creationPolicy);
             OutpostService outpostService = new OutpostService(locationService, limitService, creationPolicy);
+            ServerWarpService serverWarpService = new ServerWarpService(locationService);
             SpawnService spawnService = new SpawnService(locationService, homeService);
             return new Fixture(
                     new PlayerLocationCommand(
@@ -146,6 +148,7 @@ final class PlayerLocationCommandTest {
                             warpService,
                             shopService,
                             outpostService,
+                            serverWarpService,
                             spawnService,
                             new DialogMenuService(),
                             new PaperDialogPresenter()
