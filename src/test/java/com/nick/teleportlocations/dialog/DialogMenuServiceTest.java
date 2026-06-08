@@ -37,6 +37,18 @@ final class DialogMenuServiceTest {
         assertThat(model.actions()).extracting(DialogActionModel::key).contains("teleport:base", "edit:base");
     }
 
+    @Test
+    void shopWarpsMenuIncludesTeleportAndOwnerEditAction() {
+        UUID owner = UUID.randomUUID();
+        DialogMenuService service = new DialogMenuService();
+
+        DialogMenuModel model = service.shopWarpsMenu(owner, List.of(location(owner, "shop")));
+
+        assertThat(model.title()).isEqualTo("Shop Warps");
+        assertThat(model.lines()).contains("Shop: base");
+        assertThat(model.actions()).extracting(DialogActionModel::key).contains("teleport:base", "edit:base");
+    }
+
     private static TeleportLocation location(UUID owner) {
         return location(owner, "home");
     }

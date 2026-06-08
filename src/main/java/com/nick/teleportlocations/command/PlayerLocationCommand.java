@@ -6,6 +6,8 @@ import com.nick.teleportlocations.dialog.PaperDialogPresenter;
 import com.nick.teleportlocations.home.HomeResult;
 import com.nick.teleportlocations.home.HomeService;
 import com.nick.teleportlocations.location.TeleportLocation;
+import com.nick.teleportlocations.shop.ShopWarpResult;
+import com.nick.teleportlocations.shop.ShopWarpService;
 import com.nick.teleportlocations.spawn.SpawnService;
 import com.nick.teleportlocations.warp.PlayerWarpResult;
 import com.nick.teleportlocations.warp.PlayerWarpService;
@@ -22,13 +24,15 @@ import org.bukkit.entity.Player;
 public final class PlayerLocationCommand implements CommandExecutor {
     private final HomeService homes;
     private final PlayerWarpService warps;
+    private final ShopWarpService shops;
     private final SpawnService spawn;
     private final DialogMenuService dialogs;
     private final PaperDialogPresenter presenter;
 
-    public PlayerLocationCommand(HomeService homes, PlayerWarpService warps, SpawnService spawn, DialogMenuService dialogs, PaperDialogPresenter presenter) {
+    public PlayerLocationCommand(HomeService homes, PlayerWarpService warps, ShopWarpService shops, SpawnService spawn, DialogMenuService dialogs, PaperDialogPresenter presenter) {
         this.homes = homes;
         this.warps = warps;
+        this.shops = shops;
         this.spawn = spawn;
         this.dialogs = dialogs;
         this.presenter = presenter;
@@ -52,6 +56,9 @@ public final class PlayerLocationCommand implements CommandExecutor {
             case "warp" -> teleportWarp(player, args);
             case "delwarp" -> deleteWarp(player, args);
             case "warps" -> presenter.show(player, dialogs.playerWarpsMenu(player.getUniqueId(), warps.visibleWarps(player.getUniqueId())));
+            case "setshop" -> setShop(player, args);
+            case "delshop" -> deleteShop(player, args);
+            case "shops" -> presenter.show(player, dialogs.shopWarpsMenu(player.getUniqueId(), shops.visibleShops(player.getUniqueId())));
             case "spawn" -> teleportSpawn(player);
             default -> player.sendMessage(Component.text(CommandMessages.playerUsage(), NamedTextColor.YELLOW));
         }
@@ -145,6 +152,28 @@ public final class PlayerLocationCommand implements CommandExecutor {
         sendWarpResult(player, warps.deleteWarp(player.getUniqueId(), args[0]), args[0]);
     }
 
+    private void setShop(Player player, String[] args) {
+        if (args.length == 0) {
+            player.sendMessage(Component.text("Usage: /setshop <name>", NamedTextColor.YELLOW));
+            return;
+        }
+        ShopWarpResult result = shops.setShop(
+                player.getUniqueId(),
+                args[0],
+                BukkitLocations.save(player.getLocation()),
+                player.hasPermission("teleportlocations.admin.bypass.creation")
+        );
+        sendShopResult(player, result, args[0]);
+    }
+
+    private void deleteShop(Player player, String[] args) {
+        if (args.length == 0) {
+            player.sendMessage(Component.text("Usage: /delshop <name>", NamedTextColor.YELLOW));
+            return;
+        }
+        sendShopResult(player, shops.deleteShop(player.getUniqueId(), args[0]), args[0]);
+    }
+
     private void teleportSpawn(Player player) {
         Optional<TeleportLocation> configuredSpawn = spawn.spawn();
         if (configuredSpawn.isEmpty()) {
@@ -179,6 +208,17 @@ public final class PlayerLocationCommand implements CommandExecutor {
             case NOT_FOUND -> player.sendMessage(Component.text("Warp " + name + " was not found.", NamedTextColor.RED));
             case LIMIT_REACHED -> player.sendMessage(Component.text("You have reached your player warp limit.", NamedTextColor.RED));
             case CLAIM_DENIED -> player.sendMessage(Component.text("You cannot create a warp here.", NamedTextColor.RED));
+        }
+    }
+
+    private void sendShopResult(Player player, ShopWarpResult result, String name) {
+        switch (result.status()) {
+            case CREATED -> player.sendMessage(Component.text("Shop " + name + " set.", NamedTextColor.GREEN));
+            case UPDATED -> player.sendMessage(Component.text("Shop " + name + " updated.", NamedTextColor.GREEN));
+            case DELETED -> player.sendMessage(Component.text("Shop " + name + " deleted.", NamedTextColor.GREEN));
+            case NOT_FOUND -> player.sendMessage(Component.text("Shop " + name + " was not found.", NamedTextColor.RED));
+            case LIMIT_REACHED -> player.sendMessage(Component.text("You have reached your shop warp limit.", NamedTextColor.RED));
+            case CLAIM_DENIED -> player.sendMessage(Component.text("You cannot create a shop warp here.", NamedTextColor.RED));
         }
     }
 

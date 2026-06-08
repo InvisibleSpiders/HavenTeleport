@@ -17,6 +17,7 @@ import com.nick.teleportlocations.limit.InMemoryLimitRepository;
 import com.nick.teleportlocations.limit.LimitService;
 import com.nick.teleportlocations.location.LocationService;
 import com.nick.teleportlocations.location.SavedPosition;
+import com.nick.teleportlocations.shop.ShopWarpService;
 import com.nick.teleportlocations.spawn.SpawnService;
 import com.nick.teleportlocations.storage.InMemoryLocationRepository;
 import com.nick.teleportlocations.warp.PlayerWarpService;
@@ -62,6 +63,19 @@ final class PlayerLocationCommandTest {
         assertThat(fixture.warps.ownerWarps(playerId)).extracting("name").containsExactly("market");
     }
 
+    @Test
+    void setShopCommandCreatesShopWarpAtCurrentLocation() {
+        Fixture fixture = Fixture.create();
+        UUID playerId = UUID.randomUUID();
+        World world = world("world");
+        Player player = playerAt(playerId, new Location(world, 1.0, 64.0, 2.0, 90.0f, 10.0f));
+        Command command = command("setshop");
+
+        fixture.command.onCommand(player, command, "setshop", new String[] {"tools"});
+
+        assertThat(fixture.shops.ownerShops(playerId)).extracting("name").containsExactly("tools");
+    }
+
     private static Player playerAt(UUID playerId, Location location) {
         Player player = mock(Player.class);
         when(player.getUniqueId()).thenReturn(playerId);
@@ -83,7 +97,7 @@ final class PlayerLocationCommandTest {
         return command;
     }
 
-    private record Fixture(PlayerLocationCommand command, PlayerWarpService warps) {
+    private record Fixture(PlayerLocationCommand command, PlayerWarpService warps, ShopWarpService shops) {
         private static Fixture create() {
             PluginConfig config = ConfigLoader.fromResources();
             InMemoryLocationRepository locations = new InMemoryLocationRepository();
@@ -96,16 +110,19 @@ final class PlayerLocationCommandTest {
             );
             HomeService homeService = new HomeService(locationService, limitService, creationPolicy);
             PlayerWarpService warpService = new PlayerWarpService(locationService, limitService, creationPolicy);
+            ShopWarpService shopService = new ShopWarpService(locationService, limitService, creationPolicy);
             SpawnService spawnService = new SpawnService(locationService, homeService);
             return new Fixture(
                     new PlayerLocationCommand(
                             homeService,
                             warpService,
+                            shopService,
                             spawnService,
                             new DialogMenuService(),
                             new PaperDialogPresenter()
                     ),
-                    warpService
+                    warpService,
+                    shopService
             );
         }
     }

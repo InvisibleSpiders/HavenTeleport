@@ -11,6 +11,7 @@ import com.nick.teleportlocations.home.HomeService;
 import com.nick.teleportlocations.limit.LimitRepository;
 import com.nick.teleportlocations.limit.LimitService;
 import com.nick.teleportlocations.location.LocationService;
+import com.nick.teleportlocations.shop.ShopWarpService;
 import com.nick.teleportlocations.spawn.SpawnPolicy;
 import com.nick.teleportlocations.spawn.SpawnPolicyService;
 import com.nick.teleportlocations.spawn.SpawnService;
@@ -38,6 +39,7 @@ public record RuntimeServices(
         CreationPolicyService creationPolicyService,
         HomeService homeService,
         PlayerWarpService playerWarpService,
+        ShopWarpService shopWarpService,
         SpawnPolicyService spawnPolicyService,
         SpawnService spawnService
 ) implements AutoCloseable {
@@ -55,6 +57,7 @@ public record RuntimeServices(
         Objects.requireNonNull(creationPolicyService, "creationPolicyService");
         Objects.requireNonNull(homeService, "homeService");
         Objects.requireNonNull(playerWarpService, "playerWarpService");
+        Objects.requireNonNull(shopWarpService, "shopWarpService");
         Objects.requireNonNull(spawnPolicyService, "spawnPolicyService");
         Objects.requireNonNull(spawnService, "spawnService");
     }
@@ -82,6 +85,7 @@ public record RuntimeServices(
         );
         HomeService homeService = new HomeService(locationService, limitService, creationPolicyService);
         PlayerWarpService playerWarpService = new PlayerWarpService(locationService, limitService, creationPolicyService);
+        ShopWarpService shopWarpService = new ShopWarpService(locationService, limitService, creationPolicyService);
         SpawnPolicyService spawnPolicyService = new SpawnPolicyService(spawnPolicy(config));
         SpawnService spawnService = new SpawnService(locationService, homeService);
         return new RuntimeServices(
@@ -95,6 +99,7 @@ public record RuntimeServices(
                 creationPolicyService,
                 homeService,
                 playerWarpService,
+                shopWarpService,
                 spawnPolicyService,
                 spawnService
         );

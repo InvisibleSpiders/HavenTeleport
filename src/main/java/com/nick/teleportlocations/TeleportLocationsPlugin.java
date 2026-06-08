@@ -52,6 +52,7 @@ public final class TeleportLocationsPlugin extends JavaPlugin {
         PlayerLocationCommand playerCommand = new PlayerLocationCommand(
                 services.homeService(),
                 services.playerWarpService(),
+                services.shopWarpService(),
                 services.spawnService(),
                 new DialogMenuService(),
                 new PaperDialogPresenter()

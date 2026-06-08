@@ -32,4 +32,17 @@ public final class DialogMenuService {
         }
         return new DialogMenuModel("Player Warps", List.copyOf(lines), List.copyOf(actions));
     }
+
+    public DialogMenuModel shopWarpsMenu(UUID viewerId, List<TeleportLocation> shops) {
+        List<String> lines = new ArrayList<>();
+        List<DialogActionModel> actions = new ArrayList<>();
+        for (TeleportLocation shop : shops) {
+            lines.add("Shop: " + shop.name());
+            actions.add(new DialogActionModel("teleport:" + shop.normalizedName(), "Teleport"));
+            if (shop.owner().playerIdOptional().filter(viewerId::equals).isPresent()) {
+                actions.add(new DialogActionModel("edit:" + shop.normalizedName(), "Edit"));
+            }
+        }
+        return new DialogMenuModel("Shop Warps", List.copyOf(lines), List.copyOf(actions));
+    }
 }

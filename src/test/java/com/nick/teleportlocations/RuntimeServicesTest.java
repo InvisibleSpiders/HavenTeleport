@@ -35,6 +35,7 @@ final class RuntimeServicesTest {
             assertThat(services.limitService()).isNotNull();
             assertThat(services.homeService()).isNotNull();
             assertThat(services.playerWarpService()).isNotNull();
+            assertThat(services.shopWarpService()).isNotNull();
             assertThat(services.spawnService()).isNotNull();
             assertThat(services.spawnPolicyService().deathCandidates()).isNotEmpty();
         }
