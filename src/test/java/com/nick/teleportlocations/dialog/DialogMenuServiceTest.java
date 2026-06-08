@@ -25,17 +25,33 @@ final class DialogMenuServiceTest {
         assertThat(model.actions()).extracting(DialogActionModel::key).contains("teleport:base", "edit:base");
     }
 
+    @Test
+    void playerWarpsMenuIncludesTeleportAndOwnerEditAction() {
+        UUID owner = UUID.randomUUID();
+        DialogMenuService service = new DialogMenuService();
+
+        DialogMenuModel model = service.playerWarpsMenu(owner, List.of(location(owner, "player_warp")));
+
+        assertThat(model.title()).isEqualTo("Player Warps");
+        assertThat(model.lines()).contains("Warp: base");
+        assertThat(model.actions()).extracting(DialogActionModel::key).contains("teleport:base", "edit:base");
+    }
+
     private static TeleportLocation location(UUID owner) {
+        return location(owner, "home");
+    }
+
+    private static TeleportLocation location(UUID owner, String category) {
         return TeleportLocation.create(
                 UUID.randomUUID(),
-                "home",
+                category,
                 OwnerRef.player(owner),
                 "base",
                 new SavedPosition(UUID.randomUUID(), "world", 0.0, 64.0, 0.0, 0.0f, 0.0f),
                 AccessMode.PRIVATE,
                 VisibilityMode.HIDDEN,
                 CostSpec.free(),
-                true,
+                "home".equals(category),
                 Instant.EPOCH
         );
     }

@@ -67,6 +67,10 @@ public final class LocationService {
         return repository.findByOwnerAndCategory(owner, category);
     }
 
+    public List<TeleportLocation> list(String category) {
+        return repository.findByCategory(category);
+    }
+
     public void delete(UUID id) {
         repository.delete(id);
     }

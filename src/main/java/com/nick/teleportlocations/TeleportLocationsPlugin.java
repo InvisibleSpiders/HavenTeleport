@@ -51,6 +51,7 @@ public final class TeleportLocationsPlugin extends JavaPlugin {
         getCommand("tl").setExecutor(new AdminTeleportCommand(services.spawnService()));
         PlayerLocationCommand playerCommand = new PlayerLocationCommand(
                 services.homeService(),
+                services.playerWarpService(),
                 services.spawnService(),
                 new DialogMenuService(),
                 new PaperDialogPresenter()

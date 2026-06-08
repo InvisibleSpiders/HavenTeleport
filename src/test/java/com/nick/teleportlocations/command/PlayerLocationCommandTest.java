@@ -5,10 +5,27 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.nick.teleportlocations.bukkit.BukkitLocations;
+import com.nick.teleportlocations.claim.CreationPolicyService;
+import com.nick.teleportlocations.claim.LandClaimsGateway;
+import com.nick.teleportlocations.claim.MissingLandClaimsPolicy;
+import com.nick.teleportlocations.config.ConfigLoader;
+import com.nick.teleportlocations.config.PluginConfig;
+import com.nick.teleportlocations.dialog.DialogMenuService;
+import com.nick.teleportlocations.dialog.PaperDialogPresenter;
+import com.nick.teleportlocations.home.HomeService;
+import com.nick.teleportlocations.limit.InMemoryLimitRepository;
+import com.nick.teleportlocations.limit.LimitService;
+import com.nick.teleportlocations.location.LocationService;
 import com.nick.teleportlocations.location.SavedPosition;
+import com.nick.teleportlocations.spawn.SpawnService;
+import com.nick.teleportlocations.storage.InMemoryLocationRepository;
+import com.nick.teleportlocations.warp.PlayerWarpService;
+import java.time.Instant;
 import java.util.UUID;
+import org.bukkit.command.Command;
 import org.bukkit.Location;
 import org.bukkit.World;
+import org.bukkit.entity.Player;
 import org.junit.jupiter.api.Test;
 
 final class PlayerLocationCommandTest {
@@ -30,5 +47,66 @@ final class PlayerLocationCommandTest {
         assertThat(position.z()).isEqualTo(2.0);
         assertThat(position.yaw()).isEqualTo(90.0f);
         assertThat(position.pitch()).isEqualTo(10.0f);
+    }
+
+    @Test
+    void setWarpCommandCreatesPlayerWarpAtCurrentLocation() {
+        Fixture fixture = Fixture.create();
+        UUID playerId = UUID.randomUUID();
+        World world = world("world");
+        Player player = playerAt(playerId, new Location(world, 1.0, 64.0, 2.0, 90.0f, 10.0f));
+        Command command = command("setwarp");
+
+        fixture.command.onCommand(player, command, "setwarp", new String[] {"market"});
+
+        assertThat(fixture.warps.ownerWarps(playerId)).extracting("name").containsExactly("market");
+    }
+
+    private static Player playerAt(UUID playerId, Location location) {
+        Player player = mock(Player.class);
+        when(player.getUniqueId()).thenReturn(playerId);
+        when(player.getLocation()).thenReturn(location);
+        when(player.hasPermission("teleportlocations.admin.bypass.creation")).thenReturn(false);
+        return player;
+    }
+
+    private static World world(String name) {
+        World world = mock(World.class);
+        when(world.getUID()).thenReturn(UUID.randomUUID());
+        when(world.getName()).thenReturn(name);
+        return world;
+    }
+
+    private static Command command(String name) {
+        Command command = mock(Command.class);
+        when(command.getName()).thenReturn(name);
+        return command;
+    }
+
+    private record Fixture(PlayerLocationCommand command, PlayerWarpService warps) {
+        private static Fixture create() {
+            PluginConfig config = ConfigLoader.fromResources();
+            InMemoryLocationRepository locations = new InMemoryLocationRepository();
+            LocationService locationService = new LocationService(locations, () -> Instant.EPOCH);
+            LimitService limitService = new LimitService(config.categories(), new InMemoryLimitRepository());
+            CreationPolicyService creationPolicy = new CreationPolicyService(
+                    config.categories(),
+                    LandClaimsGateway.fixed(true, true),
+                    MissingLandClaimsPolicy.DENY_CLAIM_REQUIRED
+            );
+            HomeService homeService = new HomeService(locationService, limitService, creationPolicy);
+            PlayerWarpService warpService = new PlayerWarpService(locationService, limitService, creationPolicy);
+            SpawnService spawnService = new SpawnService(locationService, homeService);
+            return new Fixture(
+                    new PlayerLocationCommand(
+                            homeService,
+                            warpService,
+                            spawnService,
+                            new DialogMenuService(),
+                            new PaperDialogPresenter()
+                    ),
+                    warpService
+            );
+        }
     }
 }

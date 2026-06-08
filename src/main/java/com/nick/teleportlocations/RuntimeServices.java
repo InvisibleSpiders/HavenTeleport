@@ -19,6 +19,7 @@ import com.nick.teleportlocations.storage.Database;
 import com.nick.teleportlocations.storage.LocationRepository;
 import com.nick.teleportlocations.storage.SqliteLimitRepository;
 import com.nick.teleportlocations.storage.SqliteLocationRepository;
+import com.nick.teleportlocations.warp.PlayerWarpService;
 import dev.invisiblespiders.haven.api.service.HavenDataSource;
 import dev.invisiblespiders.haven.api.service.HavenEconomyService;
 import java.time.Instant;
@@ -36,6 +37,7 @@ public record RuntimeServices(
         EconomyGateway economyGateway,
         CreationPolicyService creationPolicyService,
         HomeService homeService,
+        PlayerWarpService playerWarpService,
         SpawnPolicyService spawnPolicyService,
         SpawnService spawnService
 ) implements AutoCloseable {
@@ -52,6 +54,7 @@ public record RuntimeServices(
         Objects.requireNonNull(economyGateway, "economyGateway");
         Objects.requireNonNull(creationPolicyService, "creationPolicyService");
         Objects.requireNonNull(homeService, "homeService");
+        Objects.requireNonNull(playerWarpService, "playerWarpService");
         Objects.requireNonNull(spawnPolicyService, "spawnPolicyService");
         Objects.requireNonNull(spawnService, "spawnService");
     }
@@ -78,6 +81,7 @@ public record RuntimeServices(
                 MissingLandClaimsPolicy.parse(config.landClaimsMissingPolicy())
         );
         HomeService homeService = new HomeService(locationService, limitService, creationPolicyService);
+        PlayerWarpService playerWarpService = new PlayerWarpService(locationService, limitService, creationPolicyService);
         SpawnPolicyService spawnPolicyService = new SpawnPolicyService(spawnPolicy(config));
         SpawnService spawnService = new SpawnService(locationService, homeService);
         return new RuntimeServices(
@@ -90,6 +94,7 @@ public record RuntimeServices(
                 economyGateway,
                 creationPolicyService,
                 homeService,
+                playerWarpService,
                 spawnPolicyService,
                 spawnService
         );
