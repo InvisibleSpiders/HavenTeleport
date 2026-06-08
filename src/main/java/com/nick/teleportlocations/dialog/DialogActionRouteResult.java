@@ -12,6 +12,7 @@ public record DialogActionRouteResult(
     public enum Status {
         TELEPORT,
         SHOW_MENU,
+        MESSAGE,
         NOT_FOUND,
         ACCESS_DENIED,
         UNKNOWN_ACTION
@@ -23,6 +24,10 @@ public record DialogActionRouteResult(
 
     public static DialogActionRouteResult showMenu(DialogMenuModel menu) {
         return new DialogActionRouteResult(Status.SHOW_MENU, Optional.empty(), Optional.of(menu), "");
+    }
+
+    public static DialogActionRouteResult message(String message) {
+        return new DialogActionRouteResult(Status.MESSAGE, Optional.empty(), Optional.empty(), message);
     }
 
     public static DialogActionRouteResult notFound() {

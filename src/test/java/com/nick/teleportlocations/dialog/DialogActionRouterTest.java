@@ -58,6 +58,31 @@ final class DialogActionRouterTest {
         assertThat(result.status()).isEqualTo(DialogActionRouteResult.Status.UNKNOWN_ACTION);
     }
 
+    @Test
+    void setMainHomeActionUpdatesTheSelectedHome() {
+        Fixture fixture = Fixture.create();
+        UUID owner = UUID.randomUUID();
+        fixture.homes.setHome(owner, "base", position(), true);
+        fixture.homes.setHome(owner, "vault", position(), true);
+
+        DialogActionRouteResult result = fixture.router.route(owner, "set-main:home:vault");
+
+        assertThat(result.status()).isEqualTo(DialogActionRouteResult.Status.MESSAGE);
+        assertThat(fixture.homes.resolveHome(owner, "").orElseThrow().name()).isEqualTo("vault");
+    }
+
+    @Test
+    void deleteShopActionRemovesOwnedShop() {
+        Fixture fixture = Fixture.create();
+        UUID owner = UUID.randomUUID();
+        fixture.shops.setShop(owner, "tools", position(), true);
+
+        DialogActionRouteResult result = fixture.router.route(owner, "delete:shop:tools");
+
+        assertThat(result.status()).isEqualTo(DialogActionRouteResult.Status.MESSAGE);
+        assertThat(fixture.shops.resolveVisibleShop(owner, "tools")).isEmpty();
+    }
+
     private static SavedPosition position() {
         return new SavedPosition(UUID.randomUUID(), "world", 1.0, 64.0, 2.0, 90.0f, 0.0f);
     }

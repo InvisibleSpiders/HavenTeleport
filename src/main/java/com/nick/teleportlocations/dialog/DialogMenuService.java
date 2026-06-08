@@ -48,11 +48,16 @@ public final class DialogMenuService {
 
     public DialogMenuModel editMenu(TeleportLocation location) {
         List<String> lines = new ArrayList<>();
+        List<DialogActionModel> actions = new ArrayList<>();
         lines.add("Name: " + location.name());
         lines.add("Access: " + title(location.accessMode().name()));
         lines.add("Visibility: " + title(location.visibilityMode().name()));
         lines.add("Cost: " + title(location.cost().type().name()));
-        return new DialogMenuModel("Edit " + title(location.category()), List.copyOf(lines), List.of());
+        if ("home".equals(location.category())) {
+            actions.add(new DialogActionModel("set-main:home:" + location.normalizedName(), "Set Main"));
+        }
+        actions.add(new DialogActionModel("delete:" + location.category() + ":" + location.normalizedName(), "Delete"));
+        return new DialogMenuModel("Edit " + title(location.category()), List.copyOf(lines), List.copyOf(actions));
     }
 
     private String title(String value) {

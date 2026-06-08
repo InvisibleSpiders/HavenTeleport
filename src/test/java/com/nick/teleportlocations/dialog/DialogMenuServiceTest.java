@@ -58,6 +58,28 @@ final class DialogMenuServiceTest {
 
         assertThat(model.title()).isEqualTo("Edit Shop");
         assertThat(model.lines()).contains("Access: Public", "Visibility: Listed", "Cost: Free");
+        assertThat(model.actions()).extracting(DialogActionModel::key).containsExactly("delete:shop:base");
+    }
+
+    @Test
+    void editMenuIncludesMainHomeAndDeleteActionsForHomes() {
+        UUID owner = UUID.randomUUID();
+        DialogMenuService service = new DialogMenuService();
+
+        DialogMenuModel model = service.editMenu(location(owner, "home"));
+
+        assertThat(model.actions()).extracting(DialogActionModel::key)
+                .containsExactly("set-main:home:base", "delete:home:base");
+    }
+
+    @Test
+    void editMenuIncludesDeleteActionForPlayerWarps() {
+        UUID owner = UUID.randomUUID();
+        DialogMenuService service = new DialogMenuService();
+
+        DialogMenuModel model = service.editMenu(location(owner, "player_warp"));
+
+        assertThat(model.actions()).extracting(DialogActionModel::key).containsExactly("delete:player_warp:base");
     }
 
     private static TeleportLocation location(UUID owner) {

@@ -22,6 +22,7 @@ public final class DialogActionExecutor implements DialogActionHandler {
         switch (result.status()) {
             case TELEPORT -> teleport(player, result.location().orElseThrow());
             case SHOW_MENU -> presenter.show(player, result.menu().orElseThrow());
+            case MESSAGE -> player.sendMessage(Component.text(result.message(), NamedTextColor.GREEN));
             case NOT_FOUND, ACCESS_DENIED, UNKNOWN_ACTION -> player.sendMessage(Component.text(result.message(), NamedTextColor.RED));
         }
     }
