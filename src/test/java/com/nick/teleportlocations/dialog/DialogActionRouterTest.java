@@ -11,6 +11,7 @@ import com.nick.teleportlocations.home.HomeService;
 import com.nick.teleportlocations.limit.InMemoryLimitRepository;
 import com.nick.teleportlocations.limit.LimitService;
 import com.nick.teleportlocations.location.AccessMode;
+import com.nick.teleportlocations.location.CostSpec;
 import com.nick.teleportlocations.location.LocationService;
 import com.nick.teleportlocations.location.SavedPosition;
 import com.nick.teleportlocations.location.VisibilityMode;
@@ -126,6 +127,37 @@ final class DialogActionRouterTest {
         assertThat(visibilityResult.status()).isEqualTo(DialogActionRouteResult.Status.UNKNOWN_ACTION);
         assertThat(fixture.shops.resolveVisibleShop(owner, "tools").orElseThrow().accessMode()).isEqualTo(AccessMode.PUBLIC);
         assertThat(fixture.shops.resolveVisibleShop(owner, "tools").orElseThrow().visibilityMode()).isEqualTo(VisibilityMode.LISTED);
+    }
+
+    @Test
+    void playerWarpCostActionsUpdateCostForOwner() {
+        Fixture fixture = Fixture.create();
+        UUID owner = UUID.randomUUID();
+        fixture.warps.setWarp(owner, "market", position(), true);
+
+        DialogActionRouteResult moneyResult = fixture.router.route(owner, "set-cost:player_warp:market:money:50");
+        assertThat(moneyResult.status()).isEqualTo(DialogActionRouteResult.Status.MESSAGE);
+        assertThat(fixture.warps.ownerWarps(owner).getFirst().cost()).isEqualTo(CostSpec.money(50.0));
+
+        DialogActionRouteResult xpResult = fixture.router.route(owner, "set-cost:player_warp:market:xp-levels:10");
+        assertThat(xpResult.status()).isEqualTo(DialogActionRouteResult.Status.MESSAGE);
+        assertThat(fixture.warps.ownerWarps(owner).getFirst().cost()).isEqualTo(CostSpec.xpLevels(10));
+
+        DialogActionRouteResult freeResult = fixture.router.route(owner, "set-cost:player_warp:market:free:0");
+        assertThat(freeResult.status()).isEqualTo(DialogActionRouteResult.Status.MESSAGE);
+        assertThat(fixture.warps.ownerWarps(owner).getFirst().cost()).isEqualTo(CostSpec.free());
+    }
+
+    @Test
+    void shopCostActionsRemainUnavailable() {
+        Fixture fixture = Fixture.create();
+        UUID owner = UUID.randomUUID();
+        fixture.shops.setShop(owner, "tools", position(), true);
+
+        DialogActionRouteResult result = fixture.router.route(owner, "set-cost:shop:tools:money:50");
+
+        assertThat(result.status()).isEqualTo(DialogActionRouteResult.Status.UNKNOWN_ACTION);
+        assertThat(fixture.shops.resolveVisibleShop(owner, "tools").orElseThrow().cost()).isEqualTo(CostSpec.free());
     }
 
     private static SavedPosition position() {

@@ -3,6 +3,7 @@ package com.nick.teleportlocations.dialog;
 import com.nick.teleportlocations.home.HomeService;
 import com.nick.teleportlocations.home.HomeResult;
 import com.nick.teleportlocations.location.AccessMode;
+import com.nick.teleportlocations.location.CostSpec;
 import com.nick.teleportlocations.location.TeleportLocation;
 import com.nick.teleportlocations.location.VisibilityMode;
 import com.nick.teleportlocations.outpost.OutpostService;
@@ -53,6 +54,9 @@ public final class DialogActionRouter {
                     : DialogActionRouteResult.unknownAction();
             case "set-visibility" -> parts.length == 4
                     ? setPlayerWarpVisibility(viewerId, parts[1], parts[2], parts[3])
+                    : DialogActionRouteResult.unknownAction();
+            case "set-cost" -> parts.length == 5
+                    ? setPlayerWarpCost(viewerId, parts[1], parts[2], parts[3], parts[4])
                     : DialogActionRouteResult.unknownAction();
             default -> DialogActionRouteResult.unknownAction();
         };
@@ -122,6 +126,46 @@ public final class DialogActionRouter {
         } catch (IllegalArgumentException exception) {
             return DialogActionRouteResult.unknownAction();
         }
+    }
+
+    private DialogActionRouteResult setPlayerWarpCost(UUID viewerId, String category, String name, String costType, String amount) {
+        if (!"player_warp".equals(category)) {
+            return DialogActionRouteResult.unknownAction();
+        }
+        try {
+            PlayerWarpResult result = warps.setCost(viewerId, name, parseCost(costType, amount));
+            return result.status() == PlayerWarpResult.Status.UPDATED
+                    ? DialogActionRouteResult.message("Warp " + name + " cost updated.")
+                    : DialogActionRouteResult.notFound();
+        } catch (IllegalArgumentException exception) {
+            return DialogActionRouteResult.unknownAction();
+        }
+    }
+
+    private CostSpec parseCost(String type, String amount) {
+        return switch (type) {
+            case "free" -> CostSpec.free();
+            case "money" -> CostSpec.money(positiveDouble(amount));
+            case "xp-levels" -> CostSpec.xpLevels(positiveInt(amount));
+            case "xp-points" -> CostSpec.xpPoints(positiveInt(amount));
+            default -> throw new IllegalArgumentException("Unsupported cost type");
+        };
+    }
+
+    private double positiveDouble(String value) {
+        double amount = Double.parseDouble(value);
+        if (amount < 0.0) {
+            throw new IllegalArgumentException("Cost cannot be negative");
+        }
+        return amount;
+    }
+
+    private int positiveInt(String value) {
+        int amount = Integer.parseInt(value);
+        if (amount < 0) {
+            throw new IllegalArgumentException("Cost cannot be negative");
+        }
+        return amount;
     }
 
     private DialogActionRouteResult homeDeleteResult(HomeResult result, String name) {

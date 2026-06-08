@@ -80,6 +80,14 @@ public final class DialogMenuService {
             actions.add(new DialogActionModel("set-visibility:player_warp:" + location.normalizedName() + ":listed", "Listed"));
             actions.add(new DialogActionModel("set-visibility:player_warp:" + location.normalizedName() + ":unlisted", "Unlisted"));
             actions.add(new DialogActionModel("set-visibility:player_warp:" + location.normalizedName() + ":hidden", "Hidden"));
+            actions.add(new DialogActionModel("set-cost:player_warp:" + location.normalizedName() + ":free:0", "Free"));
+            actions.add(new DialogActionModel("set-cost:player_warp:" + location.normalizedName() + ":money:10", "$10"));
+            actions.add(new DialogActionModel("set-cost:player_warp:" + location.normalizedName() + ":money:50", "$50"));
+            actions.add(new DialogActionModel("set-cost:player_warp:" + location.normalizedName() + ":money:100", "$100"));
+            actions.add(new DialogActionModel("set-cost:player_warp:" + location.normalizedName() + ":xp-levels:5", "5 Levels"));
+            actions.add(new DialogActionModel("set-cost:player_warp:" + location.normalizedName() + ":xp-levels:10", "10 Levels"));
+            actions.add(new DialogActionModel("set-cost:player_warp:" + location.normalizedName() + ":xp-points:100", "100 XP"));
+            actions.add(new DialogActionModel("set-cost:player_warp:" + location.normalizedName() + ":xp-points:500", "500 XP"));
         }
         actions.add(new DialogActionModel("delete:" + location.category() + ":" + location.normalizedName(), "Delete"));
         return new DialogMenuModel("Edit " + title(location.category()), List.copyOf(lines), List.copyOf(actions));

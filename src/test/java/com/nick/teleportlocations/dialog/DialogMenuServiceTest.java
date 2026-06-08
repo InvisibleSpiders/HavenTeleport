@@ -101,6 +101,14 @@ final class DialogMenuServiceTest {
                 "set-visibility:player_warp:base:listed",
                 "set-visibility:player_warp:base:unlisted",
                 "set-visibility:player_warp:base:hidden",
+                "set-cost:player_warp:base:free:0",
+                "set-cost:player_warp:base:money:10",
+                "set-cost:player_warp:base:money:50",
+                "set-cost:player_warp:base:money:100",
+                "set-cost:player_warp:base:xp-levels:5",
+                "set-cost:player_warp:base:xp-levels:10",
+                "set-cost:player_warp:base:xp-points:100",
+                "set-cost:player_warp:base:xp-points:500",
                 "delete:player_warp:base"
         );
     }
