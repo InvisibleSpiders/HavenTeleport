@@ -56,6 +56,9 @@ commands:
   outpost:
     description: Teleport to one of your outposts.
     usage: /outpost <name>
+  deloutpost:
+    description: Delete one of your outposts.
+    usage: /deloutpost <name>
   spawn:
     description: Teleport to server spawn.
     usage: /spawn

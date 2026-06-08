@@ -5,7 +5,7 @@ public final class CommandMessages {
     }
 
     public static String playerUsage() {
-        return "/home [name], /sethome <name>, /homes, /warp <name>, /warps, /shops, /setshop <name>, /outpost <name>, /spawn";
+        return "/home [name], /sethome <name>, /homes, /warp <name>, /warps, /shops, /setshop <name>, /setoutpost <name>, /outpost <name>, /deloutpost <name>, /spawn";
     }
 
     public static String adminUsage() {

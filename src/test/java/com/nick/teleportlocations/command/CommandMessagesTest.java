@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test;
 final class CommandMessagesTest {
     @Test
     void playerUsageMentionsHomeAndWarpCommands() {
-        assertThat(CommandMessages.playerUsage()).contains("/home", "/warps", "/shops");
+        assertThat(CommandMessages.playerUsage()).contains("/home", "/warps", "/shops", "/setoutpost", "/deloutpost");
     }
 
     @Test

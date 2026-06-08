@@ -16,5 +16,6 @@ final class PluginDescriptorTest {
 
         assertThat(descriptor).contains("  ht:");
         assertThat(descriptor).contains("aliases: [haventeleport, tl]");
+        assertThat(descriptor).contains("  deloutpost:");
     }
 }

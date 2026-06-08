@@ -58,6 +58,7 @@ public final class TeleportLocationsPlugin extends JavaPlugin {
                 services.homeService(),
                 services.playerWarpService(),
                 services.shopWarpService(),
+                services.outpostService(),
                 services.spawnService(),
                 new DialogMenuService(),
                 new PaperDialogPresenter()
@@ -76,6 +77,7 @@ public final class TeleportLocationsPlugin extends JavaPlugin {
         getCommand("delshop").setExecutor(playerCommand);
         getCommand("setoutpost").setExecutor(playerCommand);
         getCommand("outpost").setExecutor(playerCommand);
+        getCommand("deloutpost").setExecutor(playerCommand);
         getCommand("spawn").setExecutor(playerCommand);
     }
 }

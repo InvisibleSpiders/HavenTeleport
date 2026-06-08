@@ -6,6 +6,8 @@ import com.nick.teleportlocations.dialog.PaperDialogPresenter;
 import com.nick.teleportlocations.home.HomeResult;
 import com.nick.teleportlocations.home.HomeService;
 import com.nick.teleportlocations.location.TeleportLocation;
+import com.nick.teleportlocations.outpost.OutpostResult;
+import com.nick.teleportlocations.outpost.OutpostService;
 import com.nick.teleportlocations.shop.ShopWarpResult;
 import com.nick.teleportlocations.shop.ShopWarpService;
 import com.nick.teleportlocations.spawn.SpawnService;
@@ -25,14 +27,16 @@ public final class PlayerLocationCommand implements CommandExecutor {
     private final HomeService homes;
     private final PlayerWarpService warps;
     private final ShopWarpService shops;
+    private final OutpostService outposts;
     private final SpawnService spawn;
     private final DialogMenuService dialogs;
     private final PaperDialogPresenter presenter;
 
-    public PlayerLocationCommand(HomeService homes, PlayerWarpService warps, ShopWarpService shops, SpawnService spawn, DialogMenuService dialogs, PaperDialogPresenter presenter) {
+    public PlayerLocationCommand(HomeService homes, PlayerWarpService warps, ShopWarpService shops, OutpostService outposts, SpawnService spawn, DialogMenuService dialogs, PaperDialogPresenter presenter) {
         this.homes = homes;
         this.warps = warps;
         this.shops = shops;
+        this.outposts = outposts;
         this.spawn = spawn;
         this.dialogs = dialogs;
         this.presenter = presenter;
@@ -59,6 +63,9 @@ public final class PlayerLocationCommand implements CommandExecutor {
             case "setshop" -> setShop(player, args);
             case "delshop" -> deleteShop(player, args);
             case "shops" -> presenter.show(player, dialogs.shopWarpsMenu(player.getUniqueId(), shops.visibleShops(player.getUniqueId())));
+            case "setoutpost" -> setOutpost(player, args);
+            case "outpost" -> teleportOutpost(player, args);
+            case "deloutpost" -> deleteOutpost(player, args);
             case "spawn" -> teleportSpawn(player);
             default -> player.sendMessage(Component.text(CommandMessages.playerUsage(), NamedTextColor.YELLOW));
         }
@@ -174,6 +181,47 @@ public final class PlayerLocationCommand implements CommandExecutor {
         sendShopResult(player, shops.deleteShop(player.getUniqueId(), args[0]), args[0]);
     }
 
+    private void setOutpost(Player player, String[] args) {
+        if (args.length == 0) {
+            player.sendMessage(Component.text("Usage: /setoutpost <name>", NamedTextColor.YELLOW));
+            return;
+        }
+        OutpostResult result = outposts.setOutpost(
+                player.getUniqueId(),
+                args[0],
+                BukkitLocations.save(player.getLocation()),
+                player.hasPermission("teleportlocations.admin.bypass.creation")
+        );
+        sendOutpostResult(player, result, args[0]);
+    }
+
+    private void teleportOutpost(Player player, String[] args) {
+        if (args.length == 0) {
+            player.sendMessage(Component.text("Usage: /outpost <name>", NamedTextColor.YELLOW));
+            return;
+        }
+        Optional<TeleportLocation> outpost = outposts.resolveOutpost(player.getUniqueId(), args[0]);
+        if (outpost.isEmpty()) {
+            player.sendMessage(Component.text("Outpost not found.", NamedTextColor.RED));
+            return;
+        }
+        Location destination = BukkitLocations.load(outpost.orElseThrow().position());
+        if (destination == null) {
+            player.sendMessage(Component.text("That outpost world is not loaded.", NamedTextColor.RED));
+            return;
+        }
+        player.teleportAsync(destination);
+        player.sendMessage(Component.text("Teleported to outpost " + outpost.orElseThrow().name() + ".", NamedTextColor.GREEN));
+    }
+
+    private void deleteOutpost(Player player, String[] args) {
+        if (args.length == 0) {
+            player.sendMessage(Component.text("Usage: /deloutpost <name>", NamedTextColor.YELLOW));
+            return;
+        }
+        sendOutpostResult(player, outposts.deleteOutpost(player.getUniqueId(), args[0]), args[0]);
+    }
+
     private void teleportSpawn(Player player) {
         Optional<TeleportLocation> configuredSpawn = spawn.spawn();
         if (configuredSpawn.isEmpty()) {
@@ -219,6 +267,17 @@ public final class PlayerLocationCommand implements CommandExecutor {
             case NOT_FOUND -> player.sendMessage(Component.text("Shop " + name + " was not found.", NamedTextColor.RED));
             case LIMIT_REACHED -> player.sendMessage(Component.text("You have reached your shop warp limit.", NamedTextColor.RED));
             case CLAIM_DENIED -> player.sendMessage(Component.text("You cannot create a shop warp here.", NamedTextColor.RED));
+        }
+    }
+
+    private void sendOutpostResult(Player player, OutpostResult result, String name) {
+        switch (result.status()) {
+            case CREATED -> player.sendMessage(Component.text("Outpost " + name + " set.", NamedTextColor.GREEN));
+            case UPDATED -> player.sendMessage(Component.text("Outpost " + name + " updated.", NamedTextColor.GREEN));
+            case DELETED -> player.sendMessage(Component.text("Outpost " + name + " deleted.", NamedTextColor.GREEN));
+            case NOT_FOUND -> player.sendMessage(Component.text("Outpost " + name + " was not found.", NamedTextColor.RED));
+            case LIMIT_REACHED -> player.sendMessage(Component.text("You have reached your outpost limit.", NamedTextColor.RED));
+            case CLAIM_DENIED -> player.sendMessage(Component.text("You cannot create an outpost here.", NamedTextColor.RED));
         }
     }
 

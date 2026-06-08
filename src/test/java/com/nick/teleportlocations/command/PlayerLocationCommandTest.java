@@ -17,6 +17,7 @@ import com.nick.teleportlocations.limit.InMemoryLimitRepository;
 import com.nick.teleportlocations.limit.LimitService;
 import com.nick.teleportlocations.location.LocationService;
 import com.nick.teleportlocations.location.SavedPosition;
+import com.nick.teleportlocations.outpost.OutpostService;
 import com.nick.teleportlocations.shop.ShopWarpService;
 import com.nick.teleportlocations.spawn.SpawnService;
 import com.nick.teleportlocations.storage.InMemoryLocationRepository;
@@ -76,6 +77,32 @@ final class PlayerLocationCommandTest {
         assertThat(fixture.shops.ownerShops(playerId)).extracting("name").containsExactly("tools");
     }
 
+    @Test
+    void setOutpostCommandCreatesOutpostAtCurrentLocation() {
+        Fixture fixture = Fixture.create();
+        UUID playerId = UUID.randomUUID();
+        World world = world("world");
+        Player player = playerAt(playerId, new Location(world, 1.0, 64.0, 2.0, 90.0f, 10.0f));
+        Command command = command("setoutpost");
+
+        fixture.command.onCommand(player, command, "setoutpost", new String[] {"camp"});
+
+        assertThat(fixture.outposts.listOutposts(playerId)).extracting("name").containsExactly("camp");
+    }
+
+    @Test
+    void delOutpostCommandDeletesOwnOutpost() {
+        Fixture fixture = Fixture.create();
+        UUID playerId = UUID.randomUUID();
+        World world = world("world");
+        Player player = playerAt(playerId, new Location(world, 1.0, 64.0, 2.0, 90.0f, 10.0f));
+        fixture.command.onCommand(player, command("setoutpost"), "setoutpost", new String[] {"camp"});
+
+        fixture.command.onCommand(player, command("deloutpost"), "deloutpost", new String[] {"camp"});
+
+        assertThat(fixture.outposts.listOutposts(playerId)).isEmpty();
+    }
+
     private static Player playerAt(UUID playerId, Location location) {
         Player player = mock(Player.class);
         when(player.getUniqueId()).thenReturn(playerId);
@@ -97,7 +124,7 @@ final class PlayerLocationCommandTest {
         return command;
     }
 
-    private record Fixture(PlayerLocationCommand command, PlayerWarpService warps, ShopWarpService shops) {
+    private record Fixture(PlayerLocationCommand command, PlayerWarpService warps, ShopWarpService shops, OutpostService outposts) {
         private static Fixture create() {
             PluginConfig config = ConfigLoader.fromResources();
             InMemoryLocationRepository locations = new InMemoryLocationRepository();
@@ -105,24 +132,27 @@ final class PlayerLocationCommandTest {
             LimitService limitService = new LimitService(config.categories(), new InMemoryLimitRepository());
             CreationPolicyService creationPolicy = new CreationPolicyService(
                     config.categories(),
-                    LandClaimsGateway.fixed(true, true),
+                    LandClaimsGateway.fixed(false, true),
                     MissingLandClaimsPolicy.DENY_CLAIM_REQUIRED
             );
             HomeService homeService = new HomeService(locationService, limitService, creationPolicy);
             PlayerWarpService warpService = new PlayerWarpService(locationService, limitService, creationPolicy);
             ShopWarpService shopService = new ShopWarpService(locationService, limitService, creationPolicy);
+            OutpostService outpostService = new OutpostService(locationService, limitService, creationPolicy);
             SpawnService spawnService = new SpawnService(locationService, homeService);
             return new Fixture(
                     new PlayerLocationCommand(
                             homeService,
                             warpService,
                             shopService,
+                            outpostService,
                             spawnService,
                             new DialogMenuService(),
                             new PaperDialogPresenter()
                     ),
                     warpService,
-                    shopService
+                    shopService,
+                    outpostService
             );
         }
     }
