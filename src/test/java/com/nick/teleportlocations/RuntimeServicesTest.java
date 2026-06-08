@@ -24,7 +24,7 @@ final class RuntimeServicesTest {
         try (RuntimeServices services = RuntimeServices.open(
                 havenDataSource,
                 Optional.empty(),
-                LandClaimsGateway.fixed(true, true),
+                LandClaimsGateway.fixedOwned(true, true, true),
                 getClass().getClassLoader()
         )) {
             assertThat(Files.exists(dataFolder.resolve("locations.db"))).isTrue();
@@ -41,6 +41,7 @@ final class RuntimeServicesTest {
             assertThat(services.shopWarpService()).isNotNull();
             assertThat(services.outpostService()).isNotNull();
             assertThat(services.serverWarpService()).isNotNull();
+            assertThat(services.elevatorService()).isNotNull();
             assertThat(services.spawnService()).isNotNull();
             assertThat(services.spawnPolicyService().deathCandidates()).isNotEmpty();
         }

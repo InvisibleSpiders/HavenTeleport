@@ -47,6 +47,27 @@ public final class BukkitLandClaimsGateway implements LandClaimsGateway {
         return api.canInteract(player, location, actionKey);
     }
 
+    @Override
+    public boolean canBuild(UUID playerId, SavedPosition position) {
+        Player player = Bukkit.getPlayer(playerId);
+        Location location = toLocation(position);
+        if (player == null || location == null) {
+            return false;
+        }
+        return api.canBuild(player, location);
+    }
+
+    @Override
+    public boolean ownsClaimAt(UUID playerId, SavedPosition position) {
+        Location location = toLocation(position);
+        if (location == null) {
+            return false;
+        }
+        return api.getClaimAt(location)
+                .map(claim -> playerId.equals(claim.ownerUuid()))
+                .orElse(false);
+    }
+
     private static Location toLocation(SavedPosition position) {
         Objects.requireNonNull(position, "position");
         World world = Bukkit.getWorld(position.worldId());

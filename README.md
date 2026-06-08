@@ -1,6 +1,6 @@
 # TeleportLocations
 
-TeleportLocations is a Paper plugin for homes, server warps, player warps, free public shop warps, outposts, and spawn control.
+TeleportLocations is a Paper plugin for homes, server warps, player warps, free public shop warps, outposts, spawn control, and elevator block foundations.
 
 ## Build
 
@@ -58,6 +58,8 @@ The plugin jar is written to `build/libs/TeleportLocations-1.0.0-SNAPSHOT.jar`.
 
 `/ht` aliases: `/haventeleport`, `/tl`.
 
+Elevator block placement, use, particle selection, recipe registration, and movement listeners are not exposed yet. The current elevator slice adds the durable service, claim checks, config, storage migration, and permissions that the in-game listener and dialog layer will use next.
+
 ## Permissions
 
 | Permission | Default | Description |
@@ -69,6 +71,13 @@ The plugin jar is written to `build/libs/TeleportLocations-1.0.0-SNAPSHOT.jar`.
 | `teleportlocations.shop` | true | Allows shop warp commands. |
 | `teleportlocations.outpost` | true | Allows outpost commands. |
 | `teleportlocations.spawn` | true | Allows `/spawn`. |
+| `teleportlocations.elevator` | true | Parent permission for elevator placement, breaking, use, menu, and default particles. |
+| `teleportlocations.elevator.place` | true | Allows placing elevator blocks in owned claims. |
+| `teleportlocations.elevator.break` | true | Allows breaking elevator blocks where the player has claim build access. |
+| `teleportlocations.elevator.use` | true | Allows using elevator blocks where the player has claim access. |
+| `teleportlocations.elevator.menu` | true | Allows opening the elevator settings dialog once wired. |
+| `teleportlocations.elevator.particle.wax_on` | true | Allows selecting the default Wax On elevator particle. |
+| `teleportlocations.elevator.particle.end_rod` | op | Allows selecting the End Rod elevator particle. |
 | `teleportlocations.admin` | op | Parent permission for all admin permissions. |
 | `teleportlocations.admin.reload` | op via `teleportlocations.admin` | Reserved for reload/admin maintenance. |
 | `teleportlocations.admin.limits` | op via `teleportlocations.admin` | Allows editing player limits. |
@@ -76,9 +85,24 @@ The plugin jar is written to `build/libs/TeleportLocations-1.0.0-SNAPSHOT.jar`.
 | `teleportlocations.admin.spawn` | op via `teleportlocations.admin` | Allows setting managed spawn. |
 | `teleportlocations.admin.edit` | op via `teleportlocations.admin` | Reserved for admin location editing. |
 | `teleportlocations.admin.teleport` | op via `teleportlocations.admin` | Reserved for admin teleport tools. |
+| `teleportlocations.admin.elevator` | op via `teleportlocations.admin` | Reserved for admin elevator management. |
 | `teleportlocations.admin.bypass.creation` | op via `teleportlocations.admin` | Bypass claim/location creation checks. |
+| `teleportlocations.admin.bypass.claims` | op via `teleportlocations.admin` | Reserved for admin claim bypass mode. |
 | `teleportlocations.admin.bypass.cost` | op via `teleportlocations.admin` | Bypass teleport costs. |
 | `teleportlocations.admin.bypass.cooldown` | op via `teleportlocations.admin` | Reserved for cooldown bypass. |
+
+## Elevator Blocks
+
+Elevator blocks are stored separately from homes, warps, shops, and outposts. Placement is restricted to a player's own LandClaims claim unless an admin bypasses claims. Breaking follows claim build access, so trusted builders can remove elevators in claims where they can build.
+
+Elevator defaults are configured under `elevators` in `config.yml`:
+
+| Setting | Default | Description |
+| --- | --- | --- |
+| `elevators.max-distance` | `16` | Maximum vertical distance between detected elevator floors. |
+| `elevators.cooldown-seconds` | `2` | Cooldown used by the upcoming in-game elevator listener. |
+| `elevators.particles.enabled` | `true` | Enables the subtle elevator visual cue globally. |
+| `elevators.particles.default` | `WAX_ON` | Default particle for newly placed elevator blocks. |
 
 ## Shop Warps
 

@@ -10,6 +10,8 @@ import com.nick.teleportlocations.cost.PlayerResourceGateway;
 import com.nick.teleportlocations.cost.TeleportCostService;
 import com.nick.teleportlocations.config.ConfigLoader;
 import com.nick.teleportlocations.config.PluginConfig;
+import com.nick.teleportlocations.elevator.ElevatorRepository;
+import com.nick.teleportlocations.elevator.ElevatorService;
 import com.nick.teleportlocations.home.HomeService;
 import com.nick.teleportlocations.limit.LimitRepository;
 import com.nick.teleportlocations.limit.LimitService;
@@ -23,6 +25,7 @@ import com.nick.teleportlocations.spawn.SpawnService;
 import com.nick.teleportlocations.spawn.SpawnTarget;
 import com.nick.teleportlocations.storage.Database;
 import com.nick.teleportlocations.storage.LocationRepository;
+import com.nick.teleportlocations.storage.SqliteElevatorRepository;
 import com.nick.teleportlocations.storage.SqliteLimitRepository;
 import com.nick.teleportlocations.storage.SqliteLocationRepository;
 import com.nick.teleportlocations.teleport.TeleportChargeService;
@@ -39,6 +42,7 @@ public record RuntimeServices(
         Database database,
         LocationRepository locationRepository,
         LimitRepository limitRepository,
+        ElevatorRepository elevatorRepository,
         LocationService locationService,
         LimitService limitService,
         EconomyGateway economyGateway,
@@ -51,6 +55,7 @@ public record RuntimeServices(
         ShopWarpService shopWarpService,
         OutpostService outpostService,
         ServerWarpService serverWarpService,
+        ElevatorService elevatorService,
         SpawnPolicyService spawnPolicyService,
         SpawnService spawnService
 ) implements AutoCloseable {
@@ -62,6 +67,7 @@ public record RuntimeServices(
         Objects.requireNonNull(database, "database");
         Objects.requireNonNull(locationRepository, "locationRepository");
         Objects.requireNonNull(limitRepository, "limitRepository");
+        Objects.requireNonNull(elevatorRepository, "elevatorRepository");
         Objects.requireNonNull(locationService, "locationService");
         Objects.requireNonNull(limitService, "limitService");
         Objects.requireNonNull(economyGateway, "economyGateway");
@@ -74,6 +80,7 @@ public record RuntimeServices(
         Objects.requireNonNull(shopWarpService, "shopWarpService");
         Objects.requireNonNull(outpostService, "outpostService");
         Objects.requireNonNull(serverWarpService, "serverWarpService");
+        Objects.requireNonNull(elevatorService, "elevatorService");
         Objects.requireNonNull(spawnPolicyService, "spawnPolicyService");
         Objects.requireNonNull(spawnService, "spawnService");
     }
@@ -89,6 +96,7 @@ public record RuntimeServices(
         Database database = Database.fromDataSource(dataSource.getDataSource());
         LocationRepository locations = new SqliteLocationRepository(database);
         LimitRepository limits = new SqliteLimitRepository(database);
+        ElevatorRepository elevators = new SqliteElevatorRepository(database);
         LimitService limitService = new LimitService(config.categories(), limits);
         LocationService locationService = new LocationService(locations, Instant::now);
         EconomyGateway economyGateway = economyService
@@ -111,6 +119,7 @@ public record RuntimeServices(
         ShopWarpService shopWarpService = new ShopWarpService(locationService, limitService, creationPolicyService);
         OutpostService outpostService = new OutpostService(locationService, limitService, creationPolicyService);
         ServerWarpService serverWarpService = new ServerWarpService(locationService);
+        ElevatorService elevatorService = new ElevatorService(elevators, landClaims, Instant::now);
         SpawnPolicyService spawnPolicyService = new SpawnPolicyService(spawnPolicy(config));
         SpawnService spawnService = new SpawnService(locationService, homeService);
         return new RuntimeServices(
@@ -118,6 +127,7 @@ public record RuntimeServices(
                 database,
                 locations,
                 limits,
+                elevators,
                 locationService,
                 limitService,
                 economyGateway,
@@ -130,6 +140,7 @@ public record RuntimeServices(
                 shopWarpService,
                 outpostService,
                 serverWarpService,
+                elevatorService,
                 spawnPolicyService,
                 spawnService
         );

@@ -13,6 +13,10 @@ final class ConfigLoaderTest {
         PluginConfig config = ConfigLoader.fromResources();
 
         assertThat(config.categories()).containsKeys("home", "player_warp", "shop", "outpost", "server_warp");
+        assertThat(config.elevatorMaxDistance()).isEqualTo(16);
+        assertThat(config.elevatorCooldownSeconds()).isEqualTo(2);
+        assertThat(config.elevatorParticlesEnabled()).isTrue();
+        assertThat(config.elevatorDefaultParticle()).isEqualTo("WAX_ON");
         assertThat(config.categories().get("home").creationZone()).isEqualTo(CreationZone.TRUSTED_CLAIM);
         assertThat(config.categories().get("shop").allowsCost()).isFalse();
         assertThat(config.categories().get("shop").forcePublic()).isTrue();

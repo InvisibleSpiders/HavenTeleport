@@ -84,6 +84,15 @@ permissions:
   teleportlocations.spawn:
     description: Allows /spawn.
     default: true
+  teleportlocations.elevator:
+    description: Allows elevator block usage.
+    default: true
+    children:
+      teleportlocations.elevator.place: true
+      teleportlocations.elevator.break: true
+      teleportlocations.elevator.use: true
+      teleportlocations.elevator.menu: true
+      teleportlocations.elevator.particle.wax_on: true
   teleportlocations.admin:
     description: Grants all TeleportLocations admin permissions.
     default: op
@@ -95,5 +104,31 @@ permissions:
       teleportlocations.admin.edit: true
       teleportlocations.admin.teleport: true
       teleportlocations.admin.bypass.creation: true
+      teleportlocations.admin.bypass.claims: true
       teleportlocations.admin.bypass.cost: true
       teleportlocations.admin.bypass.cooldown: true
+      teleportlocations.admin.elevator: true
+  teleportlocations.elevator.place:
+    description: Allows placing elevator blocks in owned claims.
+    default: true
+  teleportlocations.elevator.break:
+    description: Allows breaking elevator blocks where the player has build access.
+    default: true
+  teleportlocations.elevator.use:
+    description: Allows using elevator blocks where the player has claim access.
+    default: true
+  teleportlocations.elevator.menu:
+    description: Allows opening the elevator settings dialog.
+    default: true
+  teleportlocations.elevator.particle.wax_on:
+    description: Allows selecting the Wax On elevator particle.
+    default: true
+  teleportlocations.elevator.particle.end_rod:
+    description: Allows selecting the End Rod elevator particle.
+    default: op
+  teleportlocations.admin.elevator:
+    description: Allows admin elevator management.
+    default: op
+  teleportlocations.admin.bypass.claims:
+    description: Allows admin claim bypass mode for protected elevator actions.
+    default: op

@@ -29,7 +29,11 @@ public final class ConfigLoader {
                 yaml.getString("spawn.first-join.target", "spawn"),
                 yaml.getString("spawn.login.target", "last-location"),
                 yaml.getString("spawn.death-respawn.target", "main-home"),
-                yaml.getStringList("spawn.death-respawn.fallback")
+                yaml.getStringList("spawn.death-respawn.fallback"),
+                yaml.getInt("elevators.max-distance", 16),
+                yaml.getInt("elevators.cooldown-seconds", 2),
+                yaml.getBoolean("elevators.particles.enabled", true),
+                yaml.getString("elevators.particles.default", "WAX_ON")
         );
     }
 

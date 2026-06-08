@@ -46,6 +46,25 @@ public final class DatabaseMigrationTestSupport {
                         PRIMARY KEY(player_uuid, category)
                     )
                     """);
+            statement.executeUpdate("""
+                    CREATE TABLE IF NOT EXISTS teleport_elevator_blocks (
+                        id TEXT PRIMARY KEY,
+                        owner_uuid TEXT NOT NULL,
+                        world_id TEXT NOT NULL,
+                        world_name TEXT NOT NULL,
+                        block_x INTEGER NOT NULL,
+                        block_y INTEGER NOT NULL,
+                        block_z INTEGER NOT NULL,
+                        particle TEXT NOT NULL,
+                        created_at TEXT NOT NULL,
+                        updated_at TEXT NOT NULL,
+                        CONSTRAINT teleport_elevator_blocks_position UNIQUE(world_id, block_x, block_y, block_z)
+                    )
+                    """);
+            statement.executeUpdate("""
+                    CREATE INDEX IF NOT EXISTS teleport_elevator_blocks_column
+                    ON teleport_elevator_blocks(world_id, block_x, block_z)
+                    """);
         } catch (SQLException exception) {
             throw new IllegalStateException("Could not migrate test database", exception);
         }

@@ -35,6 +35,17 @@ spawn:
       - spawn
       - vanilla-world-spawn
 
+elevators:
+  # Maximum vertical distance between linked elevator floors.
+  max-distance: 16
+  # Cooldown applied after elevator use to prevent rapid-fire movement.
+  cooldown-seconds: 2
+  particles:
+    # Subtle floor cue particles can be disabled globally.
+    enabled: true
+    # Players can select unlocked particles later through the elevator dialog.
+    default: WAX_ON
+
 categories:
   home:
     owner: player

@@ -14,6 +14,10 @@ public record PluginConfig(
         String firstJoinTarget,
         String loginTarget,
         String deathRespawnTarget,
-        List<String> deathRespawnFallback
+        List<String> deathRespawnFallback,
+        int elevatorMaxDistance,
+        int elevatorCooldownSeconds,
+        boolean elevatorParticlesEnabled,
+        String elevatorDefaultParticle
 ) {
 }
