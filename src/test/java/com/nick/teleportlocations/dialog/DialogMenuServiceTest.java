@@ -72,6 +72,8 @@ final class DialogMenuServiceTest {
         assertThat(model.title()).isEqualTo("Edit Shop");
         assertThat(model.lines()).contains("Access: Public", "Visibility: Listed", "Cost: Free");
         assertThat(model.actions()).extracting(DialogActionModel::key).containsExactly("delete:shop:base");
+        assertThat(model.actions()).extracting(DialogActionModel::key)
+                .noneMatch(key -> key.startsWith("set-access:") || key.startsWith("set-visibility:"));
     }
 
     @Test
@@ -92,7 +94,15 @@ final class DialogMenuServiceTest {
 
         DialogMenuModel model = service.editMenu(location(owner, "player_warp"));
 
-        assertThat(model.actions()).extracting(DialogActionModel::key).containsExactly("delete:player_warp:base");
+        assertThat(model.actions()).extracting(DialogActionModel::key).containsExactly(
+                "set-access:player_warp:base:public",
+                "set-access:player_warp:base:trusted",
+                "set-access:player_warp:base:private",
+                "set-visibility:player_warp:base:listed",
+                "set-visibility:player_warp:base:unlisted",
+                "set-visibility:player_warp:base:hidden",
+                "delete:player_warp:base"
+        );
     }
 
     private static TeleportLocation location(UUID owner) {

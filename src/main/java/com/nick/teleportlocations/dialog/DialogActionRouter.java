@@ -2,7 +2,9 @@ package com.nick.teleportlocations.dialog;
 
 import com.nick.teleportlocations.home.HomeService;
 import com.nick.teleportlocations.home.HomeResult;
+import com.nick.teleportlocations.location.AccessMode;
 import com.nick.teleportlocations.location.TeleportLocation;
+import com.nick.teleportlocations.location.VisibilityMode;
 import com.nick.teleportlocations.outpost.OutpostService;
 import com.nick.teleportlocations.outpost.OutpostResult;
 import com.nick.teleportlocations.shop.ShopWarpService;
@@ -38,14 +40,20 @@ public final class DialogActionRouter {
     }
 
     public DialogActionRouteResult route(UUID viewerId, String actionKey) {
-        String[] parts = actionKey.split(":", 3);
-        if (parts.length != 3) {
+        String[] parts = actionKey.split(":");
+        if (parts.length < 3) {
             return DialogActionRouteResult.unknownAction();
         }
         return switch (parts[0]) {
             case "teleport", "edit" -> routeLocationAction(viewerId, parts[0], parts[1], parts[2]);
             case "set-main" -> setMainHome(viewerId, parts[1], parts[2]);
             case "delete" -> deleteLocation(viewerId, parts[1], parts[2]);
+            case "set-access" -> parts.length == 4
+                    ? setPlayerWarpAccess(viewerId, parts[1], parts[2], parts[3])
+                    : DialogActionRouteResult.unknownAction();
+            case "set-visibility" -> parts.length == 4
+                    ? setPlayerWarpVisibility(viewerId, parts[1], parts[2], parts[3])
+                    : DialogActionRouteResult.unknownAction();
             default -> DialogActionRouteResult.unknownAction();
         };
     }
@@ -86,6 +94,34 @@ public final class DialogActionRouter {
             case "outpost" -> outpostDeleteResult(outposts.deleteOutpost(viewerId, name), name);
             default -> DialogActionRouteResult.unknownAction();
         };
+    }
+
+    private DialogActionRouteResult setPlayerWarpAccess(UUID viewerId, String category, String name, String access) {
+        if (!"player_warp".equals(category)) {
+            return DialogActionRouteResult.unknownAction();
+        }
+        try {
+            PlayerWarpResult result = warps.setAccess(viewerId, name, AccessMode.parse(access));
+            return result.status() == PlayerWarpResult.Status.UPDATED
+                    ? DialogActionRouteResult.message("Warp " + name + " access updated.")
+                    : DialogActionRouteResult.notFound();
+        } catch (IllegalArgumentException exception) {
+            return DialogActionRouteResult.unknownAction();
+        }
+    }
+
+    private DialogActionRouteResult setPlayerWarpVisibility(UUID viewerId, String category, String name, String visibility) {
+        if (!"player_warp".equals(category)) {
+            return DialogActionRouteResult.unknownAction();
+        }
+        try {
+            PlayerWarpResult result = warps.setVisibility(viewerId, name, VisibilityMode.parse(visibility));
+            return result.status() == PlayerWarpResult.Status.UPDATED
+                    ? DialogActionRouteResult.message("Warp " + name + " visibility updated.")
+                    : DialogActionRouteResult.notFound();
+        } catch (IllegalArgumentException exception) {
+            return DialogActionRouteResult.unknownAction();
+        }
     }
 
     private DialogActionRouteResult homeDeleteResult(HomeResult result, String name) {

@@ -10,6 +10,7 @@ import com.nick.teleportlocations.config.PluginConfig;
 import com.nick.teleportlocations.limit.InMemoryLimitRepository;
 import com.nick.teleportlocations.limit.LimitService;
 import com.nick.teleportlocations.location.AccessMode;
+import com.nick.teleportlocations.location.CostSpec;
 import com.nick.teleportlocations.location.LocationService;
 import com.nick.teleportlocations.location.SavedPosition;
 import com.nick.teleportlocations.location.VisibilityMode;
@@ -67,6 +68,34 @@ final class PlayerWarpServiceTest {
         assertThat(fixture.service.resolveVisibleWarp(viewer, "market")).isPresent();
         assertThat(fixture.service.deleteWarp(owner, "market").status()).isEqualTo(PlayerWarpResult.Status.DELETED);
         assertThat(fixture.service.resolveVisibleWarp(viewer, "market")).isEmpty();
+    }
+
+    @Test
+    void updatesWarpAccessAndVisibility() {
+        Fixture fixture = Fixture.create(LandClaimsGateway.fixed(true, true));
+        UUID owner = UUID.randomUUID();
+        fixture.service.setWarp(owner, "market", position(), false);
+
+        PlayerWarpResult accessResult = fixture.service.setAccess(owner, "market", AccessMode.TRUSTED);
+        PlayerWarpResult visibilityResult = fixture.service.setVisibility(owner, "market", VisibilityMode.HIDDEN);
+
+        assertThat(accessResult.status()).isEqualTo(PlayerWarpResult.Status.UPDATED);
+        assertThat(visibilityResult.status()).isEqualTo(PlayerWarpResult.Status.UPDATED);
+        assertThat(fixture.service.ownerWarps(owner).getFirst().accessMode()).isEqualTo(AccessMode.TRUSTED);
+        assertThat(fixture.service.ownerWarps(owner).getFirst().visibilityMode()).isEqualTo(VisibilityMode.HIDDEN);
+        assertThat(fixture.service.ownerWarps(owner).getFirst().cost()).isEqualTo(CostSpec.free());
+    }
+
+    @Test
+    void ownerCanStillSeeHiddenPrivateWarpButStrangersCannot() {
+        Fixture fixture = Fixture.create(LandClaimsGateway.fixed(true, true));
+        UUID owner = UUID.randomUUID();
+        fixture.service.setWarp(owner, "market", position(), false);
+        fixture.service.setAccess(owner, "market", AccessMode.PRIVATE);
+        fixture.service.setVisibility(owner, "market", VisibilityMode.HIDDEN);
+
+        assertThat(fixture.service.visibleWarps(owner)).extracting("name").containsExactly("market");
+        assertThat(fixture.service.visibleWarps(UUID.randomUUID())).isEmpty();
     }
 
     private static SavedPosition position() {

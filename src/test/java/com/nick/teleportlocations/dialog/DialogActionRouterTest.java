@@ -10,8 +10,10 @@ import com.nick.teleportlocations.config.PluginConfig;
 import com.nick.teleportlocations.home.HomeService;
 import com.nick.teleportlocations.limit.InMemoryLimitRepository;
 import com.nick.teleportlocations.limit.LimitService;
+import com.nick.teleportlocations.location.AccessMode;
 import com.nick.teleportlocations.location.LocationService;
 import com.nick.teleportlocations.location.SavedPosition;
+import com.nick.teleportlocations.location.VisibilityMode;
 import com.nick.teleportlocations.outpost.OutpostService;
 import com.nick.teleportlocations.serverwarp.ServerWarpService;
 import com.nick.teleportlocations.shop.ShopWarpService;
@@ -94,6 +96,36 @@ final class DialogActionRouterTest {
 
         assertThat(result.status()).isEqualTo(DialogActionRouteResult.Status.MESSAGE);
         assertThat(fixture.shops.resolveVisibleShop(owner, "tools")).isEmpty();
+    }
+
+    @Test
+    void playerWarpEditActionsUpdateAccessAndVisibilityForOwner() {
+        Fixture fixture = Fixture.create();
+        UUID owner = UUID.randomUUID();
+        fixture.warps.setWarp(owner, "market", position(), true);
+
+        DialogActionRouteResult accessResult = fixture.router.route(owner, "set-access:player_warp:market:trusted");
+        DialogActionRouteResult visibilityResult = fixture.router.route(owner, "set-visibility:player_warp:market:hidden");
+
+        assertThat(accessResult.status()).isEqualTo(DialogActionRouteResult.Status.MESSAGE);
+        assertThat(visibilityResult.status()).isEqualTo(DialogActionRouteResult.Status.MESSAGE);
+        assertThat(fixture.warps.ownerWarps(owner).getFirst().accessMode()).isEqualTo(AccessMode.TRUSTED);
+        assertThat(fixture.warps.ownerWarps(owner).getFirst().visibilityMode()).isEqualTo(VisibilityMode.HIDDEN);
+    }
+
+    @Test
+    void shopEditActionsCannotChangeAccessOrVisibility() {
+        Fixture fixture = Fixture.create();
+        UUID owner = UUID.randomUUID();
+        fixture.shops.setShop(owner, "tools", position(), true);
+
+        DialogActionRouteResult accessResult = fixture.router.route(owner, "set-access:shop:tools:private");
+        DialogActionRouteResult visibilityResult = fixture.router.route(owner, "set-visibility:shop:tools:hidden");
+
+        assertThat(accessResult.status()).isEqualTo(DialogActionRouteResult.Status.UNKNOWN_ACTION);
+        assertThat(visibilityResult.status()).isEqualTo(DialogActionRouteResult.Status.UNKNOWN_ACTION);
+        assertThat(fixture.shops.resolveVisibleShop(owner, "tools").orElseThrow().accessMode()).isEqualTo(AccessMode.PUBLIC);
+        assertThat(fixture.shops.resolveVisibleShop(owner, "tools").orElseThrow().visibilityMode()).isEqualTo(VisibilityMode.LISTED);
     }
 
     private static SavedPosition position() {

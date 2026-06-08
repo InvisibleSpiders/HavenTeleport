@@ -73,6 +73,14 @@ public final class DialogMenuService {
         if ("home".equals(location.category())) {
             actions.add(new DialogActionModel("set-main:home:" + location.normalizedName(), "Set Main"));
         }
+        if ("player_warp".equals(location.category())) {
+            actions.add(new DialogActionModel("set-access:player_warp:" + location.normalizedName() + ":public", "Public"));
+            actions.add(new DialogActionModel("set-access:player_warp:" + location.normalizedName() + ":trusted", "Trusted"));
+            actions.add(new DialogActionModel("set-access:player_warp:" + location.normalizedName() + ":private", "Private"));
+            actions.add(new DialogActionModel("set-visibility:player_warp:" + location.normalizedName() + ":listed", "Listed"));
+            actions.add(new DialogActionModel("set-visibility:player_warp:" + location.normalizedName() + ":unlisted", "Unlisted"));
+            actions.add(new DialogActionModel("set-visibility:player_warp:" + location.normalizedName() + ":hidden", "Hidden"));
+        }
         actions.add(new DialogActionModel("delete:" + location.category() + ":" + location.normalizedName(), "Delete"));
         return new DialogMenuModel("Edit " + title(location.category()), List.copyOf(lines), List.copyOf(actions));
     }

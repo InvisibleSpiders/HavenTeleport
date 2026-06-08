@@ -63,9 +63,8 @@ public final class PlayerWarpService {
 
     public List<TeleportLocation> visibleWarps(UUID viewerId) {
         return locations.list(CATEGORY).stream()
-                .filter(warp -> warp.visibilityMode() == VisibilityMode.LISTED)
-                .filter(warp -> warp.accessMode() == AccessMode.PUBLIC
-                        || warp.owner().playerIdOptional().filter(viewerId::equals).isPresent())
+                .filter(warp -> warp.owner().playerIdOptional().filter(viewerId::equals).isPresent()
+                        || warp.visibilityMode() == VisibilityMode.LISTED && warp.accessMode() == AccessMode.PUBLIC)
                 .sorted(Comparator.comparing(TeleportLocation::name, String.CASE_INSENSITIVE_ORDER))
                 .toList();
     }
@@ -81,6 +80,44 @@ public final class PlayerWarpService {
         }
         locations.delete(warp.orElseThrow().id());
         return PlayerWarpResult.deleted();
+    }
+
+    public PlayerWarpResult setAccess(UUID ownerId, String name, AccessMode accessMode) {
+        Optional<TeleportLocation> warp = locations.find(OwnerRef.player(ownerId), CATEGORY, name);
+        if (warp.isEmpty()) {
+            return PlayerWarpResult.notFound();
+        }
+        TeleportLocation existing = warp.orElseThrow();
+        TeleportLocation location = locations.createOrUpdate(new CreateLocationRequest(
+                CATEGORY,
+                OwnerRef.player(ownerId),
+                existing.name(),
+                existing.position(),
+                accessMode,
+                existing.visibilityMode(),
+                existing.cost(),
+                false
+        ));
+        return PlayerWarpResult.updated(location);
+    }
+
+    public PlayerWarpResult setVisibility(UUID ownerId, String name, VisibilityMode visibilityMode) {
+        Optional<TeleportLocation> warp = locations.find(OwnerRef.player(ownerId), CATEGORY, name);
+        if (warp.isEmpty()) {
+            return PlayerWarpResult.notFound();
+        }
+        TeleportLocation existing = warp.orElseThrow();
+        TeleportLocation location = locations.createOrUpdate(new CreateLocationRequest(
+                CATEGORY,
+                OwnerRef.player(ownerId),
+                existing.name(),
+                existing.position(),
+                existing.accessMode(),
+                visibilityMode,
+                existing.cost(),
+                false
+        ));
+        return PlayerWarpResult.updated(location);
     }
 
     private boolean reachedLimit(UUID ownerId, int existingWarps) {
