@@ -1,6 +1,7 @@
 package com.nick.teleportlocations.limit;
 
 import com.nick.teleportlocations.category.CategoryConfig;
+import java.util.Set;
 import java.util.Map;
 import java.util.UUID;
 
@@ -16,6 +17,14 @@ public final class LimitService {
     public int resolveLimit(UUID playerId, String category) {
         return repository.findLimit(playerId, category)
                 .orElseGet(() -> categories.get(category).defaultLimit());
+    }
+
+    public boolean hasCategory(String category) {
+        return categories.containsKey(category);
+    }
+
+    public Set<String> categoryKeys() {
+        return categories.keySet();
     }
 
     public void setLimit(UUID playerId, String category, int amount) {

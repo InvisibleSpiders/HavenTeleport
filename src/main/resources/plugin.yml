@@ -9,10 +9,10 @@ depend:
 softdepend:
   - LandClaims
 commands:
-  tl:
-    description: TeleportLocations admin and utility commands.
-    usage: /tl
-    aliases: [teleportlocations]
+  ht:
+    description: HavenTeleport admin and utility commands.
+    usage: /ht
+    aliases: [haventeleport, tl]
   home:
     description: Teleport to your main home or a named home.
     usage: /home [name]

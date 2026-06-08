@@ -1,6 +1,7 @@
 package com.nick.teleportlocations;
 
 import com.nick.teleportlocations.command.AdminTeleportCommand;
+import com.nick.teleportlocations.command.BukkitPlayerLookup;
 import com.nick.teleportlocations.command.PlayerLocationCommand;
 import com.nick.teleportlocations.claim.BukkitLandClaimsGateway;
 import com.nick.teleportlocations.dialog.DialogMenuService;
@@ -48,7 +49,11 @@ public final class TeleportLocationsPlugin extends JavaPlugin {
     }
 
     private void registerCommands() {
-        getCommand("tl").setExecutor(new AdminTeleportCommand(services.spawnService()));
+        getCommand("ht").setExecutor(new AdminTeleportCommand(
+                services.spawnService(),
+                services.limitService(),
+                new BukkitPlayerLookup()
+        ));
         PlayerLocationCommand playerCommand = new PlayerLocationCommand(
                 services.homeService(),
                 services.playerWarpService(),

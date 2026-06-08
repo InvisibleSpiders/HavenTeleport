@@ -12,6 +12,6 @@ final class CommandMessagesTest {
 
     @Test
     void adminUsageMentionsLimitAndSpawnCommands() {
-        assertThat(CommandMessages.adminUsage()).contains("setlimit", "setspawn", "setserverwarp");
+        assertThat(CommandMessages.adminUsage()).contains("/ht admin", "limits", "setspawn", "setserverwarp");
     }
 }
