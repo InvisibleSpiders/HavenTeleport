@@ -1,12 +1,13 @@
 name: TeleportLocations
 version: '${version}'
 main: com.nick.teleportlocations.TeleportLocationsPlugin
-api-version: '26.1.2'
+api-version: '26.1'
 author: Nick
 description: Homes, warps, shops, outposts, and spawn control.
+depend:
+  - HavenCore
 softdepend:
   - LandClaims
-  - VaultUnlocked
 commands:
   tl:
     description: TeleportLocations admin and utility commands.

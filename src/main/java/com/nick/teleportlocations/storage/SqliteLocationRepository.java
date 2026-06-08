@@ -8,6 +8,7 @@ import com.nick.teleportlocations.location.OwnerType;
 import com.nick.teleportlocations.location.SavedPosition;
 import com.nick.teleportlocations.location.TeleportLocation;
 import com.nick.teleportlocations.location.VisibilityMode;
+import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -32,12 +33,19 @@ public final class SqliteLocationRepository implements LocationRepository {
     @Override
     public Optional<TeleportLocation> findByIdentity(OwnerRef owner, String category, String normalizedName) {
         return queryOne(
-                "SELECT * FROM teleport_locations WHERE owner_type = ? AND owner_uuid IS ? AND category = ? AND normalized_name = ?",
+                """
+                SELECT * FROM teleport_locations
+                WHERE owner_type = ?
+                  AND (owner_uuid = ? OR (owner_uuid IS NULL AND ? IS NULL))
+                  AND category = ?
+                  AND normalized_name = ?
+                """,
                 statement -> {
                     statement.setString(1, owner.type().name());
                     statement.setString(2, owner.playerId() == null ? null : owner.playerId().toString());
-                    statement.setString(3, category);
-                    statement.setString(4, normalizedName);
+                    statement.setString(3, owner.playerId() == null ? null : owner.playerId().toString());
+                    statement.setString(4, category);
+                    statement.setString(5, normalizedName);
                 }
         );
     }
@@ -45,11 +53,18 @@ public final class SqliteLocationRepository implements LocationRepository {
     @Override
     public List<TeleportLocation> findByOwnerAndCategory(OwnerRef owner, String category) {
         return queryMany(
-                "SELECT * FROM teleport_locations WHERE owner_type = ? AND owner_uuid IS ? AND category = ? ORDER BY name",
+                """
+                SELECT * FROM teleport_locations
+                WHERE owner_type = ?
+                  AND (owner_uuid = ? OR (owner_uuid IS NULL AND ? IS NULL))
+                  AND category = ?
+                ORDER BY name
+                """,
                 statement -> {
                     statement.setString(1, owner.type().name());
                     statement.setString(2, owner.playerId() == null ? null : owner.playerId().toString());
-                    statement.setString(3, category);
+                    statement.setString(3, owner.playerId() == null ? null : owner.playerId().toString());
+                    statement.setString(4, category);
                 }
         );
     }
@@ -64,38 +79,10 @@ public final class SqliteLocationRepository implements LocationRepository {
 
     @Override
     public void save(TeleportLocation location) {
-        try (PreparedStatement statement = database.connection().prepareStatement("""
-                INSERT INTO teleport_locations(
-                    id, category, owner_type, owner_uuid, name, normalized_name,
-                    world_id, world_name, x, y, z, yaw, pitch,
-                    access_mode, visibility_mode, cost_type, cost_amount,
-                    cost_item_material, cost_item_amount, main_home, created_at, updated_at
-                )
-                VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ON CONFLICT(id) DO UPDATE SET
-                    category = excluded.category,
-                    owner_type = excluded.owner_type,
-                    owner_uuid = excluded.owner_uuid,
-                    name = excluded.name,
-                    normalized_name = excluded.normalized_name,
-                    world_id = excluded.world_id,
-                    world_name = excluded.world_name,
-                    x = excluded.x,
-                    y = excluded.y,
-                    z = excluded.z,
-                    yaw = excluded.yaw,
-                    pitch = excluded.pitch,
-                    access_mode = excluded.access_mode,
-                    visibility_mode = excluded.visibility_mode,
-                    cost_type = excluded.cost_type,
-                    cost_amount = excluded.cost_amount,
-                    cost_item_material = excluded.cost_item_material,
-                    cost_item_amount = excluded.cost_item_amount,
-                    main_home = excluded.main_home,
-                    updated_at = excluded.updated_at
-                """)) {
-            bindLocation(statement, location);
-            statement.executeUpdate();
+        try (Connection connection = database.connection()) {
+            if (update(connection, location) == 0) {
+                insert(connection, location);
+            }
         } catch (SQLException exception) {
             throw new IllegalStateException("Could not save teleport location", exception);
         }
@@ -103,7 +90,8 @@ public final class SqliteLocationRepository implements LocationRepository {
 
     @Override
     public void delete(UUID id) {
-        try (PreparedStatement statement = database.connection().prepareStatement("DELETE FROM teleport_locations WHERE id = ?")) {
+        try (Connection connection = database.connection();
+             PreparedStatement statement = connection.prepareStatement("DELETE FROM teleport_locations WHERE id = ?")) {
             statement.setString(1, id.toString());
             statement.executeUpdate();
         } catch (SQLException exception) {
@@ -116,7 +104,8 @@ public final class SqliteLocationRepository implements LocationRepository {
     }
 
     private List<TeleportLocation> queryMany(String sql, StatementBinder binder) {
-        try (PreparedStatement statement = database.connection().prepareStatement(sql)) {
+        try (Connection connection = database.connection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
             binder.bind(statement);
             try (ResultSet resultSet = statement.executeQuery()) {
                 List<TeleportLocation> results = new ArrayList<>();
@@ -127,6 +116,52 @@ public final class SqliteLocationRepository implements LocationRepository {
             }
         } catch (SQLException exception) {
             throw new IllegalStateException("Could not query teleport locations", exception);
+        }
+    }
+
+    private static int update(Connection connection, TeleportLocation location) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement("""
+                UPDATE teleport_locations
+                SET category = ?,
+                    owner_type = ?,
+                    owner_uuid = ?,
+                    name = ?,
+                    normalized_name = ?,
+                    world_id = ?,
+                    world_name = ?,
+                    x = ?,
+                    y = ?,
+                    z = ?,
+                    yaw = ?,
+                    pitch = ?,
+                    access_mode = ?,
+                    visibility_mode = ?,
+                    cost_type = ?,
+                    cost_amount = ?,
+                    cost_item_material = ?,
+                    cost_item_amount = ?,
+                    main_home = ?,
+                    updated_at = ?
+                WHERE id = ?
+                """)) {
+            bindLocationWithoutId(statement, location);
+            statement.setString(21, location.id().toString());
+            return statement.executeUpdate();
+        }
+    }
+
+    private static void insert(Connection connection, TeleportLocation location) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement("""
+                INSERT INTO teleport_locations(
+                    id, category, owner_type, owner_uuid, name, normalized_name,
+                    world_id, world_name, x, y, z, yaw, pitch,
+                    access_mode, visibility_mode, cost_type, cost_amount,
+                    cost_item_material, cost_item_amount, main_home, created_at, updated_at
+                )
+                VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """)) {
+            bindLocation(statement, location);
+            statement.executeUpdate();
         }
     }
 
@@ -153,6 +188,29 @@ public final class SqliteLocationRepository implements LocationRepository {
         statement.setInt(20, location.mainHome() ? 1 : 0);
         statement.setString(21, location.createdAt().toString());
         statement.setString(22, location.updatedAt().toString());
+    }
+
+    private static void bindLocationWithoutId(PreparedStatement statement, TeleportLocation location) throws SQLException {
+        statement.setString(1, location.category());
+        statement.setString(2, location.owner().type().name());
+        statement.setString(3, location.owner().playerId() == null ? null : location.owner().playerId().toString());
+        statement.setString(4, location.name());
+        statement.setString(5, location.normalizedName());
+        statement.setString(6, location.position().worldId().toString());
+        statement.setString(7, location.position().worldName());
+        statement.setDouble(8, location.position().x());
+        statement.setDouble(9, location.position().y());
+        statement.setDouble(10, location.position().z());
+        statement.setFloat(11, location.position().yaw());
+        statement.setFloat(12, location.position().pitch());
+        statement.setString(13, location.accessMode().name());
+        statement.setString(14, location.visibilityMode().name());
+        statement.setString(15, location.cost().type().name());
+        statement.setDouble(16, location.cost().amount());
+        statement.setString(17, location.cost().itemMaterial());
+        statement.setInt(18, location.cost().itemAmount());
+        statement.setInt(19, location.mainHome() ? 1 : 0);
+        statement.setString(20, location.updatedAt().toString());
     }
 
     private static TeleportLocation map(ResultSet resultSet) throws SQLException {

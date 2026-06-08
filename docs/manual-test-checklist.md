@@ -1,8 +1,10 @@
 # Manual Test Checklist
 
 - Start a Paper 26.1+ server with Java 25.
-- Install `TeleportLocations-1.0.0-SNAPSHOT.jar` only.
-- Confirm the plugin loads without LandClaims or VaultUnlocked.
+- Install HavenCore.
+- Install `TeleportLocations-1.0.0-SNAPSHOT.jar`.
+- Confirm TeleportLocations loads after HavenCore.
+- Confirm the plugin loads without LandClaims or VaultUnlocked when HavenCore is installed.
 - Confirm first join sends a new player to configured spawn.
 - Confirm login leaves players where they logged out by default.
 - Confirm death respawn uses main home, then bed spawn, then configured spawn, then vanilla world spawn.
@@ -16,8 +18,8 @@
 - Confirm `/shops` opens the shop Dialog menu.
 - Confirm owner edit buttons appear in Dialog lists.
 - Confirm shop edit menus do not expose cost or private access controls.
-- Install VaultUnlocked and confirm money-cost player warps charge successfully.
-- Remove VaultUnlocked and confirm money-cost player warps are denied by default.
+- Install VaultUnlocked and confirm money-cost player warps charge successfully through HavenCore economy.
+- Remove VaultUnlocked and confirm money-cost player warps are denied by default through HavenCore economy.
 - Confirm `/tl admin setlimit`, `addlimit`, `removelimit`, and `clearlimit` affect one category at a time.
 - Confirm `/tl admin setserverwarp` creates a global warp.
 - Confirm `/tl admin setspawn` updates the managed spawn location.

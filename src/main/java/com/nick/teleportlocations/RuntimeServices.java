@@ -1,5 +1,7 @@
 package com.nick.teleportlocations;
 
+import com.nick.teleportlocations.cost.EconomyGateway;
+import com.nick.teleportlocations.cost.HavenEconomyGateway;
 import com.nick.teleportlocations.config.ConfigLoader;
 import com.nick.teleportlocations.config.PluginConfig;
 import com.nick.teleportlocations.limit.LimitRepository;
@@ -9,10 +11,11 @@ import com.nick.teleportlocations.storage.Database;
 import com.nick.teleportlocations.storage.LocationRepository;
 import com.nick.teleportlocations.storage.SqliteLimitRepository;
 import com.nick.teleportlocations.storage.SqliteLocationRepository;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import dev.invisiblespiders.haven.api.service.HavenDataSource;
+import dev.invisiblespiders.haven.api.service.HavenEconomyService;
 import java.time.Instant;
 import java.util.Objects;
+import java.util.Optional;
 
 public record RuntimeServices(
         PluginConfig config,
@@ -20,8 +23,12 @@ public record RuntimeServices(
         LocationRepository locationRepository,
         LimitRepository limitRepository,
         LocationService locationService,
-        LimitService limitService
+        LimitService limitService,
+        EconomyGateway economyGateway
 ) implements AutoCloseable {
+    public static final String PLUGIN_ID = "teleportlocations";
+    public static final String MIGRATIONS_LOCATION = "db/migrations/teleportlocations";
+
     public RuntimeServices {
         Objects.requireNonNull(config, "config");
         Objects.requireNonNull(database, "database");
@@ -29,22 +36,25 @@ public record RuntimeServices(
         Objects.requireNonNull(limitRepository, "limitRepository");
         Objects.requireNonNull(locationService, "locationService");
         Objects.requireNonNull(limitService, "limitService");
+        Objects.requireNonNull(economyGateway, "economyGateway");
     }
 
-    public static RuntimeServices open(Path dataFolder) {
-        try {
-            Files.createDirectories(dataFolder);
-        } catch (Exception exception) {
-            throw new IllegalStateException("Could not create TeleportLocations data folder", exception);
-        }
-
+    public static RuntimeServices open(
+            HavenDataSource dataSource,
+            Optional<HavenEconomyService> economyService,
+            ClassLoader classLoader
+    ) {
         PluginConfig config = ConfigLoader.fromResources();
-        Database database = Database.open(dataFolder.resolve("locations.db"));
+        dataSource.registerMigrations(PLUGIN_ID, MIGRATIONS_LOCATION, classLoader);
+        Database database = Database.fromDataSource(dataSource.getDataSource());
         LocationRepository locations = new SqliteLocationRepository(database);
         LimitRepository limits = new SqliteLimitRepository(database);
         LimitService limitService = new LimitService(config.categories(), limits);
         LocationService locationService = new LocationService(locations, Instant::now);
-        return new RuntimeServices(config, database, locations, limits, locationService, limitService);
+        EconomyGateway economyGateway = economyService
+                .<EconomyGateway>map(HavenEconomyGateway::new)
+                .orElseGet(EconomyGateway::unavailable);
+        return new RuntimeServices(config, database, locations, limits, locationService, limitService, economyGateway);
     }
 
     @Override

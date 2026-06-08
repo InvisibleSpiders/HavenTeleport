@@ -14,8 +14,10 @@ The plugin jar is written to `build/libs/TeleportLocations-1.0.0-SNAPSHOT.jar`.
 
 - Paper 26.1+.
 - Java 25.
+- Required: HavenCore.
 - Optional: LandClaims.
-- Optional: VaultUnlocked for money-cost player warps.
+- Optional through HavenCore: VaultUnlocked for money-cost player warps.
+- TeleportLocations stores data through HavenCore's shared datasource and registers its own migrations at startup.
 
 ## Shop Warps
 

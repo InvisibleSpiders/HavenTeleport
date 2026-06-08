@@ -3,6 +3,9 @@ package com.nick.teleportlocations;
 import com.nick.teleportlocations.command.AdminTeleportCommand;
 import com.nick.teleportlocations.command.PlayerLocationCommand;
 import com.nick.teleportlocations.listener.SpawnListener;
+import dev.invisiblespiders.haven.api.HavenAPI;
+import dev.invisiblespiders.haven.api.service.HavenDataSource;
+import dev.invisiblespiders.haven.api.service.HavenEconomyService;
 import java.io.File;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -14,7 +17,11 @@ public final class TeleportLocationsPlugin extends JavaPlugin {
         getDataFolder().mkdirs();
         saveDefaultConfig();
         saveResourceIfMissing("messages.yml");
-        services = RuntimeServices.open(getDataFolder().toPath());
+        services = RuntimeServices.open(
+                HavenAPI.get(HavenDataSource.class),
+                HavenAPI.optional(HavenEconomyService.class),
+                getClassLoader()
+        );
         registerCommands();
         getServer().getPluginManager().registerEvents(new SpawnListener(), this);
         getLogger().info("TeleportLocations enabled.");

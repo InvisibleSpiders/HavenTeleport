@@ -18,15 +18,15 @@ tasks.withType<JavaCompile>().configureEach {
 
 dependencies {
     compileOnly("io.papermc.paper:paper-api:26.1.2.build.69-stable")
+    compileOnly(files("libs/haven-api.jar"))
     compileOnly(files("libs/landclaims-api.jar"))
-    compileOnly("net.milkbowl.vault:VaultAPI:1.7")
-
-    implementation("org.xerial:sqlite-jdbc:3.49.1.0")
 
     testImplementation("org.junit.jupiter:junit-jupiter:5.12.2")
     testImplementation("org.assertj:assertj-core:3.27.3")
     testImplementation("org.mockito:mockito-core:5.18.0")
+    testImplementation(files("libs/haven-api.jar"))
     testImplementation("io.papermc.paper:paper-api:26.1.2.build.69-stable")
+    testRuntimeOnly("org.xerial:sqlite-jdbc:3.49.1.0")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
