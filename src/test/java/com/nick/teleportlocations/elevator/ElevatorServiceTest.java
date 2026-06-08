@@ -77,6 +77,21 @@ final class ElevatorServiceTest {
         assertThat(service.findAt(position(64)).orElseThrow().particle()).isEqualTo(ElevatorParticle.END_ROD);
     }
 
+    @Test
+    void placesWithConfiguredDefaultParticle() {
+        UUID owner = UUID.randomUUID();
+        ElevatorService service = new ElevatorService(
+                new InMemoryElevatorRepository(),
+                LandClaimsGateway.fixedOwned(true, true, true),
+                ElevatorParticle.END_ROD,
+                () -> Instant.EPOCH
+        );
+
+        ElevatorResult result = service.place(owner, position(64), false);
+
+        assertThat(result.block()).map(ElevatorBlock::particle).contains(ElevatorParticle.END_ROD);
+    }
+
     private static SavedPosition position(int y) {
         return new SavedPosition(WORLD_ID, "world", 12.0, y, 22.0, 0.0f, 0.0f);
     }

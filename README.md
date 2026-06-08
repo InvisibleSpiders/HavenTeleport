@@ -58,7 +58,7 @@ The plugin jar is written to `build/libs/TeleportLocations-1.0.0-SNAPSHOT.jar`.
 
 `/ht` aliases: `/haventeleport`, `/tl`.
 
-Elevator block placement, use, particle selection, recipe registration, and movement listeners are not exposed yet. The current elevator slice adds the durable service, claim checks, config, storage migration, and permissions that the in-game listener and dialog layer will use next.
+Elevator placement, breaking, jump/sneak movement, recipe registration, cooldowns, and ambient particles are active. The particle selection dialog is still pending for the next UI slice.
 
 ## Permissions
 
@@ -93,7 +93,17 @@ Elevator block placement, use, particle selection, recipe registration, and move
 
 ## Elevator Blocks
 
-Elevator blocks are stored separately from homes, warps, shops, and outposts. Placement is restricted to a player's own LandClaims claim unless an admin bypasses claims. Breaking follows claim build access, so trusted builders can remove elevators in claims where they can build.
+Elevator blocks are stored separately from homes, warps, shops, and outposts. They are crafted as a marked Lodestone item with this recipe:
+
+```text
+ E 
+CLC
+ E 
+```
+
+`E` is Echo Shard, `C` is Copper Ingot, and `L` is Lodestone. When placed, the block remains visually Lodestone, but right-click interaction is cancelled so it does not behave like a normal Lodestone.
+
+Placement is restricted to a player's own LandClaims claim unless an admin claim bypass mode is added later. Breaking follows claim build access, so trusted builders can remove elevators in claims where they can build. Players with claim access can use elevators. Jumping on an elevator moves to the nearest elevator above in the same X/Z column; sneaking moves to the nearest elevator below.
 
 Elevator defaults are configured under `elevators` in `config.yml`:
 
@@ -103,6 +113,7 @@ Elevator defaults are configured under `elevators` in `config.yml`:
 | `elevators.cooldown-seconds` | `2` | Cooldown used by the upcoming in-game elevator listener. |
 | `elevators.particles.enabled` | `true` | Enables the subtle elevator visual cue globally. |
 | `elevators.particles.default` | `WAX_ON` | Default particle for newly placed elevator blocks. |
+| `elevators.particles.interval-ticks` | `20` | How often elevator cue particles are emitted. |
 
 ## Shop Warps
 

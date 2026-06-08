@@ -33,7 +33,8 @@ public final class ConfigLoader {
                 yaml.getInt("elevators.max-distance", 16),
                 yaml.getInt("elevators.cooldown-seconds", 2),
                 yaml.getBoolean("elevators.particles.enabled", true),
-                yaml.getString("elevators.particles.default", "WAX_ON")
+                yaml.getString("elevators.particles.default", "WAX_ON"),
+                yaml.getInt("elevators.particles.interval-ticks", 20)
         );
     }
 

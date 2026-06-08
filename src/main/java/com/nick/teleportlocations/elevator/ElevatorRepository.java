@@ -9,6 +9,8 @@ public interface ElevatorRepository {
 
     List<ElevatorBlock> findColumn(UUID worldId, int blockX, int blockZ);
 
+    List<ElevatorBlock> findAll();
+
     void save(ElevatorBlock block);
 
     void delete(UUID id);

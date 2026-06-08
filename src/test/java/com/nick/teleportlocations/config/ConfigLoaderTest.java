@@ -17,6 +17,7 @@ final class ConfigLoaderTest {
         assertThat(config.elevatorCooldownSeconds()).isEqualTo(2);
         assertThat(config.elevatorParticlesEnabled()).isTrue();
         assertThat(config.elevatorDefaultParticle()).isEqualTo("WAX_ON");
+        assertThat(config.elevatorParticleIntervalTicks()).isEqualTo(20);
         assertThat(config.categories().get("home").creationZone()).isEqualTo(CreationZone.TRUSTED_CLAIM);
         assertThat(config.categories().get("shop").allowsCost()).isFalse();
         assertThat(config.categories().get("shop").forcePublic()).isTrue();

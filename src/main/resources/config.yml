@@ -45,6 +45,8 @@ elevators:
     enabled: true
     # Players can select unlocked particles later through the elevator dialog.
     default: WAX_ON
+    # How often elevator cue particles are emitted.
+    interval-ticks: 20
 
 categories:
   home:

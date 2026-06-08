@@ -54,6 +54,18 @@ public final class SqliteElevatorRepository implements ElevatorRepository {
     }
 
     @Override
+    public List<ElevatorBlock> findAll() {
+        return queryMany(
+                """
+                SELECT * FROM teleport_elevator_blocks
+                ORDER BY world_name, block_x, block_y, block_z
+                """,
+                statement -> {
+                }
+        );
+    }
+
+    @Override
     public void save(ElevatorBlock block) {
         try (Connection connection = database.connection()) {
             if (update(connection, block) == 0) {

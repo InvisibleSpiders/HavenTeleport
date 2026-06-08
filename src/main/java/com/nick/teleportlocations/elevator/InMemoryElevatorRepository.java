@@ -29,6 +29,17 @@ public final class InMemoryElevatorRepository implements ElevatorRepository {
     }
 
     @Override
+    public List<ElevatorBlock> findAll() {
+        return blocks.values().stream()
+                .sorted(Comparator
+                        .comparing((ElevatorBlock block) -> block.position().worldName())
+                        .thenComparingInt(ElevatorBlock::blockX)
+                        .thenComparingInt(ElevatorBlock::blockY)
+                        .thenComparingInt(ElevatorBlock::blockZ))
+                .toList();
+    }
+
+    @Override
     public void save(ElevatorBlock block) {
         blocks.put(block.id(), block);
     }

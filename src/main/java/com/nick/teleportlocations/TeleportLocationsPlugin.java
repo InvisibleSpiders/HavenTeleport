@@ -8,15 +8,23 @@ import com.nick.teleportlocations.dialog.DialogActionRouter;
 import com.nick.teleportlocations.claim.BukkitLandClaimsGateway;
 import com.nick.teleportlocations.dialog.DialogMenuService;
 import com.nick.teleportlocations.dialog.PaperDialogPresenter;
+import com.nick.teleportlocations.elevator.ElevatorActivationService;
+import com.nick.teleportlocations.elevator.ElevatorCooldownService;
+import com.nick.teleportlocations.elevator.bukkit.ElevatorItemService;
+import com.nick.teleportlocations.elevator.bukkit.ElevatorParticleTask;
+import com.nick.teleportlocations.listener.ElevatorListener;
 import com.nick.teleportlocations.listener.SpawnListener;
 import dev.invisiblespiders.haven.api.HavenAPI;
 import dev.invisiblespiders.haven.api.service.HavenDataSource;
 import dev.invisiblespiders.haven.api.service.HavenEconomyService;
 import java.io.File;
+import java.time.Instant;
+import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public final class TeleportLocationsPlugin extends JavaPlugin {
     private RuntimeServices services;
+    private BukkitTask elevatorParticleTask;
 
     @Override
     public void onEnable() {
@@ -31,16 +39,46 @@ public final class TeleportLocationsPlugin extends JavaPlugin {
         );
         registerCommands();
         getServer().getPluginManager().registerEvents(new SpawnListener(services.spawnService(), services.spawnPolicyService()), this);
+        registerElevators();
         getLogger().info("TeleportLocations enabled.");
     }
 
     @Override
     public void onDisable() {
+        if (elevatorParticleTask != null) {
+            elevatorParticleTask.cancel();
+            elevatorParticleTask = null;
+        }
         if (services != null) {
             services.close();
             services = null;
         }
         getLogger().info("TeleportLocations disabled.");
+    }
+
+    private void registerElevators() {
+        ElevatorItemService elevatorItems = new ElevatorItemService(this);
+        getServer().removeRecipe(elevatorItems.recipeKey());
+        getServer().addRecipe(elevatorItems.createRecipe());
+
+        ElevatorActivationService activations = new ElevatorActivationService(
+                services.elevatorService(),
+                new ElevatorCooldownService(services.config().elevatorCooldownSeconds(), Instant::now),
+                services.config().elevatorMaxDistance()
+        );
+        getServer().getPluginManager().registerEvents(
+                new ElevatorListener(services.elevatorService(), activations, elevatorItems),
+                this
+        );
+        if (services.config().elevatorParticlesEnabled()) {
+            int interval = Math.max(1, services.config().elevatorParticleIntervalTicks());
+            elevatorParticleTask = getServer().getScheduler().runTaskTimer(
+                    this,
+                    new ElevatorParticleTask(services.elevatorRepository()),
+                    interval,
+                    interval
+            );
+        }
     }
 
     private void saveResourceIfMissing(String name) {

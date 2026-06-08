@@ -18,6 +18,7 @@ public record PluginConfig(
         int elevatorMaxDistance,
         int elevatorCooldownSeconds,
         boolean elevatorParticlesEnabled,
-        String elevatorDefaultParticle
+        String elevatorDefaultParticle,
+        int elevatorParticleIntervalTicks
 ) {
 }

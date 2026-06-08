@@ -41,6 +41,7 @@ final class SqliteElevatorRepositoryTest {
 
         assertThat(repository.findAt(worldId, 4, 64, 7)).contains(lower);
         assertThat(repository.findColumn(worldId, 4, 7)).containsExactly(lower, upper);
+        assertThat(repository.findAll()).containsExactly(lower, upper);
 
         repository.delete(lower.id());
 

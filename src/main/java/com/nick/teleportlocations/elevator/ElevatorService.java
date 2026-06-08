@@ -14,11 +14,22 @@ public final class ElevatorService {
 
     private final ElevatorRepository repository;
     private final LandClaimsGateway landClaims;
+    private final ElevatorParticle defaultParticle;
     private final Supplier<Instant> clock;
 
     public ElevatorService(ElevatorRepository repository, LandClaimsGateway landClaims, Supplier<Instant> clock) {
+        this(repository, landClaims, ElevatorParticle.WAX_ON, clock);
+    }
+
+    public ElevatorService(
+            ElevatorRepository repository,
+            LandClaimsGateway landClaims,
+            ElevatorParticle defaultParticle,
+            Supplier<Instant> clock
+    ) {
         this.repository = Objects.requireNonNull(repository, "repository");
         this.landClaims = Objects.requireNonNull(landClaims, "landClaims");
+        this.defaultParticle = Objects.requireNonNull(defaultParticle, "defaultParticle");
         this.clock = Objects.requireNonNull(clock, "clock");
     }
 
@@ -33,7 +44,7 @@ public final class ElevatorService {
             return ElevatorResult.of(ElevatorResult.Status.UPDATED, existing.get());
         }
         Instant now = clock.get();
-        ElevatorBlock block = new ElevatorBlock(UUID.randomUUID(), ownerId, normalized(position), ElevatorParticle.WAX_ON, now, now);
+        ElevatorBlock block = new ElevatorBlock(UUID.randomUUID(), ownerId, normalized(position), defaultParticle, now, now);
         repository.save(block);
         return ElevatorResult.of(ElevatorResult.Status.PLACED, block);
     }

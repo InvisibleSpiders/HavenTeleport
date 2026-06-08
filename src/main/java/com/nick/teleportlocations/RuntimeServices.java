@@ -10,6 +10,7 @@ import com.nick.teleportlocations.cost.PlayerResourceGateway;
 import com.nick.teleportlocations.cost.TeleportCostService;
 import com.nick.teleportlocations.config.ConfigLoader;
 import com.nick.teleportlocations.config.PluginConfig;
+import com.nick.teleportlocations.elevator.ElevatorParticle;
 import com.nick.teleportlocations.elevator.ElevatorRepository;
 import com.nick.teleportlocations.elevator.ElevatorService;
 import com.nick.teleportlocations.home.HomeService;
@@ -119,7 +120,12 @@ public record RuntimeServices(
         ShopWarpService shopWarpService = new ShopWarpService(locationService, limitService, creationPolicyService);
         OutpostService outpostService = new OutpostService(locationService, limitService, creationPolicyService);
         ServerWarpService serverWarpService = new ServerWarpService(locationService);
-        ElevatorService elevatorService = new ElevatorService(elevators, landClaims, Instant::now);
+        ElevatorService elevatorService = new ElevatorService(
+                elevators,
+                landClaims,
+                ElevatorParticle.parse(config.elevatorDefaultParticle()),
+                Instant::now
+        );
         SpawnPolicyService spawnPolicyService = new SpawnPolicyService(spawnPolicy(config));
         SpawnService spawnService = new SpawnService(locationService, homeService);
         return new RuntimeServices(
