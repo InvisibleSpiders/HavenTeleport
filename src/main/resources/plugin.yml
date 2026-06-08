@@ -1,0 +1,95 @@
+name: TeleportLocations
+version: '${version}'
+main: com.nick.teleportlocations.TeleportLocationsPlugin
+api-version: '26.1.2'
+author: Nick
+description: Homes, warps, shops, outposts, and spawn control.
+softdepend:
+  - LandClaims
+  - VaultUnlocked
+commands:
+  tl:
+    description: TeleportLocations admin and utility commands.
+    usage: /tl
+    aliases: [teleportlocations]
+  home:
+    description: Teleport to your main home or a named home.
+    usage: /home [name]
+  homes:
+    description: Open your homes menu.
+    usage: /homes
+  sethome:
+    description: Create or update a home.
+    usage: /sethome <name>
+  delhome:
+    description: Delete a home.
+    usage: /delhome <name>
+  mainhome:
+    description: Set your main home.
+    usage: /mainhome <name>
+  warp:
+    description: Teleport to a visible warp.
+    usage: /warp <name>
+  warps:
+    description: Open the warps menu.
+    usage: /warps
+  setwarp:
+    description: Create or update a player warp.
+    usage: /setwarp <name>
+  delwarp:
+    description: Delete one of your player warps.
+    usage: /delwarp <name>
+  shops:
+    description: Open the shop warps menu.
+    usage: /shops
+    aliases: [shopwarps]
+  setshop:
+    description: Create or update a free public shop warp.
+    usage: /setshop <name>
+  delshop:
+    description: Delete one of your shop warps.
+    usage: /delshop <name>
+  setoutpost:
+    description: Create or update an outpost.
+    usage: /setoutpost <name>
+  outpost:
+    description: Teleport to one of your outposts.
+    usage: /outpost <name>
+  spawn:
+    description: Teleport to server spawn.
+    usage: /spawn
+permissions:
+  teleportlocations.use:
+    description: Allows basic TeleportLocations usage.
+    default: true
+  teleportlocations.menu:
+    description: Allows opening location menus.
+    default: true
+  teleportlocations.home:
+    description: Allows home commands.
+    default: true
+  teleportlocations.warp:
+    description: Allows warp commands.
+    default: true
+  teleportlocations.shop:
+    description: Allows shop warp commands.
+    default: true
+  teleportlocations.outpost:
+    description: Allows outpost commands.
+    default: true
+  teleportlocations.spawn:
+    description: Allows /spawn.
+    default: true
+  teleportlocations.admin:
+    description: Grants all TeleportLocations admin permissions.
+    default: op
+    children:
+      teleportlocations.admin.reload: true
+      teleportlocations.admin.limits: true
+      teleportlocations.admin.serverwarp: true
+      teleportlocations.admin.spawn: true
+      teleportlocations.admin.edit: true
+      teleportlocations.admin.teleport: true
+      teleportlocations.admin.bypass.creation: true
+      teleportlocations.admin.bypass.cost: true
+      teleportlocations.admin.bypass.cooldown: true

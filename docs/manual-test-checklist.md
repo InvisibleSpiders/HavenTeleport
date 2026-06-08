@@ -1,0 +1,23 @@
+# Manual Test Checklist
+
+- Start a Paper 26.1+ server with Java 25.
+- Install `TeleportLocations-1.0.0-SNAPSHOT.jar` only.
+- Confirm the plugin loads without LandClaims or VaultUnlocked.
+- Confirm first join sends a new player to configured spawn.
+- Confirm login leaves players where they logged out by default.
+- Confirm death respawn uses main home, then bed spawn, then configured spawn, then vanilla world spawn.
+- Install LandClaims and confirm homes, player warps, and shop warps can be created in trusted claims.
+- Confirm homes, player warps, and shop warps cannot be created in untrusted claims.
+- Confirm outposts can be created in wilderness and are limited separately.
+- Confirm `/home` teleports to main home.
+- Confirm `/home secret` teleports to the named home.
+- Confirm `/warps` opens the category Dialog menu.
+- Confirm `/homes` opens the homes Dialog menu.
+- Confirm `/shops` opens the shop Dialog menu.
+- Confirm owner edit buttons appear in Dialog lists.
+- Confirm shop edit menus do not expose cost or private access controls.
+- Install VaultUnlocked and confirm money-cost player warps charge successfully.
+- Remove VaultUnlocked and confirm money-cost player warps are denied by default.
+- Confirm `/tl admin setlimit`, `addlimit`, `removelimit`, and `clearlimit` affect one category at a time.
+- Confirm `/tl admin setserverwarp` creates a global warp.
+- Confirm `/tl admin setspawn` updates the managed spawn location.

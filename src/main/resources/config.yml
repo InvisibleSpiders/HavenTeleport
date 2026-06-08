@@ -1,0 +1,75 @@
+# TeleportLocations main configuration.
+# Categories control limits, creation zones, default access, visibility, and cost support.
+# Player limits are not permission based. Admin commands store per-player overrides.
+
+integrations:
+  landclaims:
+    # allow: creation checks pass when LandClaims is missing.
+    # deny-claim-required: homes, player warps, and shops require LandClaims; wilderness outposts still work.
+    # deny-all: all non-admin creation is blocked while LandClaims is missing.
+    missing-service-policy: deny-claim-required
+  vaultunlocked:
+    # If false, money costs are denied when VaultUnlocked is unavailable.
+    treat-money-costs-as-free-when-missing: false
+
+teleport:
+  # Players must wait this many seconds before teleporting.
+  warmup-seconds: 3
+  # Moving during warmup cancels the pending teleport.
+  cancel-on-move: true
+  # The plugin can search nearby blocks for a safe landing spot.
+  safe-search-radius: 3
+
+spawn:
+  # New players enter at the managed server spawn.
+  first-join:
+    target: spawn
+  # Existing players stay where they logged out by default.
+  login:
+    target: last-location
+  # Death respawn prefers main home, then falls back safely.
+  death-respawn:
+    target: main-home
+    fallback:
+      - bed-spawn
+      - spawn
+      - vanilla-world-spawn
+
+categories:
+  home:
+    owner: player
+    default-limit: 3
+    creation-zone: trusted-claim
+    default-access: private
+    default-visibility: hidden
+    allows-cost: false
+  player_warp:
+    owner: player
+    default-limit: 2
+    creation-zone: trusted-claim
+    default-access: public
+    default-visibility: listed
+    allows-cost: true
+  shop:
+    owner: player
+    default-limit: 1
+    creation-zone: trusted-claim
+    default-access: public
+    default-visibility: listed
+    allows-cost: false
+    force-public: true
+    force-listed: true
+  outpost:
+    owner: player
+    default-limit: 1
+    creation-zone: wilderness
+    default-access: private
+    default-visibility: hidden
+    allows-cost: false
+  server_warp:
+    owner: server
+    default-limit: -1
+    creation-zone: admin
+    default-access: public
+    default-visibility: listed
+    allows-cost: false
