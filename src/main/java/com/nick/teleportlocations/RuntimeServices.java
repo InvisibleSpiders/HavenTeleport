@@ -11,6 +11,10 @@ import com.nick.teleportlocations.home.HomeService;
 import com.nick.teleportlocations.limit.LimitRepository;
 import com.nick.teleportlocations.limit.LimitService;
 import com.nick.teleportlocations.location.LocationService;
+import com.nick.teleportlocations.spawn.SpawnPolicy;
+import com.nick.teleportlocations.spawn.SpawnPolicyService;
+import com.nick.teleportlocations.spawn.SpawnService;
+import com.nick.teleportlocations.spawn.SpawnTarget;
 import com.nick.teleportlocations.storage.Database;
 import com.nick.teleportlocations.storage.LocationRepository;
 import com.nick.teleportlocations.storage.SqliteLimitRepository;
@@ -18,6 +22,7 @@ import com.nick.teleportlocations.storage.SqliteLocationRepository;
 import dev.invisiblespiders.haven.api.service.HavenDataSource;
 import dev.invisiblespiders.haven.api.service.HavenEconomyService;
 import java.time.Instant;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -30,7 +35,9 @@ public record RuntimeServices(
         LimitService limitService,
         EconomyGateway economyGateway,
         CreationPolicyService creationPolicyService,
-        HomeService homeService
+        HomeService homeService,
+        SpawnPolicyService spawnPolicyService,
+        SpawnService spawnService
 ) implements AutoCloseable {
     public static final String PLUGIN_ID = "teleportlocations";
     public static final String MIGRATIONS_LOCATION = "db/migrations/teleportlocations";
@@ -45,6 +52,8 @@ public record RuntimeServices(
         Objects.requireNonNull(economyGateway, "economyGateway");
         Objects.requireNonNull(creationPolicyService, "creationPolicyService");
         Objects.requireNonNull(homeService, "homeService");
+        Objects.requireNonNull(spawnPolicyService, "spawnPolicyService");
+        Objects.requireNonNull(spawnService, "spawnService");
     }
 
     public static RuntimeServices open(
@@ -69,6 +78,8 @@ public record RuntimeServices(
                 MissingLandClaimsPolicy.parse(config.landClaimsMissingPolicy())
         );
         HomeService homeService = new HomeService(locationService, limitService, creationPolicyService);
+        SpawnPolicyService spawnPolicyService = new SpawnPolicyService(spawnPolicy(config));
+        SpawnService spawnService = new SpawnService(locationService, homeService);
         return new RuntimeServices(
                 config,
                 database,
@@ -78,7 +89,21 @@ public record RuntimeServices(
                 limitService,
                 economyGateway,
                 creationPolicyService,
-                homeService
+                homeService,
+                spawnPolicyService,
+                spawnService
+        );
+    }
+
+    private static SpawnPolicy spawnPolicy(PluginConfig config) {
+        List<SpawnTarget> fallback = config.deathRespawnFallback().stream()
+                .map(SpawnTarget::parse)
+                .toList();
+        return new SpawnPolicy(
+                SpawnTarget.parse(config.firstJoinTarget()),
+                SpawnTarget.parse(config.loginTarget()),
+                SpawnTarget.parse(config.deathRespawnTarget()),
+                fallback
         );
     }
 

@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.nick.teleportlocations.bukkit.BukkitLocations;
 import com.nick.teleportlocations.location.SavedPosition;
 import java.util.UUID;
 import org.bukkit.Location;
@@ -18,7 +19,7 @@ final class PlayerLocationCommandTest {
         when(world.getUID()).thenReturn(worldId);
         when(world.getName()).thenReturn("world");
 
-        SavedPosition position = PlayerLocationCommand.savedPosition(
+        SavedPosition position = BukkitLocations.save(
                 new Location(world, 1.0, 64.0, 2.0, 90.0f, 10.0f)
         );
 

@@ -27,7 +27,7 @@ public final class TeleportLocationsPlugin extends JavaPlugin {
                 getClassLoader()
         );
         registerCommands();
-        getServer().getPluginManager().registerEvents(new SpawnListener(), this);
+        getServer().getPluginManager().registerEvents(new SpawnListener(services.spawnService(), services.spawnPolicyService()), this);
         getLogger().info("TeleportLocations enabled.");
     }
 
@@ -48,9 +48,10 @@ public final class TeleportLocationsPlugin extends JavaPlugin {
     }
 
     private void registerCommands() {
-        getCommand("tl").setExecutor(new AdminTeleportCommand());
+        getCommand("tl").setExecutor(new AdminTeleportCommand(services.spawnService()));
         PlayerLocationCommand playerCommand = new PlayerLocationCommand(
                 services.homeService(),
+                services.spawnService(),
                 new DialogMenuService(),
                 new PaperDialogPresenter()
         );
