@@ -67,7 +67,7 @@ public final class TeleportLocationsPlugin extends JavaPlugin {
                 services.serverWarpService(),
                 dialogMenus
         );
-        presenter.setActionHandler(new DialogActionExecutor(dialogActions, presenter));
+        presenter.setActionHandler(new DialogActionExecutor(dialogActions, presenter, services.teleportChargeService()));
         PlayerLocationCommand playerCommand = new PlayerLocationCommand(
                 services.homeService(),
                 services.playerWarpService(),
@@ -75,6 +75,7 @@ public final class TeleportLocationsPlugin extends JavaPlugin {
                 services.outpostService(),
                 services.serverWarpService(),
                 services.spawnService(),
+                services.teleportChargeService(),
                 dialogMenus,
                 presenter
         );

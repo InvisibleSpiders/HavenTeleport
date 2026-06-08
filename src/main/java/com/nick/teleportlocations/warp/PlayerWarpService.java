@@ -120,6 +120,25 @@ public final class PlayerWarpService {
         return PlayerWarpResult.updated(location);
     }
 
+    public PlayerWarpResult setCost(UUID ownerId, String name, CostSpec cost) {
+        Optional<TeleportLocation> warp = locations.find(OwnerRef.player(ownerId), CATEGORY, name);
+        if (warp.isEmpty()) {
+            return PlayerWarpResult.notFound();
+        }
+        TeleportLocation existing = warp.orElseThrow();
+        TeleportLocation location = locations.createOrUpdate(new CreateLocationRequest(
+                CATEGORY,
+                OwnerRef.player(ownerId),
+                existing.name(),
+                existing.position(),
+                existing.accessMode(),
+                existing.visibilityMode(),
+                cost,
+                false
+        ));
+        return PlayerWarpResult.updated(location);
+    }
+
     private boolean reachedLimit(UUID ownerId, int existingWarps) {
         int limit = limits.resolveLimit(ownerId, CATEGORY);
         return limit >= 0 && existingWarps >= limit;

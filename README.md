@@ -26,3 +26,7 @@ Shop warps are always public, listed, and free. They cannot be configured with a
 ## Server Warps
 
 Admins manage global server warps with `/ht admin serverwarp set <name>`, `/ht admin serverwarp delete <name>`, and `/ht admin serverwarp list`. Players can use server warps through `/warp <name>` and the `/warps` dialog.
+
+## Teleport Costs
+
+Player warp costs are enforced before teleporting through `/warp` or dialog actions. Owners and admins with `teleportlocations.admin.bypass.cost` do not pay their own configured costs. Shop warps remain free.

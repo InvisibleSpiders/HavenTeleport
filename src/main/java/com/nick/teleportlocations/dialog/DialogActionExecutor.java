@@ -1,7 +1,10 @@
 package com.nick.teleportlocations.dialog;
 
 import com.nick.teleportlocations.bukkit.BukkitLocations;
+import com.nick.teleportlocations.cost.ChargeResult;
 import com.nick.teleportlocations.location.TeleportLocation;
+import com.nick.teleportlocations.teleport.TeleportChargeMessages;
+import com.nick.teleportlocations.teleport.TeleportChargeService;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Location;
@@ -10,10 +13,12 @@ import org.bukkit.entity.Player;
 public final class DialogActionExecutor implements DialogActionHandler {
     private final DialogActionRouter router;
     private final PaperDialogPresenter presenter;
+    private final TeleportChargeService charges;
 
-    public DialogActionExecutor(DialogActionRouter router, PaperDialogPresenter presenter) {
+    public DialogActionExecutor(DialogActionRouter router, PaperDialogPresenter presenter, TeleportChargeService charges) {
         this.router = router;
         this.presenter = presenter;
+        this.charges = charges;
     }
 
     @Override
@@ -31,6 +36,15 @@ public final class DialogActionExecutor implements DialogActionHandler {
         Location destination = BukkitLocations.load(location.position());
         if (destination == null) {
             player.sendMessage(Component.text("That location world is not loaded.", NamedTextColor.RED));
+            return;
+        }
+        ChargeResult charge = charges.chargeIfNeeded(
+                player.getUniqueId(),
+                player.hasPermission("teleportlocations.admin.bypass.cost"),
+                location
+        );
+        if (!charge.success()) {
+            player.sendMessage(Component.text(TeleportChargeMessages.failure(charge.reason()), NamedTextColor.RED));
             return;
         }
         player.teleportAsync(destination);

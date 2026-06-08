@@ -3,8 +3,11 @@ package com.nick.teleportlocations;
 import com.nick.teleportlocations.claim.CreationPolicyService;
 import com.nick.teleportlocations.claim.LandClaimsGateway;
 import com.nick.teleportlocations.claim.MissingLandClaimsPolicy;
+import com.nick.teleportlocations.cost.BukkitPlayerResourceGateway;
 import com.nick.teleportlocations.cost.EconomyGateway;
 import com.nick.teleportlocations.cost.HavenEconomyGateway;
+import com.nick.teleportlocations.cost.PlayerResourceGateway;
+import com.nick.teleportlocations.cost.TeleportCostService;
 import com.nick.teleportlocations.config.ConfigLoader;
 import com.nick.teleportlocations.config.PluginConfig;
 import com.nick.teleportlocations.home.HomeService;
@@ -22,6 +25,7 @@ import com.nick.teleportlocations.storage.Database;
 import com.nick.teleportlocations.storage.LocationRepository;
 import com.nick.teleportlocations.storage.SqliteLimitRepository;
 import com.nick.teleportlocations.storage.SqliteLocationRepository;
+import com.nick.teleportlocations.teleport.TeleportChargeService;
 import com.nick.teleportlocations.warp.PlayerWarpService;
 import dev.invisiblespiders.haven.api.service.HavenDataSource;
 import dev.invisiblespiders.haven.api.service.HavenEconomyService;
@@ -38,6 +42,9 @@ public record RuntimeServices(
         LocationService locationService,
         LimitService limitService,
         EconomyGateway economyGateway,
+        PlayerResourceGateway playerResourceGateway,
+        TeleportCostService teleportCostService,
+        TeleportChargeService teleportChargeService,
         CreationPolicyService creationPolicyService,
         HomeService homeService,
         PlayerWarpService playerWarpService,
@@ -58,6 +65,9 @@ public record RuntimeServices(
         Objects.requireNonNull(locationService, "locationService");
         Objects.requireNonNull(limitService, "limitService");
         Objects.requireNonNull(economyGateway, "economyGateway");
+        Objects.requireNonNull(playerResourceGateway, "playerResourceGateway");
+        Objects.requireNonNull(teleportCostService, "teleportCostService");
+        Objects.requireNonNull(teleportChargeService, "teleportChargeService");
         Objects.requireNonNull(creationPolicyService, "creationPolicyService");
         Objects.requireNonNull(homeService, "homeService");
         Objects.requireNonNull(playerWarpService, "playerWarpService");
@@ -84,6 +94,13 @@ public record RuntimeServices(
         EconomyGateway economyGateway = economyService
                 .<EconomyGateway>map(HavenEconomyGateway::new)
                 .orElseGet(EconomyGateway::unavailable);
+        PlayerResourceGateway playerResourceGateway = new BukkitPlayerResourceGateway();
+        TeleportCostService teleportCostService = new TeleportCostService(
+                economyGateway,
+                playerResourceGateway,
+                config.treatMoneyCostsAsFreeWhenEconomyMissing()
+        );
+        TeleportChargeService teleportChargeService = new TeleportChargeService(teleportCostService);
         CreationPolicyService creationPolicyService = new CreationPolicyService(
                 config.categories(),
                 landClaims,
@@ -104,6 +121,9 @@ public record RuntimeServices(
                 locationService,
                 limitService,
                 economyGateway,
+                playerResourceGateway,
+                teleportCostService,
+                teleportChargeService,
                 creationPolicyService,
                 homeService,
                 playerWarpService,

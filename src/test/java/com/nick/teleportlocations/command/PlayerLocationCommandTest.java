@@ -10,6 +10,9 @@ import com.nick.teleportlocations.claim.LandClaimsGateway;
 import com.nick.teleportlocations.claim.MissingLandClaimsPolicy;
 import com.nick.teleportlocations.config.ConfigLoader;
 import com.nick.teleportlocations.config.PluginConfig;
+import com.nick.teleportlocations.cost.EconomyGateway;
+import com.nick.teleportlocations.cost.PlayerResourceGateway;
+import com.nick.teleportlocations.cost.TeleportCostService;
 import com.nick.teleportlocations.dialog.DialogMenuService;
 import com.nick.teleportlocations.dialog.PaperDialogPresenter;
 import com.nick.teleportlocations.home.HomeService;
@@ -22,6 +25,7 @@ import com.nick.teleportlocations.serverwarp.ServerWarpService;
 import com.nick.teleportlocations.shop.ShopWarpService;
 import com.nick.teleportlocations.spawn.SpawnService;
 import com.nick.teleportlocations.storage.InMemoryLocationRepository;
+import com.nick.teleportlocations.teleport.TeleportChargeService;
 import com.nick.teleportlocations.warp.PlayerWarpService;
 import java.time.Instant;
 import java.util.UUID;
@@ -142,6 +146,9 @@ final class PlayerLocationCommandTest {
             OutpostService outpostService = new OutpostService(locationService, limitService, creationPolicy);
             ServerWarpService serverWarpService = new ServerWarpService(locationService);
             SpawnService spawnService = new SpawnService(locationService, homeService);
+            TeleportChargeService chargeService = new TeleportChargeService(
+                    new TeleportCostService(EconomyGateway.unavailable(), PlayerResourceGateway.empty(), true)
+            );
             return new Fixture(
                     new PlayerLocationCommand(
                             homeService,
@@ -150,6 +157,7 @@ final class PlayerLocationCommandTest {
                             outpostService,
                             serverWarpService,
                             spawnService,
+                            chargeService,
                             new DialogMenuService(),
                             new PaperDialogPresenter()
                     ),

@@ -1,6 +1,7 @@
 package com.nick.teleportlocations.command;
 
 import com.nick.teleportlocations.bukkit.BukkitLocations;
+import com.nick.teleportlocations.cost.ChargeResult;
 import com.nick.teleportlocations.dialog.DialogMenuService;
 import com.nick.teleportlocations.dialog.PaperDialogPresenter;
 import com.nick.teleportlocations.home.HomeResult;
@@ -12,6 +13,8 @@ import com.nick.teleportlocations.serverwarp.ServerWarpService;
 import com.nick.teleportlocations.shop.ShopWarpResult;
 import com.nick.teleportlocations.shop.ShopWarpService;
 import com.nick.teleportlocations.spawn.SpawnService;
+import com.nick.teleportlocations.teleport.TeleportChargeMessages;
+import com.nick.teleportlocations.teleport.TeleportChargeService;
 import com.nick.teleportlocations.warp.PlayerWarpResult;
 import com.nick.teleportlocations.warp.PlayerWarpService;
 import java.util.Locale;
@@ -31,16 +34,18 @@ public final class PlayerLocationCommand implements CommandExecutor {
     private final OutpostService outposts;
     private final ServerWarpService serverWarps;
     private final SpawnService spawn;
+    private final TeleportChargeService charges;
     private final DialogMenuService dialogs;
     private final PaperDialogPresenter presenter;
 
-    public PlayerLocationCommand(HomeService homes, PlayerWarpService warps, ShopWarpService shops, OutpostService outposts, ServerWarpService serverWarps, SpawnService spawn, DialogMenuService dialogs, PaperDialogPresenter presenter) {
+    public PlayerLocationCommand(HomeService homes, PlayerWarpService warps, ShopWarpService shops, OutpostService outposts, ServerWarpService serverWarps, SpawnService spawn, TeleportChargeService charges, DialogMenuService dialogs, PaperDialogPresenter presenter) {
         this.homes = homes;
         this.warps = warps;
         this.shops = shops;
         this.outposts = outposts;
         this.serverWarps = serverWarps;
         this.spawn = spawn;
+        this.charges = charges;
         this.dialogs = dialogs;
         this.presenter = presenter;
     }
@@ -155,8 +160,24 @@ public final class PlayerLocationCommand implements CommandExecutor {
             player.sendMessage(Component.text("That warp world is not loaded.", NamedTextColor.RED));
             return;
         }
+        if (!charge(player, warp.orElseThrow())) {
+            return;
+        }
         player.teleportAsync(destination);
         player.sendMessage(Component.text("Teleported to warp " + warp.orElseThrow().name() + ".", NamedTextColor.GREEN));
+    }
+
+    private boolean charge(Player player, TeleportLocation location) {
+        ChargeResult charge = charges.chargeIfNeeded(
+                player.getUniqueId(),
+                player.hasPermission("teleportlocations.admin.bypass.cost"),
+                location
+        );
+        if (charge.success()) {
+            return true;
+        }
+        player.sendMessage(Component.text(TeleportChargeMessages.failure(charge.reason()), NamedTextColor.RED));
+        return false;
     }
 
     private void deleteWarp(Player player, String[] args) {

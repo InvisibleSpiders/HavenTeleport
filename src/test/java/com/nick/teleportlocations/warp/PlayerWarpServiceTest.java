@@ -98,6 +98,18 @@ final class PlayerWarpServiceTest {
         assertThat(fixture.service.visibleWarps(UUID.randomUUID())).isEmpty();
     }
 
+    @Test
+    void updatesWarpCost() {
+        Fixture fixture = Fixture.create(LandClaimsGateway.fixed(true, true));
+        UUID owner = UUID.randomUUID();
+        fixture.service.setWarp(owner, "market", position(), false);
+
+        PlayerWarpResult result = fixture.service.setCost(owner, "market", CostSpec.money(12.5));
+
+        assertThat(result.status()).isEqualTo(PlayerWarpResult.Status.UPDATED);
+        assertThat(fixture.service.ownerWarps(owner).getFirst().cost()).isEqualTo(CostSpec.money(12.5));
+    }
+
     private static SavedPosition position() {
         return new SavedPosition(UUID.randomUUID(), "world", 1.0, 64.0, 2.0, 90.0f, 0.0f);
     }

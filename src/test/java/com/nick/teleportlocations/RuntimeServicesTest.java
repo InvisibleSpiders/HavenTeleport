@@ -33,6 +33,9 @@ final class RuntimeServicesTest {
             assertThat(services.config().categories()).containsKey("home");
             assertThat(services.locationService()).isNotNull();
             assertThat(services.limitService()).isNotNull();
+            assertThat(services.playerResourceGateway()).isNotNull();
+            assertThat(services.teleportCostService()).isNotNull();
+            assertThat(services.teleportChargeService()).isNotNull();
             assertThat(services.homeService()).isNotNull();
             assertThat(services.playerWarpService()).isNotNull();
             assertThat(services.shopWarpService()).isNotNull();
