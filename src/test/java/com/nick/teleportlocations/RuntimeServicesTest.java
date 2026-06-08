@@ -2,6 +2,7 @@ package com.nick.teleportlocations;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.nick.teleportlocations.claim.LandClaimsGateway;
 import dev.invisiblespiders.haven.api.service.HavenDataSource;
 import java.io.PrintWriter;
 import java.nio.file.Files;
@@ -20,13 +21,19 @@ final class RuntimeServicesTest {
     void opensHavenCoreBackedServicesAndRegistersMigrations(@TempDir Path dataFolder) {
         FakeHavenDataSource havenDataSource = new FakeHavenDataSource(dataFolder.resolve("locations.db"));
 
-        try (RuntimeServices services = RuntimeServices.open(havenDataSource, Optional.empty(), getClass().getClassLoader())) {
+        try (RuntimeServices services = RuntimeServices.open(
+                havenDataSource,
+                Optional.empty(),
+                LandClaimsGateway.fixed(true, true),
+                getClass().getClassLoader()
+        )) {
             assertThat(Files.exists(dataFolder.resolve("locations.db"))).isTrue();
             assertThat(havenDataSource.pluginId).isEqualTo("teleportlocations");
             assertThat(havenDataSource.location).isEqualTo("db/migrations/teleportlocations");
             assertThat(services.config().categories()).containsKey("home");
             assertThat(services.locationService()).isNotNull();
             assertThat(services.limitService()).isNotNull();
+            assertThat(services.homeService()).isNotNull();
         }
     }
 

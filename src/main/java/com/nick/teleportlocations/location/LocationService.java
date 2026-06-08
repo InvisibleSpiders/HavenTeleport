@@ -2,6 +2,7 @@ package com.nick.teleportlocations.location;
 
 import com.nick.teleportlocations.storage.LocationRepository;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Supplier;
@@ -56,6 +57,18 @@ public final class LocationService {
         return repository.findByOwnerAndCategory(OwnerRef.player(playerId), "home").stream()
                 .filter(TeleportLocation::mainHome)
                 .findFirst();
+    }
+
+    public Optional<TeleportLocation> find(OwnerRef owner, String category, String name) {
+        return repository.findByIdentity(owner, category, LocationName.normalize(name));
+    }
+
+    public List<TeleportLocation> list(OwnerRef owner, String category) {
+        return repository.findByOwnerAndCategory(owner, category);
+    }
+
+    public void delete(UUID id) {
+        repository.delete(id);
     }
 
     private void unsetOtherMainHomes(TeleportLocation mainHome) {

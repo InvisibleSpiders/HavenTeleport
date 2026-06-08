@@ -2,6 +2,9 @@ package com.nick.teleportlocations;
 
 import com.nick.teleportlocations.command.AdminTeleportCommand;
 import com.nick.teleportlocations.command.PlayerLocationCommand;
+import com.nick.teleportlocations.claim.BukkitLandClaimsGateway;
+import com.nick.teleportlocations.dialog.DialogMenuService;
+import com.nick.teleportlocations.dialog.PaperDialogPresenter;
 import com.nick.teleportlocations.listener.SpawnListener;
 import dev.invisiblespiders.haven.api.HavenAPI;
 import dev.invisiblespiders.haven.api.service.HavenDataSource;
@@ -20,6 +23,7 @@ public final class TeleportLocationsPlugin extends JavaPlugin {
         services = RuntimeServices.open(
                 HavenAPI.get(HavenDataSource.class),
                 HavenAPI.optional(HavenEconomyService.class),
+                BukkitLandClaimsGateway.discover(getServer().getServicesManager()),
                 getClassLoader()
         );
         registerCommands();
@@ -45,7 +49,11 @@ public final class TeleportLocationsPlugin extends JavaPlugin {
 
     private void registerCommands() {
         getCommand("tl").setExecutor(new AdminTeleportCommand());
-        PlayerLocationCommand playerCommand = new PlayerLocationCommand();
+        PlayerLocationCommand playerCommand = new PlayerLocationCommand(
+                services.homeService(),
+                new DialogMenuService(),
+                new PaperDialogPresenter()
+        );
         getCommand("home").setExecutor(playerCommand);
         getCommand("homes").setExecutor(playerCommand);
         getCommand("sethome").setExecutor(playerCommand);

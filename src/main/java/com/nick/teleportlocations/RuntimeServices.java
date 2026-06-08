@@ -1,9 +1,13 @@
 package com.nick.teleportlocations;
 
+import com.nick.teleportlocations.claim.CreationPolicyService;
+import com.nick.teleportlocations.claim.LandClaimsGateway;
+import com.nick.teleportlocations.claim.MissingLandClaimsPolicy;
 import com.nick.teleportlocations.cost.EconomyGateway;
 import com.nick.teleportlocations.cost.HavenEconomyGateway;
 import com.nick.teleportlocations.config.ConfigLoader;
 import com.nick.teleportlocations.config.PluginConfig;
+import com.nick.teleportlocations.home.HomeService;
 import com.nick.teleportlocations.limit.LimitRepository;
 import com.nick.teleportlocations.limit.LimitService;
 import com.nick.teleportlocations.location.LocationService;
@@ -24,7 +28,9 @@ public record RuntimeServices(
         LimitRepository limitRepository,
         LocationService locationService,
         LimitService limitService,
-        EconomyGateway economyGateway
+        EconomyGateway economyGateway,
+        CreationPolicyService creationPolicyService,
+        HomeService homeService
 ) implements AutoCloseable {
     public static final String PLUGIN_ID = "teleportlocations";
     public static final String MIGRATIONS_LOCATION = "db/migrations/teleportlocations";
@@ -37,11 +43,14 @@ public record RuntimeServices(
         Objects.requireNonNull(locationService, "locationService");
         Objects.requireNonNull(limitService, "limitService");
         Objects.requireNonNull(economyGateway, "economyGateway");
+        Objects.requireNonNull(creationPolicyService, "creationPolicyService");
+        Objects.requireNonNull(homeService, "homeService");
     }
 
     public static RuntimeServices open(
             HavenDataSource dataSource,
             Optional<HavenEconomyService> economyService,
+            LandClaimsGateway landClaims,
             ClassLoader classLoader
     ) {
         PluginConfig config = ConfigLoader.fromResources();
@@ -54,7 +63,23 @@ public record RuntimeServices(
         EconomyGateway economyGateway = economyService
                 .<EconomyGateway>map(HavenEconomyGateway::new)
                 .orElseGet(EconomyGateway::unavailable);
-        return new RuntimeServices(config, database, locations, limits, locationService, limitService, economyGateway);
+        CreationPolicyService creationPolicyService = new CreationPolicyService(
+                config.categories(),
+                landClaims,
+                MissingLandClaimsPolicy.parse(config.landClaimsMissingPolicy())
+        );
+        HomeService homeService = new HomeService(locationService, limitService, creationPolicyService);
+        return new RuntimeServices(
+                config,
+                database,
+                locations,
+                limits,
+                locationService,
+                limitService,
+                economyGateway,
+                creationPolicyService,
+                homeService
+        );
     }
 
     @Override
