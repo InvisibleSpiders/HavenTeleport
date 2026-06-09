@@ -159,3 +159,15 @@ TPA defaults are configured under `tpa` in `config.yml`:
 ## Teleport Costs
 
 Player warp costs are enforced before teleporting through `/warp` or dialog actions. Owners and admins with `teleportlocations.admin.bypass.cost` do not pay their own configured costs. Shop warps remain free.
+
+## Claim Entry Checks
+
+TeleportLocations checks LandClaims entry access before moving a player into a claimed destination. Claimed destinations use the LandClaims action key `teleportlocations.enter`. If the player cannot enter the destination claim, the teleport is cancelled before charging costs or moving the player.
+
+This applies to homes, player warps, shop warps, outposts, spawn, dialog teleport actions, accepted TPA requests, and elevator destinations. Admins with active claim-bypass mode can bypass the entry check.
+
+Player warp and shop dialogs mark inaccessible destinations by default and omit their teleport action. Server owners can hide inaccessible player/shop destinations instead:
+
+| Setting | Default | Description |
+| --- | --- | --- |
+| `teleport.inaccessible-destinations.mode` | `mark` | Use `mark` to show inaccessible player/shop warps with `No claim access`, or `hide` to hide them unless the viewer owns them. |

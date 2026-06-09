@@ -11,6 +11,7 @@ public record PluginConfig(
         int warmupSeconds,
         boolean cancelOnMove,
         int safeSearchRadius,
+        String inaccessibleDestinationMode,
         String firstJoinTarget,
         String loginTarget,
         String deathRespawnTarget,

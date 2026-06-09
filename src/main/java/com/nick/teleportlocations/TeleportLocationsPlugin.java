@@ -81,7 +81,8 @@ public final class TeleportLocationsPlugin extends JavaPlugin {
                         elevatorItems,
                         dialogs.menus(),
                         dialogs.presenter(),
-                        services.adminBypassService()
+                        services.adminBypassService(),
+                        services.teleportAccessService()
                 ),
                 this
         );
@@ -121,6 +122,8 @@ public final class TeleportLocationsPlugin extends JavaPlugin {
                 new BukkitOnlinePlayerLookup(),
                 services.teleportRequestService(),
                 tpaWarmups,
+                services.teleportAccessService(),
+                services.adminBypassService(),
                 services.config().tpaEnabled()
         );
         getServer().getPluginManager().registerEvents(tpaWarmups, this);
@@ -146,7 +149,9 @@ public final class TeleportLocationsPlugin extends JavaPlugin {
                 dialogActions,
                 dialogPresenter,
                 services.teleportChargeService(),
-                services.teleportSafetyService()
+                services.teleportAccessService(),
+                services.teleportSafetyService(),
+                services.adminBypassService()
         ));
         PlayerLocationCommand playerCommand = new PlayerLocationCommand(
                 services.homeService(),
@@ -156,9 +161,12 @@ public final class TeleportLocationsPlugin extends JavaPlugin {
                 services.serverWarpService(),
                 services.spawnService(),
                 services.teleportChargeService(),
+                services.teleportAccessService(),
                 services.teleportSafetyService(),
+                services.adminBypassService(),
                 dialogMenus,
-                dialogPresenter
+                dialogPresenter,
+                hideInaccessibleDestinations()
         );
         getCommand("home").setExecutor(playerCommand);
         getCommand("homes").setExecutor(playerCommand);
@@ -182,6 +190,10 @@ public final class TeleportLocationsPlugin extends JavaPlugin {
     private boolean hasOnlinePermission(java.util.UUID playerId, String permission) {
         Player player = getServer().getPlayer(playerId);
         return player != null && player.hasPermission(permission);
+    }
+
+    private boolean hideInaccessibleDestinations() {
+        return "hide".equalsIgnoreCase(services.config().inaccessibleDestinationMode());
     }
 
     private record DialogRuntime(DialogMenuService menus, PaperDialogPresenter presenter) {

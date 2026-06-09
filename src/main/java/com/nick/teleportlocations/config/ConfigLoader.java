@@ -26,6 +26,7 @@ public final class ConfigLoader {
                 yaml.getInt("teleport.warmup-seconds", 3),
                 yaml.getBoolean("teleport.cancel-on-move", true),
                 yaml.getInt("teleport.safe-search-radius", 3),
+                yaml.getString("teleport.inaccessible-destinations.mode", "mark"),
                 yaml.getString("spawn.first-join.target", "spawn"),
                 yaml.getString("spawn.login.target", "last-location"),
                 yaml.getString("spawn.death-respawn.target", "main-home"),

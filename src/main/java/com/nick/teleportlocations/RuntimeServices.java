@@ -31,6 +31,7 @@ import com.nick.teleportlocations.storage.SqliteElevatorRepository;
 import com.nick.teleportlocations.storage.SqliteLimitRepository;
 import com.nick.teleportlocations.storage.SqliteLocationRepository;
 import com.nick.teleportlocations.teleport.TeleportChargeService;
+import com.nick.teleportlocations.teleport.TeleportAccessService;
 import com.nick.teleportlocations.teleport.TeleportSafetyService;
 import com.nick.teleportlocations.tpa.TeleportRequestService;
 import com.nick.teleportlocations.warp.PlayerWarpService;
@@ -54,6 +55,7 @@ public record RuntimeServices(
         PlayerResourceGateway playerResourceGateway,
         TeleportCostService teleportCostService,
         TeleportChargeService teleportChargeService,
+        TeleportAccessService teleportAccessService,
         TeleportSafetyService teleportSafetyService,
         TeleportRequestService teleportRequestService,
         CreationPolicyService creationPolicyService,
@@ -82,6 +84,7 @@ public record RuntimeServices(
         Objects.requireNonNull(playerResourceGateway, "playerResourceGateway");
         Objects.requireNonNull(teleportCostService, "teleportCostService");
         Objects.requireNonNull(teleportChargeService, "teleportChargeService");
+        Objects.requireNonNull(teleportAccessService, "teleportAccessService");
         Objects.requireNonNull(teleportSafetyService, "teleportSafetyService");
         Objects.requireNonNull(teleportRequestService, "teleportRequestService");
         Objects.requireNonNull(creationPolicyService, "creationPolicyService");
@@ -120,6 +123,7 @@ public record RuntimeServices(
                 config.treatMoneyCostsAsFreeWhenEconomyMissing()
         );
         TeleportChargeService teleportChargeService = new TeleportChargeService(teleportCostService);
+        TeleportAccessService teleportAccessService = new TeleportAccessService(landClaims);
         TeleportSafetyService teleportSafetyService = new TeleportSafetyService();
         TeleportRequestService teleportRequestService = new TeleportRequestService(
                 config.tpaRequestTimeoutSeconds(),
@@ -157,6 +161,7 @@ public record RuntimeServices(
                 playerResourceGateway,
                 teleportCostService,
                 teleportChargeService,
+                teleportAccessService,
                 teleportSafetyService,
                 teleportRequestService,
                 creationPolicyService,

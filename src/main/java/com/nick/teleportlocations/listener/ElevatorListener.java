@@ -13,6 +13,7 @@ import com.nick.teleportlocations.dialog.DialogActionRouter;
 import com.nick.teleportlocations.dialog.DialogMenuService;
 import com.nick.teleportlocations.dialog.PaperDialogPresenter;
 import com.nick.teleportlocations.location.SavedPosition;
+import com.nick.teleportlocations.teleport.TeleportAccessService;
 import java.util.Optional;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -38,6 +39,7 @@ public final class ElevatorListener implements Listener {
     private final DialogMenuService menus;
     private final PaperDialogPresenter presenter;
     private final AdminBypassService bypass;
+    private final TeleportAccessService access;
 
     public ElevatorListener(
             ElevatorService elevators,
@@ -45,7 +47,8 @@ public final class ElevatorListener implements Listener {
             ElevatorItemService itemService,
             DialogMenuService menus,
             PaperDialogPresenter presenter,
-            AdminBypassService bypass
+            AdminBypassService bypass,
+            TeleportAccessService access
     ) {
         this.elevators = elevators;
         this.activations = activations;
@@ -53,6 +56,7 @@ public final class ElevatorListener implements Listener {
         this.menus = menus;
         this.presenter = presenter;
         this.bypass = bypass;
+        this.access = access;
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
@@ -177,7 +181,12 @@ public final class ElevatorListener implements Listener {
             return;
         }
         remindBypass(player, bypassClaims);
-        Location destination = destinationLocation(result.destination().orElseThrow(), player);
+        ElevatorBlock destinationBlock = result.destination().orElseThrow();
+        if (!access.canEnter(player.getUniqueId(), destinationBlock.position(), bypassClaims).allowed()) {
+            send(player, "You cannot enter that elevator destination.", NamedTextColor.RED);
+            return;
+        }
+        Location destination = destinationLocation(destinationBlock, player);
         if (destination != null) {
             player.teleportAsync(destination);
         }

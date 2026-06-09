@@ -7,6 +7,9 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.nick.teleportlocations.admin.AdminBypassService;
+import com.nick.teleportlocations.claim.LandClaimsGateway;
+import com.nick.teleportlocations.teleport.TeleportAccessService;
 import com.nick.teleportlocations.tpa.TeleportRequestService;
 import com.nick.teleportlocations.tpa.TeleportWarmupService;
 import java.time.Instant;
@@ -76,15 +79,38 @@ final class TeleportRequestCommandTest {
         verify(requester, never()).teleportAsync(receiver.getLocation());
     }
 
+    @Test
+    void acceptingTpaDeniedWhenDestinationClaimCannotBeEntered() {
+        Player requester = player("Nova", UUID.randomUUID(), location("world"));
+        Player receiver = player("Ari", UUID.randomUUID(), location("world"));
+        TeleportRequestCommand command = command(
+                Map.of("Nova", requester, "Ari", receiver),
+                new TeleportWarmupService(mock(Plugin.class), 0, true),
+                new TeleportAccessService(LandClaimsGateway.fixed(true, false))
+        );
+        command.onCommand(requester, command("tpa"), "tpa", new String[] {"Ari"});
+
+        command.onCommand(receiver, command("tpaccept"), "tpaccept", new String[] {"Nova"});
+
+        verify(requester, never()).teleportAsync(receiver.getLocation());
+    }
+
+
     private static TeleportRequestCommand command(Map<String, Player> players) {
         return command(players, new TeleportWarmupService(mock(Plugin.class), 0, true));
     }
 
     private static TeleportRequestCommand command(Map<String, Player> players, TeleportWarmupService warmups) {
+        return command(players, warmups, new TeleportAccessService(LandClaimsGateway.fixed(false, true)));
+    }
+
+    private static TeleportRequestCommand command(Map<String, Player> players, TeleportWarmupService warmups, TeleportAccessService access) {
         return new TeleportRequestCommand(
                 new MapOnlinePlayerLookup(players),
                 new TeleportRequestService(60, 0, () -> Instant.EPOCH),
                 warmups,
+                access,
+                new AdminBypassService(),
                 true
         );
     }

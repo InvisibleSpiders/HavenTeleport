@@ -19,6 +19,10 @@ teleport:
   cancel-on-move: true
   # The plugin can search nearby blocks for a safe landing spot.
   safe-search-radius: 3
+  inaccessible-destinations:
+    # mark: show inaccessible player/shop warps with no teleport action.
+    # hide: hide inaccessible player/shop warps unless the viewer owns them.
+    mode: mark
 
 spawn:
   # New players enter at the managed server spawn.

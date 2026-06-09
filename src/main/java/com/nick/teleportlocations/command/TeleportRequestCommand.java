@@ -1,5 +1,9 @@
 package com.nick.teleportlocations.command;
 
+import com.nick.teleportlocations.admin.AdminBypassService;
+import com.nick.teleportlocations.bukkit.BukkitLocations;
+import com.nick.teleportlocations.teleport.TeleportAccessResult;
+import com.nick.teleportlocations.teleport.TeleportAccessService;
 import com.nick.teleportlocations.tpa.TeleportAcceptResult;
 import com.nick.teleportlocations.tpa.TeleportDeclineResult;
 import com.nick.teleportlocations.tpa.TeleportRequest;
@@ -29,6 +33,8 @@ public final class TeleportRequestCommand implements CommandExecutor, Listener {
     private final OnlinePlayerLookup players;
     private final TeleportRequestService requests;
     private final TeleportWarmupService warmups;
+    private final TeleportAccessService access;
+    private final AdminBypassService bypass;
     private final boolean enabled;
     private final Map<UUID, PendingWarmup> warmupsByMovingPlayer = new HashMap<>();
     private final Map<UUID, PendingWarmup> warmupsByDestinationPlayer = new HashMap<>();
@@ -37,11 +43,15 @@ public final class TeleportRequestCommand implements CommandExecutor, Listener {
             OnlinePlayerLookup players,
             TeleportRequestService requests,
             TeleportWarmupService warmups,
+            TeleportAccessService access,
+            AdminBypassService bypass,
             boolean enabled
     ) {
         this.players = players;
         this.requests = requests;
         this.warmups = warmups;
+        this.access = access;
+        this.bypass = bypass;
         this.enabled = enabled;
     }
 
@@ -151,6 +161,11 @@ public final class TeleportRequestCommand implements CommandExecutor, Listener {
         }
         Player moving = request.type() == TeleportRequestType.TPA ? requester.orElseThrow() : receiver;
         Player destinationOwner = request.type() == TeleportRequestType.TPA ? receiver : requester.orElseThrow();
+        if (!canEnter(moving, destinationOwner)) {
+            moving.sendMessage(Component.text("You cannot teleport there because you do not have claim entry access.", NamedTextColor.RED));
+            receiver.sendMessage(Component.text("Teleport request could not be completed because the destination is not accessible.", NamedTextColor.RED));
+            return;
+        }
         receiver.sendMessage(Component.text("Teleport request accepted.", NamedTextColor.GREEN));
         requester.orElseThrow().sendMessage(Component.text(receiver.getName() + " accepted your teleport request.", NamedTextColor.GREEN));
         PendingWarmup pending = new PendingWarmup(moving.getUniqueId(), destinationOwner.getUniqueId(), moving);
@@ -166,9 +181,22 @@ public final class TeleportRequestCommand implements CommandExecutor, Listener {
         if (!moving.isOnline() || !destinationOwner.isOnline()) {
             return;
         }
+        if (!canEnter(moving, destinationOwner)) {
+            moving.sendMessage(Component.text("Teleport cancelled: destination is no longer accessible.", NamedTextColor.RED));
+            return;
+        }
         Location destination = destinationOwner.getLocation();
         moving.teleportAsync(destination);
         moving.sendMessage(Component.text("Teleporting to " + destinationOwner.getName() + ".", NamedTextColor.GREEN));
+    }
+
+    private boolean canEnter(Player moving, Player destinationOwner) {
+        TeleportAccessResult result = access.canEnter(
+                moving.getUniqueId(),
+                BukkitLocations.save(destinationOwner.getLocation()),
+                moving.hasPermission("teleportlocations.admin.bypass.claims") && bypass.claims(moving.getUniqueId())
+        );
+        return result.allowed();
     }
 
     private static void sendRequestMessage(Player requester, Player target, TeleportRequestType type) {
