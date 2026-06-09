@@ -16,6 +16,8 @@ import com.nick.teleportlocations.elevator.bukkit.ElevatorItemService;
 import com.nick.teleportlocations.elevator.bukkit.ElevatorParticleTask;
 import com.nick.teleportlocations.listener.ElevatorListener;
 import com.nick.teleportlocations.listener.SpawnListener;
+import com.nick.teleportlocations.teleport.ManagedTeleportService;
+import com.nick.teleportlocations.teleport.effect.BukkitTeleportEffectService;
 import com.nick.teleportlocations.tpa.TeleportWarmupService;
 import dev.invisiblespiders.haven.api.HavenAPI;
 import dev.invisiblespiders.haven.api.service.HavenDataSource;
@@ -29,6 +31,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 public final class TeleportLocationsPlugin extends JavaPlugin {
     private RuntimeServices services;
     private BukkitTask elevatorParticleTask;
+    private ManagedTeleportService managedTeleports;
 
     @Override
     public void onEnable() {
@@ -41,11 +44,16 @@ public final class TeleportLocationsPlugin extends JavaPlugin {
                 BukkitLandClaimsGateway.discover(getServer().getServicesManager()),
                 getClassLoader()
         );
+        managedTeleports = new ManagedTeleportService(
+                new BukkitTeleportEffectService(services.config().teleportEffects(), getLogger()),
+                runnable -> getServer().getScheduler().runTask(this, runnable)
+        );
         DialogRuntime dialogs = registerCommands();
         getServer().getPluginManager().registerEvents(new SpawnListener(
                 services.spawnService(),
                 services.spawnPolicyService(),
-                services.teleportSafetyService()
+                services.teleportSafetyService(),
+                managedTeleports
         ), this);
         registerElevators(dialogs);
         getLogger().info("TeleportLocations enabled.");
@@ -82,7 +90,8 @@ public final class TeleportLocationsPlugin extends JavaPlugin {
                         dialogs.menus(),
                         dialogs.presenter(),
                         services.adminBypassService(),
-                        services.teleportAccessService()
+                        services.teleportAccessService(),
+                        managedTeleports
                 ),
                 this
         );
@@ -111,7 +120,8 @@ public final class TeleportLocationsPlugin extends JavaPlugin {
                 services.serverWarpService(),
                 services.adminBypassService(),
                 new BukkitPlayerLookup(),
-                new BukkitOnlinePlayerLookup()
+                new BukkitOnlinePlayerLookup(),
+                managedTeleports
         ));
         TeleportWarmupService tpaWarmups = new TeleportWarmupService(
                 this,
@@ -124,7 +134,8 @@ public final class TeleportLocationsPlugin extends JavaPlugin {
                 tpaWarmups,
                 services.teleportAccessService(),
                 services.adminBypassService(),
-                services.config().tpaEnabled()
+                services.config().tpaEnabled(),
+                managedTeleports
         );
         getServer().getPluginManager().registerEvents(tpaWarmups, this);
         getServer().getPluginManager().registerEvents(tpaCommand, this);
@@ -151,7 +162,8 @@ public final class TeleportLocationsPlugin extends JavaPlugin {
                 services.teleportChargeService(),
                 services.teleportAccessService(),
                 services.teleportSafetyService(),
-                services.adminBypassService()
+                services.adminBypassService(),
+                managedTeleports
         ));
         PlayerLocationCommand playerCommand = new PlayerLocationCommand(
                 services.homeService(),
@@ -166,7 +178,8 @@ public final class TeleportLocationsPlugin extends JavaPlugin {
                 services.adminBypassService(),
                 dialogMenus,
                 dialogPresenter,
-                hideInaccessibleDestinations()
+                hideInaccessibleDestinations(),
+                managedTeleports
         );
         getCommand("home").setExecutor(playerCommand);
         getCommand("homes").setExecutor(playerCommand);

@@ -146,6 +146,30 @@ TPA requests are stored in memory and expire automatically. Cooldown and warmup 
 
 Admins can use `/ht admin tp <player> <target>` to move one online player to another immediately. Admin direct teleports do not use TPA requests, cooldowns, or warmups.
 
+## Teleport Effects
+
+Managed teleports can play configurable particles and sounds. Departure effects play before movement, arrival effects play after a successful async teleport, and denied effects play when HavenTeleport blocks or fails a teleport.
+
+This applies to homes, player warps, shop warps, outposts, server warps, spawn teleports, accepted TPA requests, admin direct teleports, and elevator movement. Death respawn sets the Bukkit respawn location directly, but invalid configured respawn targets still use the denied effect.
+
+Sound audiences can be `SELF` for only the teleporting player or `NEARBY` for players within the configured radius.
+
+| Setting | Default | Description |
+| --- | --- | --- |
+| `teleport.effects.enabled` | `true` | Master switch for managed teleport particles and sounds. |
+| `teleport.effects.departure.enabled` | `true` | Enables effects before a teleport starts. |
+| `teleport.effects.departure.particle` | `PORTAL` | Particle name for the source location. |
+| `teleport.effects.departure.sound.enabled` | `true` | Enables the departure sound. |
+| `teleport.effects.arrival.enabled` | `true` | Enables effects after a successful teleport. |
+| `teleport.effects.arrival.particle` | `REVERSE_PORTAL` | Particle name for the destination location. |
+| `teleport.effects.arrival.sound.audience` | `NEARBY` | Who hears the arrival sound. |
+| `teleport.effects.denied.enabled` | `true` | Enables the denied/failed teleport effect. |
+| `teleport.effects.denied.particle` | `DUST` | Particle name for denied or failed teleport attempts. |
+| `teleport.effects.denied.color` | `RED` | Color used by the default dust particle. |
+| `teleport.effects.denied.sound.audience` | `SELF` | Who hears denied or failed teleport sounds. |
+| `*.count`, `*.radius`, `*.y-offset` | varies | Particle amount and spread controls for each phase. |
+| `*.sound.name`, `*.sound.volume`, `*.sound.pitch`, `*.sound.radius` | varies | Sound controls for each phase. |
+
 TPA defaults are configured under `tpa` in `config.yml`:
 
 | Setting | Default | Description |

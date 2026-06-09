@@ -23,6 +23,53 @@ teleport:
     # mark: show inaccessible player/shop warps with no teleport action.
     # hide: hide inaccessible player/shop warps unless the viewer owns them.
     mode: mark
+  effects:
+    # Master switch for all HavenTeleport managed teleport particles and sounds.
+    enabled: true
+    departure:
+      # Plays at the source before a teleport begins.
+      enabled: true
+      particle: PORTAL
+      count: 32
+      radius: 0.45
+      y-offset: 1.0
+      sound:
+        enabled: true
+        name: ENTITY_ENDERMAN_TELEPORT
+        volume: 0.45
+        pitch: 1.15
+        audience: SELF
+        radius: 8
+    arrival:
+      # Plays at the destination after a successful teleport.
+      enabled: true
+      particle: REVERSE_PORTAL
+      count: 32
+      radius: 0.45
+      y-offset: 1.0
+      sound:
+        enabled: true
+        name: BLOCK_AMETHYST_BLOCK_CHIME
+        volume: 0.55
+        pitch: 1.25
+        audience: NEARBY
+        radius: 8
+    denied:
+      # Plays when HavenTeleport denies or fails a teleport.
+      enabled: true
+      particle: DUST
+      color: RED
+      size: 1.25
+      count: 18
+      radius: 0.35
+      y-offset: 1.0
+      sound:
+        enabled: true
+        name: BLOCK_NOTE_BLOCK_BASS
+        volume: 0.6
+        pitch: 0.7
+        audience: SELF
+        radius: 0
 
 spawn:
   # New players enter at the managed server spawn.
