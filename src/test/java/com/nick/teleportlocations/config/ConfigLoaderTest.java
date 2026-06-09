@@ -23,6 +23,13 @@ final class ConfigLoaderTest {
         assertThat(config.tpaWarmupSeconds()).isZero();
         assertThat(config.tpaCancelWarmupOnMove()).isTrue();
         assertThat(config.inaccessibleDestinationMode()).isEqualTo("mark");
+        assertThat(config.teleportEffects().enabled()).isTrue();
+        assertThat(config.teleportEffects().departure().particle()).isEqualTo("PORTAL");
+        assertThat(config.teleportEffects().arrival().particle()).isEqualTo("REVERSE_PORTAL");
+        assertThat(config.teleportEffects().denied().particle()).isEqualTo("DUST");
+        assertThat(config.teleportEffects().denied().particleColor()).isEqualTo("RED");
+        assertThat(config.teleportEffects().denied().sound().name()).isEqualTo("BLOCK_NOTE_BLOCK_BASS");
+        assertThat(config.teleportEffects().denied().sound().audience()).isEqualTo("SELF");
         assertThat(config.categories().get("home").creationZone()).isEqualTo(CreationZone.TRUSTED_CLAIM);
         assertThat(config.categories().get("shop").allowsCost()).isFalse();
         assertThat(config.categories().get("shop").forcePublic()).isTrue();

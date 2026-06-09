@@ -13,6 +13,7 @@ import com.nick.teleportlocations.dialog.DialogActionRouter;
 import com.nick.teleportlocations.dialog.DialogMenuService;
 import com.nick.teleportlocations.dialog.PaperDialogPresenter;
 import com.nick.teleportlocations.location.SavedPosition;
+import com.nick.teleportlocations.teleport.ManagedTeleportService;
 import com.nick.teleportlocations.teleport.TeleportAccessService;
 import java.util.Optional;
 import net.kyori.adventure.text.Component;
@@ -40,6 +41,7 @@ public final class ElevatorListener implements Listener {
     private final PaperDialogPresenter presenter;
     private final AdminBypassService bypass;
     private final TeleportAccessService access;
+    private final ManagedTeleportService managedTeleports;
 
     public ElevatorListener(
             ElevatorService elevators,
@@ -48,7 +50,8 @@ public final class ElevatorListener implements Listener {
             DialogMenuService menus,
             PaperDialogPresenter presenter,
             AdminBypassService bypass,
-            TeleportAccessService access
+            TeleportAccessService access,
+            ManagedTeleportService managedTeleports
     ) {
         this.elevators = elevators;
         this.activations = activations;
@@ -57,6 +60,7 @@ public final class ElevatorListener implements Listener {
         this.presenter = presenter;
         this.bypass = bypass;
         this.access = access;
+        this.managedTeleports = managedTeleports;
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
@@ -164,16 +168,19 @@ public final class ElevatorListener implements Listener {
                 player.hasPermission("teleportlocations.admin.bypass.cooldown")
         );
         if (result.status() == ElevatorActivationResult.Status.ACCESS_DENIED) {
+            managedTeleports.denied(player);
             remindBypass(player, bypassClaims);
             send(player, "You do not have access to use that elevator.", NamedTextColor.RED);
             return;
         }
         if (result.status() == ElevatorActivationResult.Status.NO_DESTINATION) {
+            managedTeleports.denied(player);
             showNoDestinationCue(sourceBlock);
             send(player, "No elevator block found in that direction.", NamedTextColor.RED);
             return;
         }
         if (result.status() == ElevatorActivationResult.Status.COOLDOWN) {
+            managedTeleports.denied(player);
             send(player, "Elevator is on cooldown for " + result.remainingCooldownSeconds() + "s.", NamedTextColor.YELLOW);
             return;
         }
@@ -183,12 +190,15 @@ public final class ElevatorListener implements Listener {
         remindBypass(player, bypassClaims);
         ElevatorBlock destinationBlock = result.destination().orElseThrow();
         if (!access.canEnter(player.getUniqueId(), destinationBlock.position(), bypassClaims).allowed()) {
+            managedTeleports.denied(player);
             send(player, "You cannot enter that elevator destination.", NamedTextColor.RED);
             return;
         }
         Location destination = destinationLocation(destinationBlock, player);
         if (destination != null) {
-            player.teleportAsync(destination);
+            managedTeleports.teleport(player, destination);
+        } else {
+            managedTeleports.denied(player);
         }
     }
 

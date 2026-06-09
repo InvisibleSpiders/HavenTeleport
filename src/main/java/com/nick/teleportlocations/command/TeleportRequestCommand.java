@@ -2,8 +2,10 @@ package com.nick.teleportlocations.command;
 
 import com.nick.teleportlocations.admin.AdminBypassService;
 import com.nick.teleportlocations.bukkit.BukkitLocations;
+import com.nick.teleportlocations.teleport.ManagedTeleportService;
 import com.nick.teleportlocations.teleport.TeleportAccessResult;
 import com.nick.teleportlocations.teleport.TeleportAccessService;
+import com.nick.teleportlocations.teleport.effect.NoOpTeleportEffectService;
 import com.nick.teleportlocations.tpa.TeleportAcceptResult;
 import com.nick.teleportlocations.tpa.TeleportDeclineResult;
 import com.nick.teleportlocations.tpa.TeleportRequest;
@@ -36,6 +38,7 @@ public final class TeleportRequestCommand implements CommandExecutor, Listener {
     private final TeleportAccessService access;
     private final AdminBypassService bypass;
     private final boolean enabled;
+    private final ManagedTeleportService managedTeleports;
     private final Map<UUID, PendingWarmup> warmupsByMovingPlayer = new HashMap<>();
     private final Map<UUID, PendingWarmup> warmupsByDestinationPlayer = new HashMap<>();
 
@@ -47,12 +50,33 @@ public final class TeleportRequestCommand implements CommandExecutor, Listener {
             AdminBypassService bypass,
             boolean enabled
     ) {
+        this(
+                players,
+                requests,
+                warmups,
+                access,
+                bypass,
+                enabled,
+                new ManagedTeleportService(new NoOpTeleportEffectService(), Runnable::run)
+        );
+    }
+
+    public TeleportRequestCommand(
+            OnlinePlayerLookup players,
+            TeleportRequestService requests,
+            TeleportWarmupService warmups,
+            TeleportAccessService access,
+            AdminBypassService bypass,
+            boolean enabled,
+            ManagedTeleportService managedTeleports
+    ) {
         this.players = players;
         this.requests = requests;
         this.warmups = warmups;
         this.access = access;
         this.bypass = bypass;
         this.enabled = enabled;
+        this.managedTeleports = managedTeleports;
     }
 
     @Override
@@ -101,7 +125,10 @@ public final class TeleportRequestCommand implements CommandExecutor, Listener {
                 sendRequestMessage(requester, target.orElseThrow(), type);
             }
             case SELF_REQUEST -> requester.sendMessage(Component.text("You cannot send a teleport request to yourself.", NamedTextColor.RED));
-            case COOLDOWN -> requester.sendMessage(Component.text("Teleport requests are on cooldown for " + result.remainingCooldownSeconds() + "s.", NamedTextColor.YELLOW));
+            case COOLDOWN -> {
+                managedTeleports.denied(requester);
+                requester.sendMessage(Component.text("Teleport requests are on cooldown for " + result.remainingCooldownSeconds() + "s.", NamedTextColor.YELLOW));
+            }
         }
     }
 
@@ -156,12 +183,14 @@ public final class TeleportRequestCommand implements CommandExecutor, Listener {
         Optional<Player> requester = players.find(request.requesterId());
         Optional<Player> target = players.find(request.targetId());
         if (requester.isEmpty() || target.isEmpty()) {
+            managedTeleports.denied(receiver);
             receiver.sendMessage(Component.text("That teleport request can no longer be completed.", NamedTextColor.RED));
             return;
         }
         Player moving = request.type() == TeleportRequestType.TPA ? requester.orElseThrow() : receiver;
         Player destinationOwner = request.type() == TeleportRequestType.TPA ? receiver : requester.orElseThrow();
         if (!canEnter(moving, destinationOwner)) {
+            managedTeleports.denied(moving);
             moving.sendMessage(Component.text("You cannot teleport there because you do not have claim entry access.", NamedTextColor.RED));
             receiver.sendMessage(Component.text("Teleport request could not be completed because the destination is not accessible.", NamedTextColor.RED));
             return;
@@ -179,14 +208,18 @@ public final class TeleportRequestCommand implements CommandExecutor, Listener {
 
     private void teleport(Player moving, Player destinationOwner) {
         if (!moving.isOnline() || !destinationOwner.isOnline()) {
+            if (moving.isOnline()) {
+                managedTeleports.denied(moving);
+            }
             return;
         }
         if (!canEnter(moving, destinationOwner)) {
+            managedTeleports.denied(moving);
             moving.sendMessage(Component.text("Teleport cancelled: destination is no longer accessible.", NamedTextColor.RED));
             return;
         }
         Location destination = destinationOwner.getLocation();
-        moving.teleportAsync(destination);
+        managedTeleports.teleport(moving, destination);
         moving.sendMessage(Component.text("Teleporting to " + destinationOwner.getName() + ".", NamedTextColor.GREEN));
     }
 
@@ -222,6 +255,7 @@ public final class TeleportRequestCommand implements CommandExecutor, Listener {
         PendingWarmup destinationWarmup = warmupsByDestinationPlayer.remove(playerId);
         if (destinationWarmup != null) {
             warmupsByMovingPlayer.remove(destinationWarmup.movingPlayerId());
+            managedTeleports.denied(destinationWarmup.movingPlayer());
             warmups.cancel(
                     destinationWarmup.movingPlayerId(),
                     "Teleport cancelled: " + event.getPlayer().getName() + " logged off.",

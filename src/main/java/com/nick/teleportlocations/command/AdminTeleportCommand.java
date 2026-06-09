@@ -7,6 +7,8 @@ import com.nick.teleportlocations.serverwarp.ServerWarpResult;
 import com.nick.teleportlocations.serverwarp.ServerWarpService;
 import com.nick.teleportlocations.spawn.SpawnResult;
 import com.nick.teleportlocations.spawn.SpawnService;
+import com.nick.teleportlocations.teleport.ManagedTeleportService;
+import com.nick.teleportlocations.teleport.effect.NoOpTeleportEffectService;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
@@ -24,6 +26,7 @@ public final class AdminTeleportCommand implements CommandExecutor {
     private final AdminBypassService bypass;
     private final PlayerLookup players;
     private final OnlinePlayerLookup onlinePlayers;
+    private final ManagedTeleportService managedTeleports;
 
     public AdminTeleportCommand(
             SpawnService spawn,
@@ -33,12 +36,33 @@ public final class AdminTeleportCommand implements CommandExecutor {
             PlayerLookup players,
             OnlinePlayerLookup onlinePlayers
     ) {
+        this(
+                spawn,
+                limits,
+                serverWarps,
+                bypass,
+                players,
+                onlinePlayers,
+                new ManagedTeleportService(new NoOpTeleportEffectService(), Runnable::run)
+        );
+    }
+
+    public AdminTeleportCommand(
+            SpawnService spawn,
+            LimitService limits,
+            ServerWarpService serverWarps,
+            AdminBypassService bypass,
+            PlayerLookup players,
+            OnlinePlayerLookup onlinePlayers,
+            ManagedTeleportService managedTeleports
+    ) {
         this.spawn = spawn;
         this.limits = limits;
         this.serverWarps = serverWarps;
         this.bypass = bypass;
         this.players = players;
         this.onlinePlayers = onlinePlayers;
+        this.managedTeleports = managedTeleports;
     }
 
     @Override
@@ -264,15 +288,19 @@ public final class AdminTeleportCommand implements CommandExecutor {
         }
         Optional<Player> player = onlinePlayers.find(args[2]);
         if (player.isEmpty()) {
+            if (sender instanceof Player senderPlayer) {
+                managedTeleports.denied(senderPlayer);
+            }
             sender.sendMessage(Component.text("Player " + args[2] + " is not online.", NamedTextColor.RED));
             return;
         }
         Optional<Player> target = onlinePlayers.find(args[3]);
         if (target.isEmpty()) {
+            managedTeleports.denied(player.orElseThrow());
             sender.sendMessage(Component.text("Player " + args[3] + " is not online.", NamedTextColor.RED));
             return;
         }
-        player.orElseThrow().teleportAsync(target.orElseThrow().getLocation());
+        managedTeleports.teleport(player.orElseThrow(), target.orElseThrow().getLocation());
         sender.sendMessage(Component.text("Teleported " + player.orElseThrow().getName() + " to " + target.orElseThrow().getName() + ".", NamedTextColor.GREEN));
     }
 

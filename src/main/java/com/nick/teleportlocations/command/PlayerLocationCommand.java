@@ -18,8 +18,10 @@ import com.nick.teleportlocations.teleport.TeleportAccessResult;
 import com.nick.teleportlocations.teleport.TeleportAccessService;
 import com.nick.teleportlocations.teleport.TeleportChargeMessages;
 import com.nick.teleportlocations.teleport.TeleportChargeService;
+import com.nick.teleportlocations.teleport.ManagedTeleportService;
 import com.nick.teleportlocations.teleport.TeleportSafetyResult;
 import com.nick.teleportlocations.teleport.TeleportSafetyService;
+import com.nick.teleportlocations.teleport.effect.NoOpTeleportEffectService;
 import com.nick.teleportlocations.warp.PlayerWarpResult;
 import com.nick.teleportlocations.warp.PlayerWarpService;
 import java.util.Locale;
@@ -46,8 +48,28 @@ public final class PlayerLocationCommand implements CommandExecutor {
     private final DialogMenuService dialogs;
     private final PaperDialogPresenter presenter;
     private final boolean hideInaccessibleDestinations;
+    private final ManagedTeleportService managedTeleports;
 
     public PlayerLocationCommand(HomeService homes, PlayerWarpService warps, ShopWarpService shops, OutpostService outposts, ServerWarpService serverWarps, SpawnService spawn, TeleportChargeService charges, TeleportAccessService access, TeleportSafetyService safety, AdminBypassService bypass, DialogMenuService dialogs, PaperDialogPresenter presenter, boolean hideInaccessibleDestinations) {
+        this(
+                homes,
+                warps,
+                shops,
+                outposts,
+                serverWarps,
+                spawn,
+                charges,
+                access,
+                safety,
+                bypass,
+                dialogs,
+                presenter,
+                hideInaccessibleDestinations,
+                new ManagedTeleportService(new NoOpTeleportEffectService(), Runnable::run)
+        );
+    }
+
+    public PlayerLocationCommand(HomeService homes, PlayerWarpService warps, ShopWarpService shops, OutpostService outposts, ServerWarpService serverWarps, SpawnService spawn, TeleportChargeService charges, TeleportAccessService access, TeleportSafetyService safety, AdminBypassService bypass, DialogMenuService dialogs, PaperDialogPresenter presenter, boolean hideInaccessibleDestinations, ManagedTeleportService managedTeleports) {
         this.homes = homes;
         this.warps = warps;
         this.shops = shops;
@@ -61,6 +83,7 @@ public final class PlayerLocationCommand implements CommandExecutor {
         this.dialogs = dialogs;
         this.presenter = presenter;
         this.hideInaccessibleDestinations = hideInaccessibleDestinations;
+        this.managedTeleports = managedTeleports;
     }
 
     @Override
@@ -122,6 +145,7 @@ public final class PlayerLocationCommand implements CommandExecutor {
         String name = args.length == 0 ? "" : args[0];
         Optional<TeleportLocation> home = homes.resolveHome(player.getUniqueId(), name);
         if (home.isEmpty()) {
+            managedTeleports.denied(player);
             player.sendMessage(Component.text("Home not found.", NamedTextColor.RED));
             return;
         }
@@ -132,7 +156,7 @@ public final class PlayerLocationCommand implements CommandExecutor {
         if (!canEnter(player, home.orElseThrow(), true)) {
             return;
         }
-        player.teleportAsync(destination);
+        managedTeleports.teleport(player, destination);
         player.sendMessage(Component.text("Teleported to home " + home.orElseThrow().name() + ".", NamedTextColor.GREEN));
     }
 
@@ -174,6 +198,7 @@ public final class PlayerLocationCommand implements CommandExecutor {
         Optional<TeleportLocation> warp = serverWarps.resolveVisibleWarp(args[0])
                 .or(() -> warps.resolveVisibleWarp(player.getUniqueId(), args[0]));
         if (warp.isEmpty()) {
+            managedTeleports.denied(player);
             player.sendMessage(Component.text("Warp not found.", NamedTextColor.RED));
             return;
         }
@@ -187,7 +212,7 @@ public final class PlayerLocationCommand implements CommandExecutor {
         if (!charge(player, warp.orElseThrow())) {
             return;
         }
-        player.teleportAsync(destination);
+        managedTeleports.teleport(player, destination);
         player.sendMessage(Component.text("Teleported to warp " + warp.orElseThrow().name() + ".", NamedTextColor.GREEN));
     }
 
@@ -200,6 +225,7 @@ public final class PlayerLocationCommand implements CommandExecutor {
         if (charge.success()) {
             return true;
         }
+        managedTeleports.denied(player);
         player.sendMessage(Component.text(TeleportChargeMessages.failure(charge.reason()), NamedTextColor.RED));
         return false;
     }
@@ -255,6 +281,7 @@ public final class PlayerLocationCommand implements CommandExecutor {
         }
         Optional<TeleportLocation> outpost = outposts.resolveOutpost(player.getUniqueId(), args[0]);
         if (outpost.isEmpty()) {
+            managedTeleports.denied(player);
             player.sendMessage(Component.text("Outpost not found.", NamedTextColor.RED));
             return;
         }
@@ -265,7 +292,7 @@ public final class PlayerLocationCommand implements CommandExecutor {
         if (!canEnter(player, outpost.orElseThrow(), true)) {
             return;
         }
-        player.teleportAsync(destination);
+        managedTeleports.teleport(player, destination);
         player.sendMessage(Component.text("Teleported to outpost " + outpost.orElseThrow().name() + ".", NamedTextColor.GREEN));
     }
 
@@ -280,6 +307,7 @@ public final class PlayerLocationCommand implements CommandExecutor {
     private void teleportSpawn(Player player) {
         Optional<TeleportLocation> configuredSpawn = spawn.spawn();
         if (configuredSpawn.isEmpty()) {
+            managedTeleports.denied(player);
             player.sendMessage(Component.text("Spawn has not been set.", NamedTextColor.RED));
             return;
         }
@@ -290,7 +318,7 @@ public final class PlayerLocationCommand implements CommandExecutor {
         if (!canEnter(player, configuredSpawn.orElseThrow(), true)) {
             return;
         }
-        player.teleportAsync(destination);
+        managedTeleports.teleport(player, destination);
         player.sendMessage(Component.text("Teleported to spawn.", NamedTextColor.GREEN));
     }
 
@@ -341,11 +369,13 @@ public final class PlayerLocationCommand implements CommandExecutor {
     private Location safeLoad(Player player, TeleportLocation location, String missingWorldMessage) {
         TeleportSafetyResult result = safety.validate(location.position());
         if (!result.safe()) {
+            managedTeleports.denied(player);
             player.sendMessage(Component.text("That teleport destination is unsafe: " + result.reason() + ".", NamedTextColor.RED));
             return null;
         }
         Location destination = BukkitLocations.load(location.position());
         if (destination == null) {
+            managedTeleports.denied(player);
             player.sendMessage(Component.text(missingWorldMessage, NamedTextColor.RED));
             return null;
         }
@@ -359,6 +389,7 @@ public final class PlayerLocationCommand implements CommandExecutor {
                 claimBypass(player)
         );
         if (!result.allowed() && notify) {
+            managedTeleports.denied(player);
             player.sendMessage(Component.text("You cannot teleport there because you do not have claim entry access.", NamedTextColor.RED));
         }
         return result.allowed();

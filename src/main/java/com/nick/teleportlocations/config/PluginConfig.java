@@ -1,6 +1,7 @@
 package com.nick.teleportlocations.config;
 
 import com.nick.teleportlocations.category.CategoryConfig;
+import com.nick.teleportlocations.teleport.effect.TeleportEffectConfig;
 import java.util.List;
 import java.util.Map;
 
@@ -12,6 +13,7 @@ public record PluginConfig(
         boolean cancelOnMove,
         int safeSearchRadius,
         String inaccessibleDestinationMode,
+        TeleportEffectConfig teleportEffects,
         String firstJoinTarget,
         String loginTarget,
         String deathRespawnTarget,
