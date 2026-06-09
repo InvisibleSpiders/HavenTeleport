@@ -16,6 +16,7 @@ import com.nick.teleportlocations.elevator.bukkit.ElevatorItemService;
 import com.nick.teleportlocations.elevator.bukkit.ElevatorParticleTask;
 import com.nick.teleportlocations.listener.ElevatorListener;
 import com.nick.teleportlocations.listener.SpawnListener;
+import com.nick.teleportlocations.listener.TeleportBlockListener;
 import com.nick.teleportlocations.teleport.ManagedTeleportService;
 import com.nick.teleportlocations.teleport.effect.BukkitTeleportEffectService;
 import com.nick.teleportlocations.tpa.TeleportWarmupService;
@@ -56,6 +57,7 @@ public final class TeleportLocationsPlugin extends JavaPlugin {
                 managedTeleports
         ), this);
         registerElevators(dialogs);
+        registerTeleportBlocks();
         getLogger().info("TeleportLocations enabled.");
     }
 
@@ -205,6 +207,19 @@ public final class TeleportLocationsPlugin extends JavaPlugin {
     private boolean hasOnlinePermission(java.util.UUID playerId, String permission) {
         Player player = getServer().getPlayer(playerId);
         return player != null && player.hasPermission(permission);
+    }
+
+    private void registerTeleportBlocks() {
+        getServer().getPluginManager().registerEvents(
+                new TeleportBlockListener(
+                        services.teleportBlockService(),
+                        new ElevatorCooldownService(services.config().teleportBlockCooldownSeconds(), Instant::now),
+                        services.adminBypassService(),
+                        managedTeleports,
+                        services.config().teleportBlockMaxDistance()
+                ),
+                this
+        );
     }
 
     private boolean hideInaccessibleDestinations() {

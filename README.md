@@ -1,6 +1,6 @@
 # TeleportLocations
 
-TeleportLocations is a Paper plugin for homes, server warps, player warps, free public shop warps, outposts, spawn control, and elevator block foundations.
+TeleportLocations is a Paper plugin for homes, server warps, player warps, free public shop warps, outposts, spawn control, elevator blocks, and teleport block foundations.
 
 ## Build
 
@@ -68,6 +68,8 @@ The plugin jar is written to `build/libs/TeleportLocations-1.0.0-SNAPSHOT.jar`.
 
 Elevator placement, breaking, jump/sneak movement, recipe registration, cooldowns, ambient particles, and the particle settings dialog are active.
 
+Teleport block placement, breaking, Echo Shard linking, lit-state activation, cooldowns, and pad-to-pad movement are active.
+
 ## Permissions
 
 | Permission | Default | Description |
@@ -92,6 +94,11 @@ Elevator placement, breaking, jump/sneak movement, recipe registration, cooldown
 | `teleportlocations.elevator.menu` | true | Allows opening the elevator settings dialog once wired. |
 | `teleportlocations.elevator.particle.wax_on` | true | Allows selecting the default Wax On elevator particle. |
 | `teleportlocations.elevator.particle.end_rod` | op | Allows selecting the End Rod elevator particle. |
+| `teleportlocations.teleportblock` | true | Parent permission for teleport block placement, breaking, use, and linking. |
+| `teleportlocations.teleportblock.place` | true | Allows placing teleport blocks in owned claims. |
+| `teleportlocations.teleportblock.break` | true | Allows breaking teleport blocks where the player has claim build access. |
+| `teleportlocations.teleportblock.use` | true | Allows using active linked teleport blocks where the player has claim access. |
+| `teleportlocations.teleportblock.link` | true | Allows linking two teleport blocks with an Echo Shard. |
 | `teleportlocations.admin` | op | Parent permission for all admin permissions. |
 | `teleportlocations.admin.reload` | op via `teleportlocations.admin` | Reserved for reload/admin maintenance. |
 | `teleportlocations.admin.limits` | op via `teleportlocations.admin` | Allows editing player limits. |
@@ -133,6 +140,21 @@ Elevator defaults are configured under `elevators` in `config.yml`:
 | `elevators.particles.enabled` | `true` | Enables the subtle elevator visual cue globally. |
 | `elevators.particles.default` | `WAX_ON` | Default particle for newly placed elevator blocks. |
 | `elevators.particles.interval-ticks` | `20` | How often elevator cue particles are emitted. |
+
+## Teleport Blocks
+
+Teleport blocks are any waxed copper bulb variant placed inside a claim the player owns. The block remains a normal waxed copper bulb visually. Its lit state controls whether it is active, so redstone can toggle a linked pad on or off.
+
+Right-click one teleport block with an Echo Shard, then right-click another teleport block with an Echo Shard to link them. Links must be within the configured max distance. Players need edit access to both blocks; admins can use active claim-bypass mode to override this and will receive a reminder message.
+
+Walking onto an active linked teleport block moves the player to the linked block if they have claim access at both ends. Cooldowns apply to prevent loops and lag. Shift-right-click currently reserves the destination menu entry point; home/warp/shop/admin destination menus are planned for the next teleport-block PR.
+
+Teleport block defaults are configured under `teleport-blocks` in `config.yml`:
+
+| Setting | Default | Description |
+| --- | --- | --- |
+| `teleport-blocks.max-distance` | `64` | Maximum distance between two Echo Shard linked teleport blocks. |
+| `teleport-blocks.cooldown-seconds` | `3` | Cooldown after teleport block use. |
 
 ## Shop Warps
 

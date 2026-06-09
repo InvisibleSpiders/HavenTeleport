@@ -100,6 +100,25 @@ public final class Database implements AutoCloseable {
                     CREATE INDEX IF NOT EXISTS teleport_elevator_blocks_column
                     ON teleport_elevator_blocks(world_id, block_x, block_z)
                     """);
+            statement.executeUpdate("""
+                    CREATE TABLE IF NOT EXISTS teleport_blocks (
+                        id TEXT PRIMARY KEY,
+                        owner_uuid TEXT NOT NULL,
+                        world_id TEXT NOT NULL,
+                        world_name TEXT NOT NULL,
+                        block_x INTEGER NOT NULL,
+                        block_y INTEGER NOT NULL,
+                        block_z INTEGER NOT NULL,
+                        linked_block_id TEXT,
+                        created_at TEXT NOT NULL,
+                        updated_at TEXT NOT NULL,
+                        CONSTRAINT teleport_blocks_position UNIQUE(world_id, block_x, block_y, block_z)
+                    )
+                    """);
+            statement.executeUpdate("""
+                    CREATE INDEX IF NOT EXISTS teleport_blocks_link
+                    ON teleport_blocks(linked_block_id)
+                    """);
         }
     }
 
