@@ -24,6 +24,9 @@ import com.nick.teleportlocations.outpost.OutpostService;
 import com.nick.teleportlocations.serverwarp.ServerWarpService;
 import com.nick.teleportlocations.shop.ShopWarpService;
 import com.nick.teleportlocations.storage.InMemoryLocationRepository;
+import com.nick.teleportlocations.teleportblock.InMemoryTeleportBlockRepository;
+import com.nick.teleportlocations.teleportblock.TeleportBlock;
+import com.nick.teleportlocations.teleportblock.TeleportBlockService;
 import com.nick.teleportlocations.warp.PlayerWarpService;
 import java.time.Instant;
 import java.util.Set;
@@ -266,6 +269,20 @@ final class DialogActionRouterTest {
         assertThat(withBypass.status()).isEqualTo(DialogActionRouteResult.Status.MESSAGE);
     }
 
+    @Test
+    void teleportBlockTargetActionSetsOwnedLocation() {
+        Fixture fixture = Fixture.create(Set.of("teleportlocations.teleportblock.link"));
+        UUID owner = UUID.randomUUID();
+        TeleportBlock block = fixture.teleportBlocks.place(owner, position(), false).block().orElseThrow();
+        fixture.homes.setHome(owner, "base", position(), true);
+        UUID homeId = fixture.homes.resolveHome(owner, "base").orElseThrow().id();
+
+        DialogActionRouteResult result = fixture.router.route(owner, "set-teleport-block-target:" + block.id() + ":" + homeId);
+
+        assertThat(result.status()).isEqualTo(DialogActionRouteResult.Status.MESSAGE);
+        assertThat(fixture.teleportBlocks.findAt(block.position()).orElseThrow().targetLocationId()).contains(homeId);
+    }
+
     private static SavedPosition position() {
         return new SavedPosition(UUID.randomUUID(), "world", 1.0, 64.0, 2.0, 90.0f, 0.0f);
     }
@@ -278,6 +295,7 @@ final class DialogActionRouterTest {
             OutpostService outposts,
             ServerWarpService serverWarps,
             ElevatorService elevators,
+            TeleportBlockService teleportBlocks,
             AdminBypassService bypass
     ) {
         private static Fixture create() {
@@ -305,6 +323,11 @@ final class DialogActionRouterTest {
                     LandClaimsGateway.fixedOwned(true, true, true),
                     () -> Instant.EPOCH
             );
+            TeleportBlockService teleportBlockService = new TeleportBlockService(
+                    new InMemoryTeleportBlockRepository(),
+                    LandClaimsGateway.fixedOwned(true, true, true),
+                    () -> Instant.EPOCH
+            );
             DialogMenuService menus = new DialogMenuService();
             return new Fixture(
                     new DialogActionRouter(
@@ -314,6 +337,8 @@ final class DialogActionRouterTest {
                             outpostService,
                             serverWarpService,
                             elevatorService,
+                            teleportBlockService,
+                            locationService,
                             menus,
                             bypassService,
                             (viewer, permission) -> permissions.contains(permission)
@@ -324,6 +349,7 @@ final class DialogActionRouterTest {
                     outpostService,
                     serverWarpService,
                     elevatorService,
+                    teleportBlockService,
                     bypassService
             );
         }

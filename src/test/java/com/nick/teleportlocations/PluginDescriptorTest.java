@@ -31,6 +31,7 @@ final class PluginDescriptorTest {
         assertThat(descriptor).contains("teleportlocations.tptoggle:");
         assertThat(descriptor).contains("teleportlocations.teleportblock:");
         assertThat(descriptor).contains("teleportlocations.teleportblock.link:");
+        assertThat(descriptor).contains("teleportlocations.admin.teleportblock:");
         assertThat(descriptor).contains("teleportlocations.elevator:");
         assertThat(descriptor).contains("teleportlocations.elevator.particle.end_rod:");
     }

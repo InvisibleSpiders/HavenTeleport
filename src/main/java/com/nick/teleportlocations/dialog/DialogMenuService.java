@@ -3,6 +3,7 @@ package com.nick.teleportlocations.dialog;
 import com.nick.teleportlocations.elevator.ElevatorBlock;
 import com.nick.teleportlocations.elevator.ElevatorParticle;
 import com.nick.teleportlocations.location.TeleportLocation;
+import com.nick.teleportlocations.teleportblock.TeleportBlock;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -158,6 +159,33 @@ public final class DialogMenuService {
             }
         }
         return new DialogMenuModel("Elevator Settings", List.copyOf(lines), List.copyOf(actions));
+    }
+
+    public DialogMenuModel teleportBlockSettingsMenu(
+            TeleportBlock block,
+            List<TeleportLocation> playerTargets,
+            List<TeleportLocation> adminTargets,
+            boolean canEdit
+    ) {
+        List<String> lines = new ArrayList<>();
+        List<DialogActionModel> actions = new ArrayList<>();
+        lines.add(block.linkedBlockId().isPresent() ? "Linked: Teleport Block" : "Linked: None");
+        lines.add(block.targetLocationId().isPresent() ? "Target: Saved Location" : "Target: None");
+        if (canEdit) {
+            for (TeleportLocation target : playerTargets) {
+                actions.add(new DialogActionModel(
+                        "set-teleport-block-target:" + block.id() + ":" + target.id(),
+                        title(target.category()) + ": " + target.name()
+                ));
+            }
+            for (TeleportLocation target : adminTargets) {
+                actions.add(new DialogActionModel(
+                        "set-teleport-block-target:" + block.id() + ":" + target.id(),
+                        "Admin " + title(target.category()) + ": " + target.name()
+                ));
+            }
+        }
+        return new DialogMenuModel("Teleport Block", List.copyOf(lines), List.copyOf(actions));
     }
 
     private DialogInputModel costInput(String costType) {

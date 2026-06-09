@@ -155,6 +155,7 @@ permissions:
       teleportlocations.admin.bypass.cooldown: true
       teleportlocations.admin.bypass.tpa.cooldown: true
       teleportlocations.admin.elevator: true
+      teleportlocations.admin.teleportblock: true
   teleportlocations.elevator.place:
     description: Allows placing elevator blocks in owned claims.
     default: true
@@ -187,6 +188,9 @@ permissions:
     default: true
   teleportlocations.admin.elevator:
     description: Allows admin elevator management.
+    default: op
+  teleportlocations.admin.teleportblock:
+    description: Allows admin teleport block target management while claim bypass is active.
     default: op
   teleportlocations.admin.bypass.claims:
     description: Allows admin claim bypass mode for protected elevator actions.

@@ -57,7 +57,7 @@ public final class TeleportLocationsPlugin extends JavaPlugin {
                 managedTeleports
         ), this);
         registerElevators(dialogs);
-        registerTeleportBlocks();
+        registerTeleportBlocks(dialogs);
         getLogger().info("TeleportLocations enabled.");
     }
 
@@ -156,6 +156,8 @@ public final class TeleportLocationsPlugin extends JavaPlugin {
                 services.outpostService(),
                 services.serverWarpService(),
                 services.elevatorService(),
+                services.teleportBlockService(),
+                services.locationService(),
                 dialogMenus,
                 services.adminBypassService(),
                 this::hasOnlinePermission
@@ -209,11 +211,21 @@ public final class TeleportLocationsPlugin extends JavaPlugin {
         return player != null && player.hasPermission(permission);
     }
 
-    private void registerTeleportBlocks() {
+    private void registerTeleportBlocks(DialogRuntime dialogs) {
         getServer().getPluginManager().registerEvents(
                 new TeleportBlockListener(
                         services.teleportBlockService(),
+                        services.locationService(),
+                        services.homeService(),
+                        services.playerWarpService(),
+                        services.shopWarpService(),
+                        services.serverWarpService(),
+                        services.teleportSafetyService(),
+                        services.teleportAccessService(),
+                        services.teleportChargeService(),
                         new ElevatorCooldownService(services.config().teleportBlockCooldownSeconds(), Instant::now),
+                        dialogs.menus(),
+                        dialogs.presenter(),
                         services.adminBypassService(),
                         managedTeleports,
                         services.config().teleportBlockMaxDistance()

@@ -10,6 +10,7 @@ import com.nick.teleportlocations.location.OwnerRef;
 import com.nick.teleportlocations.location.SavedPosition;
 import com.nick.teleportlocations.location.TeleportLocation;
 import com.nick.teleportlocations.location.VisibilityMode;
+import com.nick.teleportlocations.teleportblock.TeleportBlock;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -207,6 +208,24 @@ final class DialogMenuServiceTest {
         assertThat(model.actions()).isEmpty();
     }
 
+    @Test
+    void teleportBlockSettingsMenuListsEditableTargets() {
+        UUID owner = UUID.randomUUID();
+        DialogMenuService service = new DialogMenuService();
+        TeleportBlock block = teleportBlock(owner);
+        TeleportLocation home = location(owner, "home");
+        TeleportLocation server = serverLocation();
+
+        DialogMenuModel model = service.teleportBlockSettingsMenu(block, List.of(home), List.of(server), true);
+
+        assertThat(model.title()).isEqualTo("Teleport Block");
+        assertThat(model.actions()).extracting(DialogActionModel::key)
+                .containsExactly(
+                        "set-teleport-block-target:" + block.id() + ":" + home.id(),
+                        "set-teleport-block-target:" + block.id() + ":" + server.id()
+                );
+    }
+
     private static TeleportLocation location(UUID owner) {
         return location(owner, "home");
     }
@@ -247,6 +266,18 @@ final class DialogMenuServiceTest {
                 owner,
                 new SavedPosition(UUID.randomUUID(), "world", 0.0, 64.0, 0.0, 0.0f, 0.0f),
                 particle,
+                Instant.EPOCH,
+                Instant.EPOCH
+        );
+    }
+
+    private static TeleportBlock teleportBlock(UUID owner) {
+        return new TeleportBlock(
+                UUID.randomUUID(),
+                owner,
+                new SavedPosition(UUID.randomUUID(), "world", 0.0, 64.0, 0.0, 0.0f, 0.0f),
+                java.util.Optional.empty(),
+                java.util.Optional.empty(),
                 Instant.EPOCH,
                 Instant.EPOCH
         );

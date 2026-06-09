@@ -95,14 +95,16 @@ public final class SqliteTeleportBlockRepository implements TeleportBlockReposit
                 SET owner_uuid = ?,
                     world_name = ?,
                     linked_block_id = ?,
+                    target_location_id = ?,
                     updated_at = ?
                 WHERE id = ?
                 """)) {
             statement.setString(1, block.ownerId().toString());
             statement.setString(2, block.position().worldName());
             statement.setString(3, block.linkedBlockId().map(UUID::toString).orElse(null));
-            statement.setString(4, block.updatedAt().toString());
-            statement.setString(5, block.id().toString());
+            statement.setString(4, block.targetLocationId().map(UUID::toString).orElse(null));
+            statement.setString(5, block.updatedAt().toString());
+            statement.setString(6, block.id().toString());
             return statement.executeUpdate();
         }
     }
@@ -111,9 +113,9 @@ public final class SqliteTeleportBlockRepository implements TeleportBlockReposit
         try (PreparedStatement statement = connection.prepareStatement("""
                 INSERT INTO teleport_blocks(
                     id, owner_uuid, world_id, world_name, block_x, block_y, block_z,
-                    linked_block_id, created_at, updated_at
+                    linked_block_id, target_location_id, created_at, updated_at
                 )
-                VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """)) {
             statement.setString(1, block.id().toString());
             statement.setString(2, block.ownerId().toString());
@@ -123,8 +125,9 @@ public final class SqliteTeleportBlockRepository implements TeleportBlockReposit
             statement.setInt(6, block.blockY());
             statement.setInt(7, block.blockZ());
             statement.setString(8, block.linkedBlockId().map(UUID::toString).orElse(null));
-            statement.setString(9, block.createdAt().toString());
-            statement.setString(10, block.updatedAt().toString());
+            statement.setString(9, block.targetLocationId().map(UUID::toString).orElse(null));
+            statement.setString(10, block.createdAt().toString());
+            statement.setString(11, block.updatedAt().toString());
             statement.executeUpdate();
         }
     }
@@ -140,11 +143,13 @@ public final class SqliteTeleportBlockRepository implements TeleportBlockReposit
                 0.0f
         );
         String linkedBlockId = resultSet.getString("linked_block_id");
+        String targetLocationId = resultSet.getString("target_location_id");
         return new TeleportBlock(
                 UUID.fromString(resultSet.getString("id")),
                 UUID.fromString(resultSet.getString("owner_uuid")),
                 position,
                 linkedBlockId == null ? Optional.empty() : Optional.of(UUID.fromString(linkedBlockId)),
+                targetLocationId == null ? Optional.empty() : Optional.of(UUID.fromString(targetLocationId)),
                 Instant.parse(resultSet.getString("created_at")),
                 Instant.parse(resultSet.getString("updated_at"))
         );

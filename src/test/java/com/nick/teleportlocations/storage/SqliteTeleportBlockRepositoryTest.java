@@ -24,6 +24,7 @@ final class SqliteTeleportBlockRepositoryTest {
                 ownerId,
                 new SavedPosition(worldId, "world", 4.0, 64.0, 7.0, 0.0f, 0.0f),
                 Optional.empty(),
+                Optional.empty(),
                 Instant.EPOCH,
                 Instant.EPOCH
         );
@@ -32,6 +33,7 @@ final class SqliteTeleportBlockRepositoryTest {
                 ownerId,
                 new SavedPosition(worldId, "world", 10.0, 64.0, 7.0, 0.0f, 0.0f),
                 Optional.of(first.id()),
+                Optional.empty(),
                 Instant.EPOCH,
                 Instant.EPOCH.plusSeconds(1)
         );
