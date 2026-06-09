@@ -45,6 +45,8 @@ The plugin jar is written to `build/libs/TeleportLocations-1.0.0-SNAPSHOT.jar`.
 | `/tpahere <player>` | `teleportlocations.tpahere` | Ask another online player to teleport to you. |
 | `/tpaccept [player]` | `teleportlocations.tpaccept` | Accept the latest pending teleport request, or a named request. Alias: `/tpyes`. |
 | `/tpdecline [player]` | `teleportlocations.tpdecline` | Decline the latest pending teleport request, or a named request. Alias: `/tpno`. |
+| `/tpcancel` | `teleportlocations.tpcancel` | Cancel your outgoing pending request or accepted warmup. |
+| `/tptoggle` | `teleportlocations.tptoggle` | Toggle whether other players can send you teleport requests. |
 
 ### Admin Commands
 
@@ -81,6 +83,8 @@ Elevator placement, breaking, jump/sneak movement, recipe registration, cooldown
 | `teleportlocations.tpahere` | true | Allows sending `/tpahere` requests. |
 | `teleportlocations.tpaccept` | true | Allows accepting teleport requests. |
 | `teleportlocations.tpdecline` | true | Allows declining teleport requests. |
+| `teleportlocations.tpcancel` | true | Allows cancelling outgoing teleport requests and active warmups. |
+| `teleportlocations.tptoggle` | true | Allows toggling incoming teleport requests. |
 | `teleportlocations.elevator` | true | Parent permission for elevator placement, breaking, use, menu, and default particles. |
 | `teleportlocations.elevator.place` | true | Allows placing elevator blocks in owned claims. |
 | `teleportlocations.elevator.break` | true | Allows breaking elevator blocks where the player has claim build access. |
@@ -141,6 +145,8 @@ Admins manage global server warps with `/ht admin serverwarp set <name>`, `/ht a
 ## Player Teleport Requests
 
 Players can use `/tpa <player>` to request teleporting to another online player, or `/tpahere <player>` to request that another online player teleport to them. The receiving player gets a clickable chat message with `[Accept]` and `[Decline]` actions, and can also use `/tpaccept [player]` or `/tpdecline [player]`.
+
+Players can use `/tpcancel` to cancel their outgoing pending request or an accepted warmup before it completes. `/tptoggle` disables or re-enables incoming TPA/TPAHERE requests for the current session.
 
 TPA requests are stored in memory and expire automatically. Cooldown and warmup are disabled by default. When warmup is enabled, movement can cancel the pending teleport.
 
