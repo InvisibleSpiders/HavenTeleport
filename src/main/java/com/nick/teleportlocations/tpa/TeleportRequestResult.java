@@ -6,7 +6,8 @@ public record TeleportRequestResult(Status status, Optional<TeleportRequest> req
     public enum Status {
         REQUESTED,
         SELF_REQUEST,
-        COOLDOWN
+        COOLDOWN,
+        TARGET_DISABLED
     }
 
     public static TeleportRequestResult requested(TeleportRequest request) {
@@ -19,5 +20,9 @@ public record TeleportRequestResult(Status status, Optional<TeleportRequest> req
 
     public static TeleportRequestResult cooldown(long remainingSeconds) {
         return new TeleportRequestResult(Status.COOLDOWN, Optional.empty(), remainingSeconds);
+    }
+
+    public static TeleportRequestResult targetDisabled() {
+        return new TeleportRequestResult(Status.TARGET_DISABLED, Optional.empty(), 0);
     }
 }

@@ -14,6 +14,7 @@ import com.nick.teleportlocations.tpa.TeleportRequestService;
 import com.nick.teleportlocations.tpa.TeleportRequestType;
 import com.nick.teleportlocations.tpa.TeleportWarmupService;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
@@ -94,7 +95,9 @@ public final class TeleportRequestCommand implements CommandExecutor, Listener {
             case "tpahere" -> request(player, args, TeleportRequestType.TPA_HERE, "teleportlocations.tpahere");
             case "tpaccept" -> accept(player, args);
             case "tpdecline" -> decline(player, args);
-            default -> player.sendMessage(Component.text("Usage: /tpa <player>, /tpahere <player>, /tpaccept [player], /tpdecline [player]", NamedTextColor.YELLOW));
+            case "tpcancel" -> cancel(player);
+            case "tptoggle" -> toggle(player);
+            default -> player.sendMessage(Component.text("Usage: /tpa <player>, /tpahere <player>, /tpaccept [player], /tpdecline [player], /tpcancel, /tptoggle", NamedTextColor.YELLOW));
         }
         return true;
     }
@@ -128,6 +131,10 @@ public final class TeleportRequestCommand implements CommandExecutor, Listener {
             case COOLDOWN -> {
                 managedTeleports.denied(requester);
                 requester.sendMessage(Component.text("Teleport requests are on cooldown for " + result.remainingCooldownSeconds() + "s.", NamedTextColor.YELLOW));
+            }
+            case TARGET_DISABLED -> {
+                managedTeleports.denied(requester);
+                requester.sendMessage(Component.text(target.orElseThrow().getName() + " is not accepting teleport requests.", NamedTextColor.RED));
             }
         }
     }
@@ -170,6 +177,40 @@ public final class TeleportRequestCommand implements CommandExecutor, Listener {
         if (requester != null) {
             requester.sendMessage(Component.text(receiver.getName() + " declined your teleport request.", NamedTextColor.RED));
         }
+    }
+
+    private void cancel(Player player) {
+        if (!player.hasPermission("teleportlocations.tpcancel")) {
+            player.sendMessage(Component.text("You do not have permission to cancel teleport requests.", NamedTextColor.RED));
+            return;
+        }
+
+        boolean cancelledWarmup = cancelWarmup(player);
+        List<TeleportRequest> cancelledRequests = requests.cancelOutgoing(player.getUniqueId());
+        for (TeleportRequest request : cancelledRequests) {
+            players.find(request.targetId()).ifPresent(target -> target.sendMessage(Component.text(
+                    player.getName() + " cancelled their teleport request.",
+                    NamedTextColor.YELLOW
+            )));
+        }
+        if (!cancelledWarmup && cancelledRequests.isEmpty()) {
+            managedTeleports.denied(player);
+            player.sendMessage(Component.text("No pending teleport request to cancel.", NamedTextColor.RED));
+            return;
+        }
+        player.sendMessage(Component.text("Teleport request cancelled.", NamedTextColor.YELLOW));
+    }
+
+    private void toggle(Player player) {
+        if (!player.hasPermission("teleportlocations.tptoggle")) {
+            player.sendMessage(Component.text("You do not have permission to toggle teleport requests.", NamedTextColor.RED));
+            return;
+        }
+        boolean enabled = requests.toggleIncomingRequests(player.getUniqueId());
+        player.sendMessage(Component.text(
+                enabled ? "Teleport requests are now enabled." : "Teleport requests are now disabled.",
+                enabled ? NamedTextColor.GREEN : NamedTextColor.YELLOW
+        ));
     }
 
     private Optional<UUID> requesterId(String[] args) {
@@ -272,6 +313,17 @@ public final class TeleportRequestCommand implements CommandExecutor, Listener {
     private void clearWarmup(PendingWarmup pending) {
         warmupsByMovingPlayer.remove(pending.movingPlayerId());
         warmupsByDestinationPlayer.remove(pending.destinationPlayerId());
+    }
+
+    private boolean cancelWarmup(Player player) {
+        PendingWarmup pending = warmupsByMovingPlayer.remove(player.getUniqueId());
+        if (pending == null) {
+            return false;
+        }
+        warmupsByDestinationPlayer.remove(pending.destinationPlayerId());
+        managedTeleports.denied(player);
+        warmups.cancel(player.getUniqueId(), "Teleport cancelled.", player);
+        return true;
     }
 
     private record PendingWarmup(UUID movingPlayerId, UUID destinationPlayerId, Player movingPlayer) {
