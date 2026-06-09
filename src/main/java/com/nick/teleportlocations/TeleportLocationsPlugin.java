@@ -116,6 +116,8 @@ public final class TeleportLocationsPlugin extends JavaPlugin {
     }
 
     private DialogRuntime registerCommands() {
+        DialogMenuService dialogMenus = new DialogMenuService();
+        PaperDialogPresenter dialogPresenter = new PaperDialogPresenter();
         getCommand("ht").setExecutor(new AdminTeleportCommand(
                 services.spawnService(),
                 services.limitService(),
@@ -123,7 +125,9 @@ public final class TeleportLocationsPlugin extends JavaPlugin {
                 services.adminBypassService(),
                 new BukkitPlayerLookup(),
                 new BukkitOnlinePlayerLookup(),
-                managedTeleports
+                managedTeleports,
+                dialogMenus,
+                dialogPresenter
         ));
         TeleportWarmupService tpaWarmups = new TeleportWarmupService(
                 this,
@@ -147,8 +151,6 @@ public final class TeleportLocationsPlugin extends JavaPlugin {
         getCommand("tpdecline").setExecutor(tpaCommand);
         getCommand("tpcancel").setExecutor(tpaCommand);
         getCommand("tptoggle").setExecutor(tpaCommand);
-        DialogMenuService dialogMenus = new DialogMenuService();
-        PaperDialogPresenter dialogPresenter = new PaperDialogPresenter();
         DialogActionRouter dialogActions = new DialogActionRouter(
                 services.homeService(),
                 services.playerWarpService(),

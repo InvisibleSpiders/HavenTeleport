@@ -283,6 +283,33 @@ final class DialogActionRouterTest {
         assertThat(fixture.teleportBlocks.findAt(block.position()).orElseThrow().targetLocationId()).contains(homeId);
     }
 
+    @Test
+    void adminToggleClaimsBypassActionRequiresPermission() {
+        UUID admin = UUID.randomUUID();
+        Fixture fixture = Fixture.create(Set.of("teleportlocations.admin.bypass.claims"));
+        Fixture denied = Fixture.create(Set.of());
+
+        DialogActionRouteResult deniedResult = denied.router.route(admin, "admin-toggle-claims-bypass");
+        DialogActionRouteResult result = fixture.router.route(admin, "admin-toggle-claims-bypass");
+
+        assertThat(deniedResult.status()).isEqualTo(DialogActionRouteResult.Status.ACCESS_DENIED);
+        assertThat(result.status()).isEqualTo(DialogActionRouteResult.Status.MESSAGE);
+        assertThat(fixture.bypass.claims(admin)).isTrue();
+    }
+
+    @Test
+    void adminServerWarpsActionShowsServerWarpMenu() {
+        UUID admin = UUID.randomUUID();
+        Fixture fixture = Fixture.create(Set.of("teleportlocations.admin.serverwarp"));
+        fixture.serverWarps.setWarp("spawn", position());
+
+        DialogActionRouteResult result = fixture.router.route(admin, "admin-show-server-warps");
+
+        assertThat(result.status()).isEqualTo(DialogActionRouteResult.Status.SHOW_MENU);
+        assertThat(result.menu()).isPresent();
+        assertThat(result.menu().orElseThrow().title()).isEqualTo("Server Warps");
+    }
+
     private static SavedPosition position() {
         return new SavedPosition(UUID.randomUUID(), "world", 1.0, 64.0, 2.0, 90.0f, 0.0f);
     }

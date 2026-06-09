@@ -2,6 +2,8 @@ package com.nick.teleportlocations.command;
 
 import com.nick.teleportlocations.admin.AdminBypassService;
 import com.nick.teleportlocations.bukkit.BukkitLocations;
+import com.nick.teleportlocations.dialog.DialogMenuService;
+import com.nick.teleportlocations.dialog.PaperDialogPresenter;
 import com.nick.teleportlocations.limit.LimitService;
 import com.nick.teleportlocations.serverwarp.ServerWarpResult;
 import com.nick.teleportlocations.serverwarp.ServerWarpService;
@@ -27,6 +29,8 @@ public final class AdminTeleportCommand implements CommandExecutor {
     private final PlayerLookup players;
     private final OnlinePlayerLookup onlinePlayers;
     private final ManagedTeleportService managedTeleports;
+    private final DialogMenuService dialogs;
+    private final PaperDialogPresenter presenter;
 
     public AdminTeleportCommand(
             SpawnService spawn,
@@ -43,7 +47,9 @@ public final class AdminTeleportCommand implements CommandExecutor {
                 bypass,
                 players,
                 onlinePlayers,
-                new ManagedTeleportService(new NoOpTeleportEffectService(), Runnable::run)
+                new ManagedTeleportService(new NoOpTeleportEffectService(), Runnable::run),
+                null,
+                null
         );
     }
 
@@ -56,6 +62,33 @@ public final class AdminTeleportCommand implements CommandExecutor {
             OnlinePlayerLookup onlinePlayers,
             ManagedTeleportService managedTeleports
     ) {
+        this(spawn, limits, serverWarps, bypass, players, onlinePlayers, managedTeleports, null, null);
+    }
+
+    public AdminTeleportCommand(
+            SpawnService spawn,
+            LimitService limits,
+            ServerWarpService serverWarps,
+            AdminBypassService bypass,
+            PlayerLookup players,
+            OnlinePlayerLookup onlinePlayers,
+            DialogMenuService dialogs,
+            PaperDialogPresenter presenter
+    ) {
+        this(spawn, limits, serverWarps, bypass, players, onlinePlayers, new ManagedTeleportService(new NoOpTeleportEffectService(), Runnable::run), dialogs, presenter);
+    }
+
+    public AdminTeleportCommand(
+            SpawnService spawn,
+            LimitService limits,
+            ServerWarpService serverWarps,
+            AdminBypassService bypass,
+            PlayerLookup players,
+            OnlinePlayerLookup onlinePlayers,
+            ManagedTeleportService managedTeleports,
+            DialogMenuService dialogs,
+            PaperDialogPresenter presenter
+    ) {
         this.spawn = spawn;
         this.limits = limits;
         this.serverWarps = serverWarps;
@@ -63,12 +96,18 @@ public final class AdminTeleportCommand implements CommandExecutor {
         this.players = players;
         this.onlinePlayers = onlinePlayers;
         this.managedTeleports = managedTeleports;
+        this.dialogs = dialogs;
+        this.presenter = presenter;
     }
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (isLimitCommand(args)) {
             handleLimits(sender, args);
+            return true;
+        }
+        if (isAdminMenu(args)) {
+            showAdminMenu(sender);
             return true;
         }
         if (isSetSpawn(args)) {
@@ -277,6 +316,22 @@ public final class AdminTeleportCommand implements CommandExecutor {
         player.sendMessage(Component.text("Claim bypass is " + (enabled ? "enabled" : "disabled") + ".", enabled ? NamedTextColor.YELLOW : NamedTextColor.GREEN));
     }
 
+    private void showAdminMenu(CommandSender sender) {
+        if (!(sender instanceof Player player)) {
+            sender.sendMessage(Component.text("Only players can open the admin menu.", NamedTextColor.RED));
+            return;
+        }
+        if (!player.hasPermission("teleportlocations.admin")) {
+            player.sendMessage(Component.text("You do not have permission to use the admin menu.", NamedTextColor.RED));
+            return;
+        }
+        if (dialogs == null || presenter == null) {
+            player.sendMessage(Component.text(CommandMessages.adminUsage(), NamedTextColor.YELLOW));
+            return;
+        }
+        presenter.show(player, dialogs.adminMenu(bypass.claims(player.getUniqueId())));
+    }
+
     private void handleAdminTeleport(CommandSender sender, String[] args) {
         if (!sender.hasPermission("teleportlocations.admin.teleport")) {
             sender.sendMessage(Component.text("You do not have permission to teleport players.", NamedTextColor.RED));
@@ -302,6 +357,10 @@ public final class AdminTeleportCommand implements CommandExecutor {
         }
         managedTeleports.teleport(player.orElseThrow(), target.orElseThrow().getLocation());
         sender.sendMessage(Component.text("Teleported " + player.orElseThrow().getName() + " to " + target.orElseThrow().getName() + ".", NamedTextColor.GREEN));
+    }
+
+    private boolean isAdminMenu(String[] args) {
+        return args.length == 1 && "admin".equalsIgnoreCase(args[0]);
     }
 
     private Optional<Integer> parseAmount(String input) {

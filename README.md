@@ -52,6 +52,7 @@ The plugin jar is written to `build/libs/TeleportLocations-1.0.0-SNAPSHOT.jar`.
 
 | Command | Permission | Description |
 | --- | --- | --- |
+| `/ht admin` | `teleportlocations.admin` | Open the HavenTeleport admin dialog. |
 | `/ht admin limits get <player> <category>` | `teleportlocations.admin.limits` | Show a player's resolved limit for a category. |
 | `/ht admin limits set <player> <category> <amount>` | `teleportlocations.admin.limits` | Set a player's explicit limit override. |
 | `/ht admin limits add <player> <category> <amount>` | `teleportlocations.admin.limits` | Increase a player's explicit limit override. |
@@ -69,6 +70,8 @@ The plugin jar is written to `build/libs/TeleportLocations-1.0.0-SNAPSHOT.jar`.
 Elevator placement, breaking, jump/sneak movement, recipe registration, cooldowns, ambient particles, and the particle settings dialog are active.
 
 Teleport block placement, breaking, Echo Shard linking, lit-state activation, cooldowns, and pad-to-pad movement are active.
+
+Admins can open `/ht admin` for a dialog entry point with claim-bypass controls and server warp browsing.
 
 ## Permissions
 

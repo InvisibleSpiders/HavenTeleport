@@ -226,6 +226,31 @@ final class DialogMenuServiceTest {
                 );
     }
 
+    @Test
+    void adminMenuShowsBypassStateAndServerWarpAction() {
+        DialogMenuService service = new DialogMenuService();
+
+        DialogMenuModel model = service.adminMenu(true);
+
+        assertThat(model.title()).isEqualTo("HavenTeleport Admin");
+        assertThat(model.lines()).contains("Claim Bypass: Enabled");
+        assertThat(model.actions()).extracting(DialogActionModel::key)
+                .containsExactly("admin-toggle-claims-bypass", "admin-show-server-warps");
+    }
+
+    @Test
+    void adminServerWarpsMenuListsConfiguredWarps() {
+        DialogMenuService service = new DialogMenuService();
+        TeleportLocation server = serverLocation();
+
+        DialogMenuModel model = service.adminServerWarpsMenu(List.of(server));
+
+        assertThat(model.title()).isEqualTo("Server Warps");
+        assertThat(model.lines()).contains("Warp: spawn");
+        assertThat(model.actions()).extracting(DialogActionModel::key)
+                .containsExactly("teleport:server_warp:spawn");
+    }
+
     private static TeleportLocation location(UUID owner) {
         return location(owner, "home");
     }

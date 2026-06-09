@@ -12,6 +12,9 @@ import com.nick.teleportlocations.category.OwnerKind;
 import com.nick.teleportlocations.claim.CreationPolicyService;
 import com.nick.teleportlocations.claim.LandClaimsGateway;
 import com.nick.teleportlocations.claim.MissingLandClaimsPolicy;
+import com.nick.teleportlocations.dialog.DialogMenuModel;
+import com.nick.teleportlocations.dialog.DialogMenuService;
+import com.nick.teleportlocations.dialog.PaperDialogPresenter;
 import com.nick.teleportlocations.home.HomeService;
 import com.nick.teleportlocations.limit.InMemoryLimitRepository;
 import com.nick.teleportlocations.limit.LimitService;
@@ -32,6 +35,7 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 final class AdminTeleportCommandTest {
     @Test
@@ -127,6 +131,23 @@ final class AdminTeleportCommandTest {
         assertThat(fixture.bypass.claims(playerId)).isFalse();
     }
 
+    @Test
+    void htAdminOpensAdminDialogForPlayerAdmin() {
+        UUID playerId = UUID.randomUUID();
+        Fixture fixture = Fixture.create("Nova", playerId);
+        PaperDialogPresenter presenter = mock(PaperDialogPresenter.class);
+        AdminTeleportCommand command = fixture.commandWithDialogs(presenter);
+        Player sender = mock(Player.class);
+        when(sender.getUniqueId()).thenReturn(playerId);
+        when(sender.hasPermission("teleportlocations.admin")).thenReturn(true);
+
+        command.onCommand(sender, command("ht"), "ht", new String[] {"admin"});
+
+        ArgumentCaptor<DialogMenuModel> menu = ArgumentCaptor.forClass(DialogMenuModel.class);
+        verify(presenter).show(org.mockito.Mockito.eq(sender), menu.capture());
+        assertThat(menu.getValue().title()).isEqualTo("HavenTeleport Admin");
+    }
+
     private static CommandSender adminSender() {
         CommandSender sender = mock(CommandSender.class);
         when(sender.hasPermission("teleportlocations.admin.limits")).thenReturn(true);
@@ -186,7 +207,15 @@ final class AdminTeleportCommandTest {
         return world;
     }
 
-    private record Fixture(AdminTeleportCommand command, LimitService limits, ServerWarpService serverWarps, AdminBypassService bypass) {
+    private record Fixture(
+            AdminTeleportCommand command,
+            SpawnService spawn,
+            LimitService limits,
+            ServerWarpService serverWarps,
+            AdminBypassService bypass,
+            PlayerLookup lookup,
+            OnlinePlayerLookup onlineLookup
+    ) {
         private static Fixture create(String playerName, UUID playerId) {
             return create(Map.of(playerName, playerWithId(playerId)));
         }
@@ -210,9 +239,25 @@ final class AdminTeleportCommandTest {
             OnlinePlayerLookup onlineLookup = new MapOnlinePlayerLookup(onlinePlayers);
             return new Fixture(
                     new AdminTeleportCommand(spawnService, limitService, serverWarpService, bypassService, lookup, onlineLookup),
+                    spawnService,
                     limitService,
                     serverWarpService,
-                    bypassService
+                    bypassService,
+                    lookup,
+                    onlineLookup
+            );
+        }
+
+        private AdminTeleportCommand commandWithDialogs(PaperDialogPresenter presenter) {
+            return new AdminTeleportCommand(
+                    spawn,
+                    limits,
+                    serverWarps,
+                    bypass,
+                    lookup,
+                    onlineLookup,
+                    new DialogMenuService(),
+                    presenter
             );
         }
     }
