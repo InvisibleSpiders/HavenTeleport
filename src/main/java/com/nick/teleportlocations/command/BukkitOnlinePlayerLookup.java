@@ -8,8 +8,7 @@ import org.bukkit.entity.Player;
 public final class BukkitOnlinePlayerLookup implements OnlinePlayerLookup {
     @Override
     public Optional<Player> find(String input) {
-        return Optional.ofNullable(Bukkit.getPlayerExact(input))
-                .or(() -> Optional.ofNullable(Bukkit.getPlayer(input)));
+        return Optional.ofNullable(Bukkit.getPlayerExact(input));
     }
 
     @Override

@@ -13,13 +13,20 @@ import java.util.function.Supplier;
 public final class TeleportRequestService {
     private final int requestTimeoutSeconds;
     private final int cooldownSeconds;
+    private final int maxOutgoingRequests;
     private final Supplier<Instant> clock;
     private final Map<RequestKey, TeleportRequest> requests = new HashMap<>();
     private final Map<UUID, Instant> nextRequestAt = new HashMap<>();
+    private final Map<UUID, Boolean> incomingEnabledByPlayer = new HashMap<>();
 
     public TeleportRequestService(int requestTimeoutSeconds, int cooldownSeconds, Supplier<Instant> clock) {
+        this(requestTimeoutSeconds, cooldownSeconds, 3, clock);
+    }
+
+    public TeleportRequestService(int requestTimeoutSeconds, int cooldownSeconds, int maxOutgoingRequests, Supplier<Instant> clock) {
         this.requestTimeoutSeconds = Math.max(1, requestTimeoutSeconds);
         this.cooldownSeconds = Math.max(0, cooldownSeconds);
+        this.maxOutgoingRequests = Math.max(1, maxOutgoingRequests);
         this.clock = Objects.requireNonNull(clock, "clock");
     }
 
@@ -30,6 +37,16 @@ public final class TeleportRequestService {
         cleanupExpired();
         if (requesterId.equals(targetId)) {
             return TeleportRequestResult.selfRequest();
+        }
+        if (!incomingEnabled(targetId)) {
+            return TeleportRequestResult.targetDisabled();
+        }
+        RequestKey requestKey = new RequestKey(targetId, requesterId);
+        if (requests.containsKey(requestKey)) {
+            return TeleportRequestResult.alreadyPending();
+        }
+        if (outgoingCount(requesterId) >= maxOutgoingRequests) {
+            return TeleportRequestResult.outgoingLimit();
         }
         long remainingCooldown = remainingCooldownSeconds(requesterId);
         if (!bypassCooldown && remainingCooldown > 0) {
@@ -44,7 +61,7 @@ public final class TeleportRequestService {
                 now,
                 now.plusSeconds(requestTimeoutSeconds)
         );
-        requests.put(new RequestKey(targetId, requesterId), request);
+        requests.put(requestKey, request);
         return TeleportRequestResult.requested(request);
     }
 
@@ -69,6 +86,15 @@ public final class TeleportRequestService {
         return TeleportDeclineResult.declined(request.orElseThrow());
     }
 
+    public TeleportCancelResult cancelOutgoing(UUID requesterId, Optional<UUID> targetId) {
+        Optional<TeleportRequest> request = resolveOutgoing(requesterId, targetId);
+        if (request.isEmpty()) {
+            return TeleportCancelResult.notFound();
+        }
+        requests.remove(new RequestKey(request.orElseThrow().targetId(), requesterId));
+        return TeleportCancelResult.cancelled(request.orElseThrow());
+    }
+
     public Optional<TeleportRequest> pendingFor(UUID receiverId, UUID requesterId) {
         cleanupExpired();
         return Optional.ofNullable(requests.get(new RequestKey(receiverId, requesterId)));
@@ -78,6 +104,25 @@ public final class TeleportRequestService {
         requests.entrySet().removeIf(entry -> entry.getKey().receiverId().equals(playerId)
                 || entry.getKey().requesterId().equals(playerId));
         nextRequestAt.remove(playerId);
+        incomingEnabledByPlayer.remove(playerId);
+    }
+
+    public boolean toggleIncoming(UUID playerId) {
+        boolean enabled = !incomingEnabled(playerId);
+        setIncomingEnabled(playerId, enabled);
+        return enabled;
+    }
+
+    public void setIncomingEnabled(UUID playerId, boolean enabled) {
+        if (enabled) {
+            incomingEnabledByPlayer.remove(playerId);
+        } else {
+            incomingEnabledByPlayer.put(playerId, false);
+        }
+    }
+
+    public boolean incomingEnabled(UUID playerId) {
+        return incomingEnabledByPlayer.getOrDefault(playerId, true);
     }
 
     private Optional<TeleportRequest> resolvePending(UUID receiverId, Optional<UUID> requesterId) {
@@ -88,6 +133,22 @@ public final class TeleportRequestService {
         return requests.values().stream()
                 .filter(request -> request.targetId().equals(receiverId))
                 .max(Comparator.comparing(TeleportRequest::createdAt));
+    }
+
+    private Optional<TeleportRequest> resolveOutgoing(UUID requesterId, Optional<UUID> targetId) {
+        cleanupExpired();
+        if (targetId.isPresent()) {
+            return Optional.ofNullable(requests.get(new RequestKey(targetId.orElseThrow(), requesterId)));
+        }
+        return requests.values().stream()
+                .filter(request -> request.requesterId().equals(requesterId))
+                .max(Comparator.comparing(TeleportRequest::createdAt));
+    }
+
+    private int outgoingCount(UUID requesterId) {
+        return (int) requests.values().stream()
+                .filter(request -> request.requesterId().equals(requesterId))
+                .count();
     }
 
     private long remainingCooldownSeconds(UUID requesterId) {

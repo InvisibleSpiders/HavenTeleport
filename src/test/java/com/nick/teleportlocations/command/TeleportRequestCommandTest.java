@@ -3,6 +3,7 @@ package com.nick.teleportlocations.command;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -56,11 +57,65 @@ final class TeleportRequestCommandTest {
         verify(receiver).teleportAsync(requester.getLocation());
     }
 
+    @Test
+    void cancelRemovesOutgoingRequest() {
+        Player requester = player("Nova", UUID.randomUUID(), location("world"));
+        Player target = player("Ari", UUID.randomUUID(), location("world"));
+        TeleportRequestService requests = new TeleportRequestService(60, 0, 3, () -> Instant.EPOCH);
+        TeleportRequestCommand command = command(Map.of("Nova", requester, "Ari", target), requests, new TeleportWarmupService(mock(Plugin.class), 0, true));
+        command.onCommand(requester, command("tpa"), "tpa", new String[] {"Ari"});
+
+        command.onCommand(requester, command("tpcancel"), "tpcancel", new String[] {"Ari"});
+
+        assertThat(requests.pendingFor(target.getUniqueId(), requester.getUniqueId())).isEmpty();
+    }
+
+    @Test
+    void toggleBlocksIncomingRequests() {
+        Player requester = player("Nova", UUID.randomUUID(), location("world"));
+        Player target = player("Ari", UUID.randomUUID(), location("world"));
+        TeleportRequestService requests = new TeleportRequestService(60, 0, 3, () -> Instant.EPOCH);
+        TeleportRequestCommand command = command(Map.of("Nova", requester, "Ari", target), requests, new TeleportWarmupService(mock(Plugin.class), 0, true));
+
+        command.onCommand(target, command("tptoggle"), "tptoggle", new String[0]);
+        command.onCommand(requester, command("tpa"), "tpa", new String[] {"Ari"});
+
+        assertThat(requests.pendingFor(target.getUniqueId(), requester.getUniqueId())).isEmpty();
+    }
+
+    @Test
+    void destinationQuitCancelsWarmupAndMessagesMovingPlayer() {
+        Player requester = player("Nova", UUID.randomUUID(), location("world"));
+        Player receiver = player("Ari", UUID.randomUUID(), location("world"));
+        TeleportRequestService requests = new TeleportRequestService(60, 0, 3, () -> Instant.EPOCH);
+        TeleportWarmupService warmups = mock(TeleportWarmupService.class);
+        TeleportRequestCommand command = command(Map.of("Nova", requester, "Ari", receiver), requests, warmups);
+        command.onCommand(requester, command("tpa"), "tpa", new String[] {"Ari"});
+        command.onCommand(receiver, command("tpaccept"), "tpaccept", new String[] {"Nova"});
+
+        command.onQuit(quit(receiver));
+
+        verify(warmups).cancel(
+                requester.getUniqueId(),
+                "Teleport cancelled: Ari logged off.",
+                requester
+        );
+        verify(requester, never()).teleportAsync(receiver.getLocation());
+    }
+
     private static TeleportRequestCommand command(Map<String, Player> players) {
+        return command(
+                players,
+                new TeleportRequestService(60, 0, 3, () -> Instant.EPOCH),
+                new TeleportWarmupService(mock(Plugin.class), 0, true)
+        );
+    }
+
+    private static TeleportRequestCommand command(Map<String, Player> players, TeleportRequestService requests, TeleportWarmupService warmups) {
         return new TeleportRequestCommand(
                 new MapOnlinePlayerLookup(players),
-                new TeleportRequestService(60, 0, () -> Instant.EPOCH),
-                new TeleportWarmupService(mock(Plugin.class), 0, true),
+                requests,
+                warmups,
                 true
         );
     }
@@ -80,6 +135,12 @@ final class TeleportRequestCommandTest {
         when(player.hasPermission(anyString())).thenReturn(true);
         when(player.teleportAsync(location)).thenReturn(CompletableFuture.completedFuture(true));
         return player;
+    }
+
+    private static org.bukkit.event.player.PlayerQuitEvent quit(Player player) {
+        org.bukkit.event.player.PlayerQuitEvent event = mock(org.bukkit.event.player.PlayerQuitEvent.class);
+        when(event.getPlayer()).thenReturn(player);
+        return event;
     }
 
     private static Location location(String worldName) {

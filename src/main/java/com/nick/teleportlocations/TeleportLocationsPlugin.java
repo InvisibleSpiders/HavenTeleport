@@ -129,6 +129,8 @@ public final class TeleportLocationsPlugin extends JavaPlugin {
         getCommand("tpahere").setExecutor(tpaCommand);
         getCommand("tpaccept").setExecutor(tpaCommand);
         getCommand("tpdecline").setExecutor(tpaCommand);
+        getCommand("tpcancel").setExecutor(tpaCommand);
+        getCommand("tptoggle").setExecutor(tpaCommand);
         DialogMenuService dialogMenus = new DialogMenuService();
         PaperDialogPresenter dialogPresenter = new PaperDialogPresenter();
         DialogActionRouter dialogActions = new DialogActionRouter(

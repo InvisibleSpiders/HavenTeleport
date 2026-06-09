@@ -5,7 +5,7 @@ public final class CommandMessages {
     }
 
     public static String playerUsage() {
-        return "/home [name], /sethome <name>, /homes, /warp <name>, /warps, /shops, /setshop <name>, /setoutpost <name>, /outpost <name>, /deloutpost <name>, /spawn, /tpa <player>, /tpahere <player>, /tpaccept [player], /tpdecline [player]";
+        return "/home [name], /sethome <name>, /homes, /warp <name>, /warps, /shops, /setshop <name>, /setoutpost <name>, /outpost <name>, /deloutpost <name>, /spawn, /tpa <player>, /tpahere <player>, /tpaccept [player], /tpdecline [player], /tpcancel [player], /tptoggle";
     }
 
     public static String adminUsage() {

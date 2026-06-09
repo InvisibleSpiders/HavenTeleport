@@ -22,6 +22,7 @@ final class ConfigLoaderTest {
         assertThat(config.tpaCooldownSeconds()).isZero();
         assertThat(config.tpaWarmupSeconds()).isZero();
         assertThat(config.tpaCancelWarmupOnMove()).isTrue();
+        assertThat(config.tpaMaxOutgoingRequests()).isEqualTo(3);
         assertThat(config.categories().get("home").creationZone()).isEqualTo(CreationZone.TRUSTED_CLAIM);
         assertThat(config.categories().get("shop").allowsCost()).isFalse();
         assertThat(config.categories().get("shop").forcePublic()).isTrue();

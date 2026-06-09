@@ -76,6 +76,12 @@ commands:
     description: Decline a pending teleport request.
     usage: /tpdecline [player]
     aliases: [tpno]
+  tpcancel:
+    description: Cancel a pending outgoing teleport request.
+    usage: /tpcancel [player]
+  tptoggle:
+    description: Toggle incoming teleport requests.
+    usage: /tptoggle
 permissions:
   teleportlocations.use:
     description: Allows basic TeleportLocations usage.
@@ -109,6 +115,12 @@ permissions:
     default: true
   teleportlocations.tpdecline:
     description: Allows declining teleport requests.
+    default: true
+  teleportlocations.tpcancel:
+    description: Allows cancelling outgoing teleport requests.
+    default: true
+  teleportlocations.tptoggle:
+    description: Allows toggling incoming teleport requests.
     default: true
   teleportlocations.elevator:
     description: Allows elevator block usage.

@@ -9,7 +9,7 @@ public final class TeleportSafetyService {
 
     @Deprecated
     public TeleportSafetyService(Set<String> availableWorlds) {
-        Set.copyOf(availableWorlds);
+        // World availability is validated when Bukkit resolves the saved location.
     }
 
     public TeleportSafetyResult validate(SavedPosition position) {
