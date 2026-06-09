@@ -42,6 +42,7 @@ final class RuntimeServicesTest {
             assertThat(services.outpostService()).isNotNull();
             assertThat(services.serverWarpService()).isNotNull();
             assertThat(services.elevatorService()).isNotNull();
+            assertThat(services.adminBypassService()).isNotNull();
             assertThat(services.spawnService()).isNotNull();
             assertThat(services.spawnPolicyService().deathCandidates()).isNotEmpty();
         }

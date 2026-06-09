@@ -1,5 +1,6 @@
 package com.nick.teleportlocations.command;
 
+import com.nick.teleportlocations.admin.AdminBypassService;
 import com.nick.teleportlocations.bukkit.BukkitLocations;
 import com.nick.teleportlocations.limit.LimitService;
 import com.nick.teleportlocations.serverwarp.ServerWarpResult;
@@ -20,12 +21,20 @@ public final class AdminTeleportCommand implements CommandExecutor {
     private final SpawnService spawn;
     private final LimitService limits;
     private final ServerWarpService serverWarps;
+    private final AdminBypassService bypass;
     private final PlayerLookup players;
 
-    public AdminTeleportCommand(SpawnService spawn, LimitService limits, ServerWarpService serverWarps, PlayerLookup players) {
+    public AdminTeleportCommand(
+            SpawnService spawn,
+            LimitService limits,
+            ServerWarpService serverWarps,
+            AdminBypassService bypass,
+            PlayerLookup players
+    ) {
         this.spawn = spawn;
         this.limits = limits;
         this.serverWarps = serverWarps;
+        this.bypass = bypass;
         this.players = players;
     }
 
@@ -41,6 +50,10 @@ public final class AdminTeleportCommand implements CommandExecutor {
         }
         if (isServerWarpCommand(args)) {
             handleServerWarp(sender, args);
+            return true;
+        }
+        if (isBypassCommand(args)) {
+            handleBypass(sender, args);
             return true;
         }
         sender.sendMessage(Component.text(CommandMessages.adminUsage(), NamedTextColor.YELLOW));
@@ -66,6 +79,12 @@ public final class AdminTeleportCommand implements CommandExecutor {
         return args.length >= 3
                 && "admin".equals(args[0].toLowerCase(Locale.ROOT))
                 && "serverwarp".equals(args[1].toLowerCase(Locale.ROOT));
+    }
+
+    private boolean isBypassCommand(String[] args) {
+        return args.length >= 3
+                && "admin".equals(args[0].toLowerCase(Locale.ROOT))
+                && "bypass".equals(args[1].toLowerCase(Locale.ROOT));
     }
 
     private void setSpawn(CommandSender sender) {
@@ -184,6 +203,41 @@ public final class AdminTeleportCommand implements CommandExecutor {
                 .reduce((left, right) -> left + ", " + right)
                 .orElse("none");
         sender.sendMessage(Component.text("Server warps: " + names + ".", NamedTextColor.GREEN));
+    }
+
+    private void handleBypass(CommandSender sender, String[] args) {
+        if (!"claims".equals(args[2].toLowerCase(Locale.ROOT))) {
+            sender.sendMessage(Component.text("Usage: /ht admin bypass claims [on|off|status]", NamedTextColor.YELLOW));
+            return;
+        }
+        if (!(sender instanceof Player player)) {
+            sender.sendMessage(Component.text("Only players can toggle claim bypass.", NamedTextColor.RED));
+            return;
+        }
+        if (!player.hasPermission("teleportlocations.admin.bypass.claims")) {
+            player.sendMessage(Component.text("You do not have permission to bypass claims.", NamedTextColor.RED));
+            return;
+        }
+
+        String action = args.length >= 4 ? args[3].toLowerCase(Locale.ROOT) : "toggle";
+        boolean enabled;
+        switch (action) {
+            case "on" -> {
+                bypass.setClaims(player.getUniqueId(), true);
+                enabled = true;
+            }
+            case "off" -> {
+                bypass.setClaims(player.getUniqueId(), false);
+                enabled = false;
+            }
+            case "status" -> enabled = bypass.claims(player.getUniqueId());
+            case "toggle" -> enabled = bypass.toggleClaims(player.getUniqueId());
+            default -> {
+                player.sendMessage(Component.text("Usage: /ht admin bypass claims [on|off|status]", NamedTextColor.YELLOW));
+                return;
+            }
+        }
+        player.sendMessage(Component.text("Claim bypass is " + (enabled ? "enabled" : "disabled") + ".", enabled ? NamedTextColor.YELLOW : NamedTextColor.GREEN));
     }
 
     private Optional<Integer> parseAmount(String input) {

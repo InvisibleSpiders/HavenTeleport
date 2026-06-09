@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.nick.teleportlocations.admin.AdminBypassService;
 import com.nick.teleportlocations.category.CategoryConfig;
 import com.nick.teleportlocations.category.CreationZone;
 import com.nick.teleportlocations.category.OwnerKind;
@@ -81,6 +82,35 @@ final class AdminTeleportCommandTest {
         assertThat(fixture.serverWarps.visibleWarps()).isEmpty();
     }
 
+    @Test
+    void adminCanToggleClaimBypassMode() {
+        UUID playerId = UUID.randomUUID();
+        Fixture fixture = Fixture.create("Nova", playerId);
+        Player sender = adminBypassPlayer(playerId);
+
+        fixture.command.onCommand(sender, command("ht"), "ht", new String[] {"admin", "bypass", "claims", "on"});
+        assertThat(fixture.bypass.claims(playerId)).isTrue();
+
+        fixture.command.onCommand(sender, command("ht"), "ht", new String[] {"admin", "bypass", "claims", "off"});
+        assertThat(fixture.bypass.claims(playerId)).isFalse();
+
+        fixture.command.onCommand(sender, command("ht"), "ht", new String[] {"admin", "bypass", "claims"});
+        assertThat(fixture.bypass.claims(playerId)).isTrue();
+    }
+
+    @Test
+    void deniesClaimBypassWithoutPermission() {
+        UUID playerId = UUID.randomUUID();
+        Fixture fixture = Fixture.create("Nova", playerId);
+        Player sender = mock(Player.class);
+        when(sender.getUniqueId()).thenReturn(playerId);
+        when(sender.hasPermission("teleportlocations.admin.bypass.claims")).thenReturn(false);
+
+        fixture.command.onCommand(sender, command("ht"), "ht", new String[] {"admin", "bypass", "claims", "on"});
+
+        assertThat(fixture.bypass.claims(playerId)).isFalse();
+    }
+
     private static CommandSender adminSender() {
         CommandSender sender = mock(CommandSender.class);
         when(sender.hasPermission("teleportlocations.admin.limits")).thenReturn(true);
@@ -97,6 +127,13 @@ final class AdminTeleportCommandTest {
         Player player = mock(Player.class);
         when(player.hasPermission("teleportlocations.admin.serverwarp")).thenReturn(true);
         when(player.getLocation()).thenReturn(location);
+        return player;
+    }
+
+    private static Player adminBypassPlayer(UUID playerId) {
+        Player player = mock(Player.class);
+        when(player.getUniqueId()).thenReturn(playerId);
+        when(player.hasPermission("teleportlocations.admin.bypass.claims")).thenReturn(true);
         return player;
     }
 
@@ -119,7 +156,7 @@ final class AdminTeleportCommandTest {
         return world;
     }
 
-    private record Fixture(AdminTeleportCommand command, LimitService limits, ServerWarpService serverWarps) {
+    private record Fixture(AdminTeleportCommand command, LimitService limits, ServerWarpService serverWarps, AdminBypassService bypass) {
         private static Fixture create(String playerName, UUID playerId) {
             LimitService limitService = new LimitService(categories(), new InMemoryLimitRepository());
             LocationService locationService = new LocationService(new InMemoryLocationRepository(), () -> Instant.EPOCH);
@@ -131,8 +168,14 @@ final class AdminTeleportCommandTest {
             HomeService homeService = new HomeService(locationService, limitService, creationPolicy);
             SpawnService spawnService = new SpawnService(locationService, homeService);
             ServerWarpService serverWarpService = new ServerWarpService(locationService);
+            AdminBypassService bypassService = new AdminBypassService();
             PlayerLookup lookup = name -> playerName.equalsIgnoreCase(name) ? Optional.of(playerId) : Optional.empty();
-            return new Fixture(new AdminTeleportCommand(spawnService, limitService, serverWarpService, lookup), limitService, serverWarpService);
+            return new Fixture(
+                    new AdminTeleportCommand(spawnService, limitService, serverWarpService, bypassService, lookup),
+                    limitService,
+                    serverWarpService,
+                    bypassService
+            );
         }
     }
 

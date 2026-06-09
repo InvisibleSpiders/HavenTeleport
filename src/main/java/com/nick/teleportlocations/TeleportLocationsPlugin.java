@@ -70,7 +70,14 @@ public final class TeleportLocationsPlugin extends JavaPlugin {
                 services.config().elevatorMaxDistance()
         );
         getServer().getPluginManager().registerEvents(
-                new ElevatorListener(services.elevatorService(), activations, elevatorItems, dialogMenus, dialogPresenter),
+                new ElevatorListener(
+                        services.elevatorService(),
+                        activations,
+                        elevatorItems,
+                        dialogMenus,
+                        dialogPresenter,
+                        services.adminBypassService()
+                ),
                 this
         );
         if (services.config().elevatorParticlesEnabled()) {
@@ -96,6 +103,7 @@ public final class TeleportLocationsPlugin extends JavaPlugin {
                 services.spawnService(),
                 services.limitService(),
                 services.serverWarpService(),
+                services.adminBypassService(),
                 new BukkitPlayerLookup()
         ));
         dialogMenus = new DialogMenuService();
@@ -108,6 +116,7 @@ public final class TeleportLocationsPlugin extends JavaPlugin {
                 services.serverWarpService(),
                 services.elevatorService(),
                 dialogMenus,
+                services.adminBypassService(),
                 this::hasOnlinePermission
         );
         dialogPresenter.setActionHandler(new DialogActionExecutor(dialogActions, dialogPresenter, services.teleportChargeService()));

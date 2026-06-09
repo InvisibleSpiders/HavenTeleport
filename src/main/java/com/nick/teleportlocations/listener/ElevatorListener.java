@@ -1,5 +1,6 @@
 package com.nick.teleportlocations.listener;
 
+import com.nick.teleportlocations.admin.AdminBypassService;
 import com.nick.teleportlocations.bukkit.BukkitLocations;
 import com.nick.teleportlocations.elevator.ElevatorActivationResult;
 import com.nick.teleportlocations.elevator.ElevatorActivationService;
@@ -34,19 +35,22 @@ public final class ElevatorListener implements Listener {
     private final ElevatorItemService itemService;
     private final DialogMenuService menus;
     private final PaperDialogPresenter presenter;
+    private final AdminBypassService bypass;
 
     public ElevatorListener(
             ElevatorService elevators,
             ElevatorActivationService activations,
             ElevatorItemService itemService,
             DialogMenuService menus,
-            PaperDialogPresenter presenter
+            PaperDialogPresenter presenter,
+            AdminBypassService bypass
     ) {
         this.elevators = elevators;
         this.activations = activations;
         this.itemService = itemService;
         this.menus = menus;
         this.presenter = presenter;
+        this.bypass = bypass;
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
@@ -60,7 +64,9 @@ public final class ElevatorListener implements Listener {
             send(player, "You do not have permission to place elevator blocks.", NamedTextColor.RED);
             return;
         }
-        ElevatorResult result = elevators.place(player.getUniqueId(), BukkitLocations.save(event.getBlockPlaced().getLocation()), false);
+        boolean bypassClaims = claimBypass(player);
+        remindBypass(player, bypassClaims);
+        ElevatorResult result = elevators.place(player.getUniqueId(), BukkitLocations.save(event.getBlockPlaced().getLocation()), bypassClaims);
         if (result.status() == ElevatorResult.Status.CLAIM_DENIED) {
             event.setCancelled(true);
             send(player, "Elevator blocks can only be placed in claims you own.", NamedTextColor.RED);
@@ -81,7 +87,9 @@ public final class ElevatorListener implements Listener {
             send(player, "You do not have permission to break elevator blocks.", NamedTextColor.RED);
             return;
         }
-        ElevatorResult result = elevators.breakBlock(player.getUniqueId(), position, false);
+        boolean bypassClaims = claimBypass(player);
+        remindBypass(player, bypassClaims);
+        ElevatorResult result = elevators.breakBlock(player.getUniqueId(), position, bypassClaims);
         if (result.status() == ElevatorResult.Status.ACCESS_DENIED) {
             event.setCancelled(true);
             send(player, "You need build access in this claim to break that elevator.", NamedTextColor.RED);
@@ -118,7 +126,10 @@ public final class ElevatorListener implements Listener {
         if (event.getPlayer().isSneaking() && event.getPlayer().hasPermission("teleportlocations.elevator.menu")) {
             Player player = event.getPlayer();
             ElevatorBlock block = elevator.orElseThrow();
-            boolean canEdit = block.ownerId().equals(player.getUniqueId()) || player.hasPermission("teleportlocations.admin.elevator");
+            boolean bypassClaims = claimBypass(player);
+            remindBypass(player, bypassClaims);
+            boolean canEdit = block.ownerId().equals(player.getUniqueId())
+                    || (player.hasPermission("teleportlocations.admin.elevator") && bypassClaims);
             presenter.show(player, menus.elevatorSettingsMenu(
                     block,
                     canEdit,
@@ -137,9 +148,10 @@ public final class ElevatorListener implements Listener {
                 player.getUniqueId(),
                 source,
                 direction,
-                false,
+                claimBypass(player),
                 player.hasPermission("teleportlocations.admin.bypass.cooldown")
         );
+        remindBypass(player, claimBypass(player));
         if (result.status() == ElevatorActivationResult.Status.ACCESS_DENIED) {
             send(player, "You do not have access to use that elevator.", NamedTextColor.RED);
             return;
@@ -174,5 +186,15 @@ public final class ElevatorListener implements Listener {
 
     private static void send(Player player, String message, NamedTextColor color) {
         player.sendMessage(Component.text(message, color));
+    }
+
+    private boolean claimBypass(Player player) {
+        return player.hasPermission("teleportlocations.admin.bypass.claims") && bypass.claims(player.getUniqueId());
+    }
+
+    private static void remindBypass(Player player, boolean bypassClaims) {
+        if (bypassClaims) {
+            send(player, "Admin claim bypass is active for this elevator action.", NamedTextColor.YELLOW);
+        }
     }
 }

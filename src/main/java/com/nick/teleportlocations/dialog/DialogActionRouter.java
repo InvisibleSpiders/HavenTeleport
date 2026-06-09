@@ -1,5 +1,6 @@
 package com.nick.teleportlocations.dialog;
 
+import com.nick.teleportlocations.admin.AdminBypassService;
 import com.nick.teleportlocations.elevator.ElevatorParticle;
 import com.nick.teleportlocations.elevator.ElevatorResult;
 import com.nick.teleportlocations.elevator.ElevatorService;
@@ -30,6 +31,7 @@ public final class DialogActionRouter {
     private final ServerWarpService serverWarps;
     private final ElevatorService elevators;
     private final DialogMenuService menus;
+    private final AdminBypassService bypass;
     private final BiPredicate<UUID, String> permissions;
 
     public DialogActionRouter(
@@ -40,7 +42,7 @@ public final class DialogActionRouter {
             ServerWarpService serverWarps,
             DialogMenuService menus
     ) {
-        this(homes, warps, shops, outposts, serverWarps, null, menus, (viewerId, permission) -> false);
+        this(homes, warps, shops, outposts, serverWarps, null, menus, new AdminBypassService(), (viewerId, permission) -> false);
     }
 
     public DialogActionRouter(
@@ -53,6 +55,20 @@ public final class DialogActionRouter {
             DialogMenuService menus,
             BiPredicate<UUID, String> permissions
     ) {
+        this(homes, warps, shops, outposts, serverWarps, elevators, menus, new AdminBypassService(), permissions);
+    }
+
+    public DialogActionRouter(
+            HomeService homes,
+            PlayerWarpService warps,
+            ShopWarpService shops,
+            OutpostService outposts,
+            ServerWarpService serverWarps,
+            ElevatorService elevators,
+            DialogMenuService menus,
+            AdminBypassService bypass,
+            BiPredicate<UUID, String> permissions
+    ) {
         this.homes = homes;
         this.warps = warps;
         this.shops = shops;
@@ -60,6 +76,7 @@ public final class DialogActionRouter {
         this.serverWarps = serverWarps;
         this.elevators = elevators;
         this.menus = menus;
+        this.bypass = Objects.requireNonNull(bypass, "bypass");
         this.permissions = Objects.requireNonNull(permissions, "permissions");
     }
 
@@ -215,7 +232,7 @@ public final class DialogActionRouter {
             if (!permissions.test(viewerId, particlePermission(particle))) {
                 return DialogActionRouteResult.accessDenied();
             }
-            boolean adminBypass = permissions.test(viewerId, "teleportlocations.admin.elevator");
+            boolean adminBypass = permissions.test(viewerId, "teleportlocations.admin.elevator") && bypass.claims(viewerId);
             ElevatorResult result = elevators.setParticle(viewerId, blockId, particle, adminBypass);
             return switch (result.status()) {
                 case UPDATED -> DialogActionRouteResult.message("Elevator particle updated.");

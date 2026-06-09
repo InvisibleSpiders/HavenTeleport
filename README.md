@@ -55,6 +55,7 @@ The plugin jar is written to `build/libs/TeleportLocations-1.0.0-SNAPSHOT.jar`.
 | `/ht admin serverwarp set <name>` | `teleportlocations.admin.serverwarp` | Create or update a global server warp at your current location. |
 | `/ht admin serverwarp delete <name>` | `teleportlocations.admin.serverwarp` | Delete a global server warp. |
 | `/ht admin serverwarp list` | `teleportlocations.admin.serverwarp` | List global server warps. |
+| `/ht admin bypass claims [on\|off\|status]` | `teleportlocations.admin.bypass.claims` | Toggle or inspect your personal claim-bypass mode for protected elevator actions. |
 
 `/ht` aliases: `/haventeleport`, `/tl`.
 
@@ -87,7 +88,7 @@ Elevator placement, breaking, jump/sneak movement, recipe registration, cooldown
 | `teleportlocations.admin.teleport` | op via `teleportlocations.admin` | Reserved for admin teleport tools. |
 | `teleportlocations.admin.elevator` | op via `teleportlocations.admin` | Reserved for admin elevator management. |
 | `teleportlocations.admin.bypass.creation` | op via `teleportlocations.admin` | Bypass claim/location creation checks. |
-| `teleportlocations.admin.bypass.claims` | op via `teleportlocations.admin` | Reserved for admin claim bypass mode. |
+| `teleportlocations.admin.bypass.claims` | op via `teleportlocations.admin` | Allows toggling personal claim-bypass mode for protected elevator actions. |
 | `teleportlocations.admin.bypass.cost` | op via `teleportlocations.admin` | Bypass teleport costs. |
 | `teleportlocations.admin.bypass.cooldown` | op via `teleportlocations.admin` | Reserved for cooldown bypass. |
 
@@ -103,9 +104,11 @@ CLC
 
 `E` is Echo Shard, `C` is Copper Ingot, and `L` is Lodestone. When placed, the block remains visually Lodestone, but right-click interaction is cancelled so it does not behave like a normal Lodestone.
 
-Placement is restricted to a player's own LandClaims claim unless an admin claim bypass mode is added later. Breaking follows claim build access, so trusted builders can remove elevators in claims where they can build. Players with claim access can use elevators. Jumping on an elevator moves to the nearest elevator above in the same X/Z column; sneaking moves to the nearest elevator below.
+Placement is restricted to a player's own LandClaims claim unless admin claim-bypass mode is active. Breaking follows claim build access, so trusted builders can remove elevators in claims where they can build. Players with claim access can use elevators. Jumping on an elevator moves to the nearest elevator above in the same X/Z column; sneaking moves to the nearest elevator below.
 
-Shift-right-click an elevator block to open its settings dialog. Owners and players with `teleportlocations.admin.elevator` can change the particle. The dialog only shows particle choices the player has permission to use, such as `teleportlocations.elevator.particle.wax_on` and `teleportlocations.elevator.particle.end_rod`.
+Shift-right-click an elevator block to open its settings dialog. Owners can change the particle. Admins need both `teleportlocations.admin.elevator` and active claim-bypass mode to edit someone else's elevator. The dialog only shows particle choices the player has permission to use, such as `teleportlocations.elevator.particle.wax_on` and `teleportlocations.elevator.particle.end_rod`.
+
+Admins can run `/ht admin bypass claims` to toggle claim-bypass mode, or use `/ht admin bypass claims on`, `/ht admin bypass claims off`, and `/ht admin bypass claims status`. When active, protected elevator actions send a chat reminder so admins know they are bypassing claim checks.
 
 Elevator defaults are configured under `elevators` in `config.yml`:
 

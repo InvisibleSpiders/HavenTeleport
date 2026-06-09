@@ -1,5 +1,6 @@
 package com.nick.teleportlocations;
 
+import com.nick.teleportlocations.admin.AdminBypassService;
 import com.nick.teleportlocations.claim.CreationPolicyService;
 import com.nick.teleportlocations.claim.LandClaimsGateway;
 import com.nick.teleportlocations.claim.MissingLandClaimsPolicy;
@@ -44,6 +45,7 @@ public record RuntimeServices(
         LocationRepository locationRepository,
         LimitRepository limitRepository,
         ElevatorRepository elevatorRepository,
+        AdminBypassService adminBypassService,
         LocationService locationService,
         LimitService limitService,
         EconomyGateway economyGateway,
@@ -69,6 +71,7 @@ public record RuntimeServices(
         Objects.requireNonNull(locationRepository, "locationRepository");
         Objects.requireNonNull(limitRepository, "limitRepository");
         Objects.requireNonNull(elevatorRepository, "elevatorRepository");
+        Objects.requireNonNull(adminBypassService, "adminBypassService");
         Objects.requireNonNull(locationService, "locationService");
         Objects.requireNonNull(limitService, "limitService");
         Objects.requireNonNull(economyGateway, "economyGateway");
@@ -98,6 +101,7 @@ public record RuntimeServices(
         LocationRepository locations = new SqliteLocationRepository(database);
         LimitRepository limits = new SqliteLimitRepository(database);
         ElevatorRepository elevators = new SqliteElevatorRepository(database);
+        AdminBypassService adminBypassService = new AdminBypassService();
         LimitService limitService = new LimitService(config.categories(), limits);
         LocationService locationService = new LocationService(locations, Instant::now);
         EconomyGateway economyGateway = economyService
@@ -134,6 +138,7 @@ public record RuntimeServices(
                 locations,
                 limits,
                 elevators,
+                adminBypassService,
                 locationService,
                 limitService,
                 economyGateway,

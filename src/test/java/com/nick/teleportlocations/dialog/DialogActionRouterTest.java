@@ -2,6 +2,7 @@ package com.nick.teleportlocations.dialog;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.nick.teleportlocations.admin.AdminBypassService;
 import com.nick.teleportlocations.claim.CreationPolicyService;
 import com.nick.teleportlocations.claim.LandClaimsGateway;
 import com.nick.teleportlocations.claim.MissingLandClaimsPolicy;
@@ -247,6 +248,24 @@ final class DialogActionRouterTest {
         assertThat(noPermissionResult.status()).isEqualTo(DialogActionRouteResult.Status.ACCESS_DENIED);
     }
 
+    @Test
+    void elevatorAdminParticleOverrideRequiresClaimBypassMode() {
+        UUID owner = UUID.randomUUID();
+        UUID admin = UUID.randomUUID();
+        Fixture fixture = Fixture.create(Set.of(
+                "teleportlocations.admin.elevator",
+                "teleportlocations.elevator.particle.end_rod"
+        ));
+        ElevatorBlock block = fixture.elevators.place(owner, position(), false).block().orElseThrow();
+
+        DialogActionRouteResult withoutBypass = fixture.router.route(admin, "set-elevator-particle:" + block.id() + ":end_rod");
+        fixture.bypass.setClaims(admin, true);
+        DialogActionRouteResult withBypass = fixture.router.route(admin, "set-elevator-particle:" + block.id() + ":end_rod");
+
+        assertThat(withoutBypass.status()).isEqualTo(DialogActionRouteResult.Status.ACCESS_DENIED);
+        assertThat(withBypass.status()).isEqualTo(DialogActionRouteResult.Status.MESSAGE);
+    }
+
     private static SavedPosition position() {
         return new SavedPosition(UUID.randomUUID(), "world", 1.0, 64.0, 2.0, 90.0f, 0.0f);
     }
@@ -258,7 +277,8 @@ final class DialogActionRouterTest {
             ShopWarpService shops,
             OutpostService outposts,
             ServerWarpService serverWarps,
-            ElevatorService elevators
+            ElevatorService elevators,
+            AdminBypassService bypass
     ) {
         private static Fixture create() {
             return create(Set.of());
@@ -279,6 +299,7 @@ final class DialogActionRouterTest {
             ShopWarpService shopService = new ShopWarpService(locationService, limitService, creationPolicy);
             OutpostService outpostService = new OutpostService(locationService, limitService, creationPolicy);
             ServerWarpService serverWarpService = new ServerWarpService(locationService);
+            AdminBypassService bypassService = new AdminBypassService();
             ElevatorService elevatorService = new ElevatorService(
                     new InMemoryElevatorRepository(),
                     LandClaimsGateway.fixedOwned(true, true, true),
@@ -294,6 +315,7 @@ final class DialogActionRouterTest {
                             serverWarpService,
                             elevatorService,
                             menus,
+                            bypassService,
                             (viewer, permission) -> permissions.contains(permission)
                     ),
                     homeService,
@@ -301,7 +323,8 @@ final class DialogActionRouterTest {
                     shopService,
                     outpostService,
                     serverWarpService,
-                    elevatorService
+                    elevatorService,
+                    bypassService
             );
         }
     }

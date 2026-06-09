@@ -9,6 +9,6 @@ public final class CommandMessages {
     }
 
     public static String adminUsage() {
-        return "/ht admin limits <get|set|add|remove> <player> <category> [amount], /ht admin setspawn, /ht admin serverwarp <set|delete|list> [name]";
+        return "/ht admin limits <get|set|add|remove> <player> <category> [amount], /ht admin setspawn, /ht admin serverwarp <set|delete|list> [name], /ht admin bypass claims [on|off|status]";
     }
 }
