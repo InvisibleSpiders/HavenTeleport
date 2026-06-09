@@ -109,6 +109,13 @@ public final class DialogActionRouter {
 
     public DialogActionRouteResult route(UUID viewerId, String actionKey, DialogInputValues inputValues) {
         String[] parts = actionKey.split(":");
+        if (parts.length == 1) {
+            return switch (parts[0]) {
+                case "admin-toggle-claims-bypass" -> adminToggleClaimsBypass(viewerId);
+                case "admin-show-server-warps" -> adminShowServerWarps(viewerId);
+                default -> DialogActionRouteResult.unknownAction();
+            };
+        }
         if (parts.length < 3) {
             return DialogActionRouteResult.unknownAction();
         }
@@ -300,6 +307,21 @@ public final class DialogActionRouter {
         } catch (IllegalArgumentException exception) {
             return DialogActionRouteResult.unknownAction();
         }
+    }
+
+    private DialogActionRouteResult adminToggleClaimsBypass(UUID viewerId) {
+        if (!permissions.test(viewerId, "teleportlocations.admin.bypass.claims")) {
+            return DialogActionRouteResult.accessDenied();
+        }
+        boolean enabled = bypass.toggleClaims(viewerId);
+        return DialogActionRouteResult.message("Claim bypass is " + (enabled ? "enabled" : "disabled") + ".");
+    }
+
+    private DialogActionRouteResult adminShowServerWarps(UUID viewerId) {
+        if (!permissions.test(viewerId, "teleportlocations.admin.serverwarp")) {
+            return DialogActionRouteResult.accessDenied();
+        }
+        return DialogActionRouteResult.showMenu(menus.adminServerWarpsMenu(serverWarps.visibleWarps()));
     }
 
     private CostSpec parseCost(String type, String amount) {

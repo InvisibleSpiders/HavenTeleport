@@ -188,6 +188,25 @@ public final class DialogMenuService {
         return new DialogMenuModel("Teleport Block", List.copyOf(lines), List.copyOf(actions));
     }
 
+    public DialogMenuModel adminMenu(boolean claimBypassEnabled) {
+        List<String> lines = List.of("Claim Bypass: " + (claimBypassEnabled ? "Enabled" : "Disabled"));
+        List<DialogActionModel> actions = List.of(
+                new DialogActionModel("admin-toggle-claims-bypass", "Toggle Claim Bypass"),
+                new DialogActionModel("admin-show-server-warps", "Server Warps")
+        );
+        return new DialogMenuModel("HavenTeleport Admin", lines, actions);
+    }
+
+    public DialogMenuModel adminServerWarpsMenu(List<TeleportLocation> serverWarps) {
+        List<String> lines = new ArrayList<>();
+        List<DialogActionModel> actions = new ArrayList<>();
+        for (TeleportLocation warp : serverWarps) {
+            lines.add("Warp: " + warp.name());
+            actions.add(new DialogActionModel("teleport:server_warp:" + warp.normalizedName(), "Teleport"));
+        }
+        return new DialogMenuModel("Server Warps", List.copyOf(lines), List.copyOf(actions));
+    }
+
     private DialogInputModel costInput(String costType) {
         return switch (costType) {
             case "money" -> new DialogInputModel("amount", "Amount", 0.0f, 100000.0f, 1.0f, 10.0f, "$%.0f");
