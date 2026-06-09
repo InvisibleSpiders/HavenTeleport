@@ -26,6 +26,7 @@ public final class ConfigLoader {
                 yaml.getInt("teleport.warmup-seconds", 3),
                 yaml.getBoolean("teleport.cancel-on-move", true),
                 yaml.getInt("teleport.safe-search-radius", 3),
+                yaml.getString("teleport.inaccessible-destinations.mode", "mark"),
                 yaml.getString("spawn.first-join.target", "spawn"),
                 yaml.getString("spawn.login.target", "last-location"),
                 yaml.getString("spawn.death-respawn.target", "main-home"),
@@ -34,7 +35,12 @@ public final class ConfigLoader {
                 yaml.getInt("elevators.cooldown-seconds", 2),
                 yaml.getBoolean("elevators.particles.enabled", true),
                 yaml.getString("elevators.particles.default", "WAX_ON"),
-                yaml.getInt("elevators.particles.interval-ticks", 20)
+                yaml.getInt("elevators.particles.interval-ticks", 20),
+                yaml.getBoolean("tpa.enabled", true),
+                yaml.getInt("tpa.request-timeout-seconds", 60),
+                yaml.getInt("tpa.cooldown-seconds", 0),
+                yaml.getInt("tpa.warmup-seconds", 0),
+                yaml.getBoolean("tpa.cancel-warmup-on-move", true)
         );
     }
 

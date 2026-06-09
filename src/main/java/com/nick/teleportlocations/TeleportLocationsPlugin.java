@@ -1,8 +1,10 @@
 package com.nick.teleportlocations;
 
 import com.nick.teleportlocations.command.AdminTeleportCommand;
+import com.nick.teleportlocations.command.BukkitOnlinePlayerLookup;
 import com.nick.teleportlocations.command.BukkitPlayerLookup;
 import com.nick.teleportlocations.command.PlayerLocationCommand;
+import com.nick.teleportlocations.command.TeleportRequestCommand;
 import com.nick.teleportlocations.dialog.DialogActionExecutor;
 import com.nick.teleportlocations.dialog.DialogActionRouter;
 import com.nick.teleportlocations.claim.BukkitLandClaimsGateway;
@@ -14,6 +16,7 @@ import com.nick.teleportlocations.elevator.bukkit.ElevatorItemService;
 import com.nick.teleportlocations.elevator.bukkit.ElevatorParticleTask;
 import com.nick.teleportlocations.listener.ElevatorListener;
 import com.nick.teleportlocations.listener.SpawnListener;
+import com.nick.teleportlocations.tpa.TeleportWarmupService;
 import dev.invisiblespiders.haven.api.HavenAPI;
 import dev.invisiblespiders.haven.api.service.HavenDataSource;
 import dev.invisiblespiders.haven.api.service.HavenEconomyService;
@@ -26,8 +29,6 @@ import org.bukkit.plugin.java.JavaPlugin;
 public final class TeleportLocationsPlugin extends JavaPlugin {
     private RuntimeServices services;
     private BukkitTask elevatorParticleTask;
-    private DialogMenuService dialogMenus;
-    private PaperDialogPresenter dialogPresenter;
 
     @Override
     public void onEnable() {
@@ -40,9 +41,13 @@ public final class TeleportLocationsPlugin extends JavaPlugin {
                 BukkitLandClaimsGateway.discover(getServer().getServicesManager()),
                 getClassLoader()
         );
-        registerCommands();
-        getServer().getPluginManager().registerEvents(new SpawnListener(services.spawnService(), services.spawnPolicyService()), this);
-        registerElevators();
+        DialogRuntime dialogs = registerCommands();
+        getServer().getPluginManager().registerEvents(new SpawnListener(
+                services.spawnService(),
+                services.spawnPolicyService(),
+                services.teleportSafetyService()
+        ), this);
+        registerElevators(dialogs);
         getLogger().info("TeleportLocations enabled.");
     }
 
@@ -59,7 +64,7 @@ public final class TeleportLocationsPlugin extends JavaPlugin {
         getLogger().info("TeleportLocations disabled.");
     }
 
-    private void registerElevators() {
+    private void registerElevators(DialogRuntime dialogs) {
         ElevatorItemService elevatorItems = new ElevatorItemService(this);
         getServer().removeRecipe(elevatorItems.recipeKey());
         getServer().addRecipe(elevatorItems.createRecipe());
@@ -74,9 +79,10 @@ public final class TeleportLocationsPlugin extends JavaPlugin {
                         services.elevatorService(),
                         activations,
                         elevatorItems,
-                        dialogMenus,
-                        dialogPresenter,
-                        services.adminBypassService()
+                        dialogs.menus(),
+                        dialogs.presenter(),
+                        services.adminBypassService(),
+                        services.teleportAccessService()
                 ),
                 this
         );
@@ -98,16 +104,36 @@ public final class TeleportLocationsPlugin extends JavaPlugin {
         }
     }
 
-    private void registerCommands() {
+    private DialogRuntime registerCommands() {
         getCommand("ht").setExecutor(new AdminTeleportCommand(
                 services.spawnService(),
                 services.limitService(),
                 services.serverWarpService(),
                 services.adminBypassService(),
-                new BukkitPlayerLookup()
+                new BukkitPlayerLookup(),
+                new BukkitOnlinePlayerLookup()
         ));
-        dialogMenus = new DialogMenuService();
-        dialogPresenter = new PaperDialogPresenter();
+        TeleportWarmupService tpaWarmups = new TeleportWarmupService(
+                this,
+                services.config().tpaWarmupSeconds(),
+                services.config().tpaCancelWarmupOnMove()
+        );
+        TeleportRequestCommand tpaCommand = new TeleportRequestCommand(
+                new BukkitOnlinePlayerLookup(),
+                services.teleportRequestService(),
+                tpaWarmups,
+                services.teleportAccessService(),
+                services.adminBypassService(),
+                services.config().tpaEnabled()
+        );
+        getServer().getPluginManager().registerEvents(tpaWarmups, this);
+        getServer().getPluginManager().registerEvents(tpaCommand, this);
+        getCommand("tpa").setExecutor(tpaCommand);
+        getCommand("tpahere").setExecutor(tpaCommand);
+        getCommand("tpaccept").setExecutor(tpaCommand);
+        getCommand("tpdecline").setExecutor(tpaCommand);
+        DialogMenuService dialogMenus = new DialogMenuService();
+        PaperDialogPresenter dialogPresenter = new PaperDialogPresenter();
         DialogActionRouter dialogActions = new DialogActionRouter(
                 services.homeService(),
                 services.playerWarpService(),
@@ -119,7 +145,14 @@ public final class TeleportLocationsPlugin extends JavaPlugin {
                 services.adminBypassService(),
                 this::hasOnlinePermission
         );
-        dialogPresenter.setActionHandler(new DialogActionExecutor(dialogActions, dialogPresenter, services.teleportChargeService()));
+        dialogPresenter.setActionHandler(new DialogActionExecutor(
+                dialogActions,
+                dialogPresenter,
+                services.teleportChargeService(),
+                services.teleportAccessService(),
+                services.teleportSafetyService(),
+                services.adminBypassService()
+        ));
         PlayerLocationCommand playerCommand = new PlayerLocationCommand(
                 services.homeService(),
                 services.playerWarpService(),
@@ -128,8 +161,12 @@ public final class TeleportLocationsPlugin extends JavaPlugin {
                 services.serverWarpService(),
                 services.spawnService(),
                 services.teleportChargeService(),
+                services.teleportAccessService(),
+                services.teleportSafetyService(),
+                services.adminBypassService(),
                 dialogMenus,
-                dialogPresenter
+                dialogPresenter,
+                hideInaccessibleDestinations()
         );
         getCommand("home").setExecutor(playerCommand);
         getCommand("homes").setExecutor(playerCommand);
@@ -147,10 +184,18 @@ public final class TeleportLocationsPlugin extends JavaPlugin {
         getCommand("outpost").setExecutor(playerCommand);
         getCommand("deloutpost").setExecutor(playerCommand);
         getCommand("spawn").setExecutor(playerCommand);
+        return new DialogRuntime(dialogMenus, dialogPresenter);
     }
 
     private boolean hasOnlinePermission(java.util.UUID playerId, String permission) {
         Player player = getServer().getPlayer(playerId);
         return player != null && player.hasPermission(permission);
+    }
+
+    private boolean hideInaccessibleDestinations() {
+        return "hide".equalsIgnoreCase(services.config().inaccessibleDestinationMode());
+    }
+
+    private record DialogRuntime(DialogMenuService menus, PaperDialogPresenter presenter) {
     }
 }

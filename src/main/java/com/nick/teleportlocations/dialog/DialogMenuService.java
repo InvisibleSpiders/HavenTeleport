@@ -37,6 +37,16 @@ public final class DialogMenuService {
     }
 
     public DialogMenuModel warpsMenu(UUID viewerId, List<TeleportLocation> serverWarps, List<TeleportLocation> playerWarps) {
+        return warpsMenu(viewerId, serverWarps, playerWarps, location -> true, false);
+    }
+
+    public DialogMenuModel warpsMenu(
+            UUID viewerId,
+            List<TeleportLocation> serverWarps,
+            List<TeleportLocation> playerWarps,
+            Predicate<TeleportLocation> canEnter,
+            boolean hideInaccessible
+    ) {
         List<String> lines = new ArrayList<>();
         List<DialogActionModel> actions = new ArrayList<>();
         for (TeleportLocation warp : serverWarps) {
@@ -44,9 +54,16 @@ public final class DialogMenuService {
             actions.add(new DialogActionModel("teleport:server_warp:" + warp.normalizedName(), "Teleport"));
         }
         for (TeleportLocation warp : playerWarps) {
-            lines.add("Player: " + warp.name());
-            actions.add(new DialogActionModel("teleport:player_warp:" + warp.normalizedName(), "Teleport"));
-            if (warp.owner().playerIdOptional().filter(viewerId::equals).isPresent()) {
+            boolean accessible = canEnter.test(warp);
+            boolean owner = warp.owner().playerIdOptional().filter(viewerId::equals).isPresent();
+            if (!accessible && hideInaccessible && !owner) {
+                continue;
+            }
+            lines.add("Player: " + warp.name() + (accessible ? "" : " (No claim access)"));
+            if (accessible) {
+                actions.add(new DialogActionModel("teleport:player_warp:" + warp.normalizedName(), "Teleport"));
+            }
+            if (owner) {
                 actions.add(new DialogActionModel("edit:player_warp:" + warp.normalizedName(), "Edit"));
             }
         }
@@ -54,12 +71,28 @@ public final class DialogMenuService {
     }
 
     public DialogMenuModel shopWarpsMenu(UUID viewerId, List<TeleportLocation> shops) {
+        return shopWarpsMenu(viewerId, shops, location -> true, false);
+    }
+
+    public DialogMenuModel shopWarpsMenu(
+            UUID viewerId,
+            List<TeleportLocation> shops,
+            Predicate<TeleportLocation> canEnter,
+            boolean hideInaccessible
+    ) {
         List<String> lines = new ArrayList<>();
         List<DialogActionModel> actions = new ArrayList<>();
         for (TeleportLocation shop : shops) {
-            lines.add("Shop: " + shop.name());
-            actions.add(new DialogActionModel("teleport:shop:" + shop.normalizedName(), "Teleport"));
-            if (shop.owner().playerIdOptional().filter(viewerId::equals).isPresent()) {
+            boolean accessible = canEnter.test(shop);
+            boolean owner = shop.owner().playerIdOptional().filter(viewerId::equals).isPresent();
+            if (!accessible && hideInaccessible && !owner) {
+                continue;
+            }
+            lines.add("Shop: " + shop.name() + (accessible ? "" : " (No claim access)"));
+            if (accessible) {
+                actions.add(new DialogActionModel("teleport:shop:" + shop.normalizedName(), "Teleport"));
+            }
+            if (owner) {
                 actions.add(new DialogActionModel("edit:shop:" + shop.normalizedName(), "Edit"));
             }
         }

@@ -2,6 +2,7 @@ package com.nick.teleportlocations.command;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.nick.teleportlocations.admin.AdminBypassService;
@@ -24,6 +25,7 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.command.Command;
@@ -99,6 +101,20 @@ final class AdminTeleportCommandTest {
     }
 
     @Test
+    void adminCanTeleportPlayerToTargetWithoutRequestWarmupOrCooldown() {
+        UUID playerId = UUID.randomUUID();
+        UUID targetId = UUID.randomUUID();
+        Player player = onlinePlayer(playerId, location("world"));
+        Player target = onlinePlayer(targetId, location("world"));
+        Fixture fixture = Fixture.create(Map.of("Nova", player, "Ari", target));
+        CommandSender sender = adminTeleportSender();
+
+        fixture.command.onCommand(sender, command("ht"), "ht", new String[] {"admin", "tp", "Nova", "Ari"});
+
+        verify(player).teleportAsync(target.getLocation());
+    }
+
+    @Test
     void deniesClaimBypassWithoutPermission() {
         UUID playerId = UUID.randomUUID();
         Fixture fixture = Fixture.create("Nova", playerId);
@@ -114,6 +130,12 @@ final class AdminTeleportCommandTest {
     private static CommandSender adminSender() {
         CommandSender sender = mock(CommandSender.class);
         when(sender.hasPermission("teleportlocations.admin.limits")).thenReturn(true);
+        return sender;
+    }
+
+    private static CommandSender adminTeleportSender() {
+        CommandSender sender = mock(CommandSender.class);
+        when(sender.hasPermission("teleportlocations.admin.teleport")).thenReturn(true);
         return sender;
     }
 
@@ -134,6 +156,14 @@ final class AdminTeleportCommandTest {
         Player player = mock(Player.class);
         when(player.getUniqueId()).thenReturn(playerId);
         when(player.hasPermission("teleportlocations.admin.bypass.claims")).thenReturn(true);
+        return player;
+    }
+
+    private static Player onlinePlayer(UUID playerId, Location location) {
+        Player player = mock(Player.class);
+        when(player.getUniqueId()).thenReturn(playerId);
+        when(player.getLocation()).thenReturn(location);
+        when(player.teleportAsync(location)).thenReturn(CompletableFuture.completedFuture(true));
         return player;
     }
 
@@ -158,6 +188,10 @@ final class AdminTeleportCommandTest {
 
     private record Fixture(AdminTeleportCommand command, LimitService limits, ServerWarpService serverWarps, AdminBypassService bypass) {
         private static Fixture create(String playerName, UUID playerId) {
+            return create(Map.of(playerName, playerWithId(playerId)));
+        }
+
+        private static Fixture create(Map<String, Player> onlinePlayers) {
             LimitService limitService = new LimitService(categories(), new InMemoryLimitRepository());
             LocationService locationService = new LocationService(new InMemoryLocationRepository(), () -> Instant.EPOCH);
             CreationPolicyService creationPolicy = new CreationPolicyService(
@@ -169,14 +203,41 @@ final class AdminTeleportCommandTest {
             SpawnService spawnService = new SpawnService(locationService, homeService);
             ServerWarpService serverWarpService = new ServerWarpService(locationService);
             AdminBypassService bypassService = new AdminBypassService();
-            PlayerLookup lookup = name -> playerName.equalsIgnoreCase(name) ? Optional.of(playerId) : Optional.empty();
+            PlayerLookup lookup = name -> onlinePlayers.entrySet().stream()
+                    .filter(entry -> entry.getKey().equalsIgnoreCase(name))
+                    .map(entry -> entry.getValue().getUniqueId())
+                    .findFirst();
+            OnlinePlayerLookup onlineLookup = new MapOnlinePlayerLookup(onlinePlayers);
             return new Fixture(
-                    new AdminTeleportCommand(spawnService, limitService, serverWarpService, bypassService, lookup),
+                    new AdminTeleportCommand(spawnService, limitService, serverWarpService, bypassService, lookup, onlineLookup),
                     limitService,
                     serverWarpService,
                     bypassService
             );
         }
+    }
+
+    private record MapOnlinePlayerLookup(Map<String, Player> players) implements OnlinePlayerLookup {
+        @Override
+        public Optional<Player> find(String input) {
+            return players.entrySet().stream()
+                    .filter(entry -> entry.getKey().equalsIgnoreCase(input))
+                    .map(Map.Entry::getValue)
+                    .findFirst();
+        }
+
+        @Override
+        public Optional<Player> find(UUID playerId) {
+            return players.values().stream()
+                    .filter(player -> player.getUniqueId().equals(playerId))
+                    .findFirst();
+        }
+    }
+
+    private static Player playerWithId(UUID playerId) {
+        Player player = mock(Player.class);
+        when(player.getUniqueId()).thenReturn(playerId);
+        return player;
     }
 
     private static Map<String, CategoryConfig> categories() {

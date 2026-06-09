@@ -36,6 +36,8 @@ final class RuntimeServicesTest {
             assertThat(services.playerResourceGateway()).isNotNull();
             assertThat(services.teleportCostService()).isNotNull();
             assertThat(services.teleportChargeService()).isNotNull();
+            assertThat(services.teleportAccessService()).isNotNull();
+            assertThat(services.teleportSafetyService()).isNotNull();
             assertThat(services.homeService()).isNotNull();
             assertThat(services.playerWarpService()).isNotNull();
             assertThat(services.shopWarpService()).isNotNull();

@@ -53,6 +53,41 @@ final class DialogMenuServiceTest {
     }
 
     @Test
+    void warpsMenuMarksInaccessiblePlayerWarpAndOmitsTeleportAction() {
+        UUID viewer = UUID.randomUUID();
+        DialogMenuService service = new DialogMenuService();
+
+        DialogMenuModel model = service.warpsMenu(
+                viewer,
+                List.of(),
+                List.of(location(UUID.randomUUID(), "player_warp")),
+                location -> false,
+                false
+        );
+
+        assertThat(model.lines()).contains("Player: base (No claim access)");
+        assertThat(model.actions()).extracting(DialogActionModel::key)
+                .doesNotContain("teleport:player_warp:base");
+    }
+
+    @Test
+    void warpsMenuCanHideInaccessiblePlayerWarp() {
+        UUID viewer = UUID.randomUUID();
+        DialogMenuService service = new DialogMenuService();
+
+        DialogMenuModel model = service.warpsMenu(
+                viewer,
+                List.of(),
+                List.of(location(UUID.randomUUID(), "player_warp")),
+                location -> false,
+                true
+        );
+
+        assertThat(model.lines()).isEmpty();
+        assertThat(model.actions()).isEmpty();
+    }
+
+    @Test
     void shopWarpsMenuIncludesTeleportAndOwnerEditAction() {
         UUID owner = UUID.randomUUID();
         DialogMenuService service = new DialogMenuService();
@@ -62,6 +97,23 @@ final class DialogMenuServiceTest {
         assertThat(model.title()).isEqualTo("Shop Warps");
         assertThat(model.lines()).contains("Shop: base");
         assertThat(model.actions()).extracting(DialogActionModel::key).contains("teleport:shop:base", "edit:shop:base");
+    }
+
+    @Test
+    void shopWarpsMenuMarksInaccessibleShopAndOmitsTeleportAction() {
+        UUID viewer = UUID.randomUUID();
+        DialogMenuService service = new DialogMenuService();
+
+        DialogMenuModel model = service.shopWarpsMenu(
+                viewer,
+                List.of(location(UUID.randomUUID(), "shop")),
+                location -> false,
+                false
+        );
+
+        assertThat(model.lines()).contains("Shop: base (No claim access)");
+        assertThat(model.actions()).extracting(DialogActionModel::key)
+                .doesNotContain("teleport:shop:base");
     }
 
     @Test

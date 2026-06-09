@@ -16,7 +16,15 @@ final class PluginDescriptorTest {
 
         assertThat(descriptor).contains("  ht:");
         assertThat(descriptor).contains("aliases: [haventeleport, tl]");
+        assertThat(descriptor).contains("  tpa:");
+        assertThat(descriptor).contains("  tpahere:");
+        assertThat(descriptor).contains("  tpaccept:");
+        assertThat(descriptor).contains("  tpdecline:");
         assertThat(descriptor).contains("  deloutpost:");
+        assertThat(descriptor).contains("teleportlocations.tpa:");
+        assertThat(descriptor).contains("teleportlocations.tpahere:");
+        assertThat(descriptor).contains("teleportlocations.tpaccept:");
+        assertThat(descriptor).contains("teleportlocations.tpdecline:");
         assertThat(descriptor).contains("teleportlocations.elevator:");
         assertThat(descriptor).contains("teleportlocations.elevator.particle.end_rod:");
     }

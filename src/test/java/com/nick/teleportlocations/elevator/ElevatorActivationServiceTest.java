@@ -29,8 +29,9 @@ final class ElevatorActivationServiceTest {
 
         assertThat(result.status()).isEqualTo(ElevatorActivationResult.Status.TELEPORT);
         assertThat(result.destination()).map(ElevatorBlock::blockY).contains(70);
-        assertThat(activations.activate(playerId, position(64), ElevatorDirection.UP, false, false).status())
-                .isEqualTo(ElevatorActivationResult.Status.COOLDOWN);
+        ElevatorActivationResult cooldown = activations.activate(playerId, position(64), ElevatorDirection.UP, false, false);
+        assertThat(cooldown.status()).isEqualTo(ElevatorActivationResult.Status.COOLDOWN);
+        assertThat(cooldown.remainingCooldownSeconds()).isEqualTo(2);
     }
 
     @Test

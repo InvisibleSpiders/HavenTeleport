@@ -42,6 +42,15 @@ final class LimitServiceTest {
         assertThat(service.resolveLimit(playerId, "home")).isEqualTo(3);
     }
 
+    @Test
+    void unknownCategoryFailsWithDescriptiveError() {
+        LimitService service = new LimitService(categories(), new InMemoryLimitRepository());
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.resolveLimit(UUID.randomUUID(), "missing"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("unknown category: missing");
+    }
+
     private static Map<String, CategoryConfig> categories() {
         return Map.of(
                 "home", new CategoryConfig("home", OwnerKind.PLAYER, 3, CreationZone.TRUSTED_CLAIM, AccessMode.PRIVATE, VisibilityMode.HIDDEN, false, false, false),

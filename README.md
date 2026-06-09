@@ -41,6 +41,10 @@ The plugin jar is written to `build/libs/TeleportLocations-1.0.0-SNAPSHOT.jar`.
 | `/outpost <name>` | `teleportlocations.outpost` | Teleport to one of your outposts. |
 | `/deloutpost <name>` | `teleportlocations.outpost` | Delete one of your outposts. |
 | `/spawn` | `teleportlocations.spawn` | Teleport to configured server spawn. |
+| `/tpa <player>` | `teleportlocations.tpa` | Ask to teleport to another online player. |
+| `/tpahere <player>` | `teleportlocations.tpahere` | Ask another online player to teleport to you. |
+| `/tpaccept [player]` | `teleportlocations.tpaccept` | Accept the latest pending teleport request, or a named request. Alias: `/tpyes`. |
+| `/tpdecline [player]` | `teleportlocations.tpdecline` | Decline the latest pending teleport request, or a named request. Alias: `/tpno`. |
 
 ### Admin Commands
 
@@ -56,6 +60,7 @@ The plugin jar is written to `build/libs/TeleportLocations-1.0.0-SNAPSHOT.jar`.
 | `/ht admin serverwarp delete <name>` | `teleportlocations.admin.serverwarp` | Delete a global server warp. |
 | `/ht admin serverwarp list` | `teleportlocations.admin.serverwarp` | List global server warps. |
 | `/ht admin bypass claims [on\|off\|status]` | `teleportlocations.admin.bypass.claims` | Toggle or inspect your personal claim-bypass mode for protected elevator actions. |
+| `/ht admin tp <player> <target>` | `teleportlocations.admin.teleport` | Instantly teleport one online player to another online player without a request, warmup, or cooldown. |
 
 `/ht` aliases: `/haventeleport`, `/tl`.
 
@@ -72,6 +77,10 @@ Elevator placement, breaking, jump/sneak movement, recipe registration, cooldown
 | `teleportlocations.shop` | true | Allows shop warp commands. |
 | `teleportlocations.outpost` | true | Allows outpost commands. |
 | `teleportlocations.spawn` | true | Allows `/spawn`. |
+| `teleportlocations.tpa` | true | Allows sending `/tpa` requests. |
+| `teleportlocations.tpahere` | true | Allows sending `/tpahere` requests. |
+| `teleportlocations.tpaccept` | true | Allows accepting teleport requests. |
+| `teleportlocations.tpdecline` | true | Allows declining teleport requests. |
 | `teleportlocations.elevator` | true | Parent permission for elevator placement, breaking, use, menu, and default particles. |
 | `teleportlocations.elevator.place` | true | Allows placing elevator blocks in owned claims. |
 | `teleportlocations.elevator.break` | true | Allows breaking elevator blocks where the player has claim build access. |
@@ -91,6 +100,7 @@ Elevator placement, breaking, jump/sneak movement, recipe registration, cooldown
 | `teleportlocations.admin.bypass.claims` | op via `teleportlocations.admin` | Allows toggling personal claim-bypass mode for protected elevator actions. |
 | `teleportlocations.admin.bypass.cost` | op via `teleportlocations.admin` | Bypass teleport costs. |
 | `teleportlocations.admin.bypass.cooldown` | op via `teleportlocations.admin` | Reserved for cooldown bypass. |
+| `teleportlocations.admin.bypass.tpa.cooldown` | op via `teleportlocations.admin` | Bypass TPA request cooldowns. |
 
 ## Elevator Blocks
 
@@ -128,6 +138,36 @@ Shop warps are always public, listed, and free. They cannot be configured with a
 
 Admins manage global server warps with `/ht admin serverwarp set <name>`, `/ht admin serverwarp delete <name>`, and `/ht admin serverwarp list`. Players can use server warps through `/warp <name>` and the `/warps` dialog.
 
+## Player Teleport Requests
+
+Players can use `/tpa <player>` to request teleporting to another online player, or `/tpahere <player>` to request that another online player teleport to them. The receiving player gets a clickable chat message with `[Accept]` and `[Decline]` actions, and can also use `/tpaccept [player]` or `/tpdecline [player]`.
+
+TPA requests are stored in memory and expire automatically. Cooldown and warmup are disabled by default. When warmup is enabled, movement can cancel the pending teleport.
+
+Admins can use `/ht admin tp <player> <target>` to move one online player to another immediately. Admin direct teleports do not use TPA requests, cooldowns, or warmups.
+
+TPA defaults are configured under `tpa` in `config.yml`:
+
+| Setting | Default | Description |
+| --- | --- | --- |
+| `tpa.enabled` | `true` | Enables `/tpa`, `/tpahere`, `/tpaccept`, and `/tpdecline`. |
+| `tpa.request-timeout-seconds` | `60` | How long a pending request can be accepted or declined. |
+| `tpa.cooldown-seconds` | `0` | Cooldown after an accepted request before the requester can send another request. |
+| `tpa.warmup-seconds` | `0` | Delay after acceptance before teleporting. |
+| `tpa.cancel-warmup-on-move` | `true` | Cancels non-zero warmups when the teleporting player moves blocks. |
+
 ## Teleport Costs
 
 Player warp costs are enforced before teleporting through `/warp` or dialog actions. Owners and admins with `teleportlocations.admin.bypass.cost` do not pay their own configured costs. Shop warps remain free.
+
+## Claim Entry Checks
+
+TeleportLocations checks LandClaims entry access before moving a player into a claimed destination. Claimed destinations use the LandClaims action key `teleportlocations.enter`. If the player cannot enter the destination claim, the teleport is cancelled before charging costs or moving the player.
+
+This applies to homes, player warps, shop warps, outposts, spawn, dialog teleport actions, accepted TPA requests, and elevator destinations. Admins with active claim-bypass mode can bypass the entry check.
+
+Player warp and shop dialogs mark inaccessible destinations by default and omit their teleport action. Server owners can hide inaccessible player/shop destinations instead:
+
+| Setting | Default | Description |
+| --- | --- | --- |
+| `teleport.inaccessible-destinations.mode` | `mark` | Use `mark` to show inaccessible player/shop warps with `No claim access`, or `hide` to hide them unless the viewer owns them. |

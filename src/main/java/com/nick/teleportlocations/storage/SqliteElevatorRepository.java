@@ -63,7 +63,6 @@ public final class SqliteElevatorRepository implements ElevatorRepository {
         return queryMany(
                 """
                 SELECT * FROM teleport_elevator_blocks
-                ORDER BY world_name, block_x, block_y, block_z
                 """,
                 statement -> {
                 }

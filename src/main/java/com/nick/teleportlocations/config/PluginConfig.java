@@ -11,6 +11,7 @@ public record PluginConfig(
         int warmupSeconds,
         boolean cancelOnMove,
         int safeSearchRadius,
+        String inaccessibleDestinationMode,
         String firstJoinTarget,
         String loginTarget,
         String deathRespawnTarget,
@@ -19,6 +20,11 @@ public record PluginConfig(
         int elevatorCooldownSeconds,
         boolean elevatorParticlesEnabled,
         String elevatorDefaultParticle,
-        int elevatorParticleIntervalTicks
+        int elevatorParticleIntervalTicks,
+        boolean tpaEnabled,
+        int tpaRequestTimeoutSeconds,
+        int tpaCooldownSeconds,
+        int tpaWarmupSeconds,
+        boolean tpaCancelWarmupOnMove
 ) {
 }

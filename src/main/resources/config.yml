@@ -19,6 +19,10 @@ teleport:
   cancel-on-move: true
   # The plugin can search nearby blocks for a safe landing spot.
   safe-search-radius: 3
+  inaccessible-destinations:
+    # mark: show inaccessible player/shop warps with no teleport action.
+    # hide: hide inaccessible player/shop warps unless the viewer owns them.
+    mode: mark
 
 spawn:
   # New players enter at the managed server spawn.
@@ -47,6 +51,18 @@ elevators:
     default: WAX_ON
     # How often elevator cue particles are emitted.
     interval-ticks: 20
+
+tpa:
+  # Enables player-to-player teleport request commands.
+  enabled: true
+  # Pending requests expire after this many seconds.
+  request-timeout-seconds: 60
+  # Cooldown after an accepted request before the requester can send another request. 0 disables it.
+  cooldown-seconds: 0
+  # Delay after a request is accepted before teleporting. 0 disables it.
+  warmup-seconds: 0
+  # Moving during a non-zero warmup cancels the teleport.
+  cancel-warmup-on-move: true
 
 categories:
   home:

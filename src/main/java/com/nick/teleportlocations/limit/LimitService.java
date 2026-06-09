@@ -15,8 +15,12 @@ public final class LimitService {
     }
 
     public int resolveLimit(UUID playerId, String category) {
+        CategoryConfig config = categories.get(category);
+        if (config == null) {
+            throw new IllegalArgumentException("unknown category: " + category);
+        }
         return repository.findLimit(playerId, category)
-                .orElseGet(() -> categories.get(category).defaultLimit());
+                .orElseGet(config::defaultLimit);
     }
 
     public boolean hasCategory(String category) {

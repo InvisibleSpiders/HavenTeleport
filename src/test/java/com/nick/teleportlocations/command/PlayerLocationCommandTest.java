@@ -24,8 +24,10 @@ import com.nick.teleportlocations.outpost.OutpostService;
 import com.nick.teleportlocations.serverwarp.ServerWarpService;
 import com.nick.teleportlocations.shop.ShopWarpService;
 import com.nick.teleportlocations.spawn.SpawnService;
+import com.nick.teleportlocations.teleport.TeleportAccessService;
 import com.nick.teleportlocations.storage.InMemoryLocationRepository;
 import com.nick.teleportlocations.teleport.TeleportChargeService;
+import com.nick.teleportlocations.teleport.TeleportSafetyService;
 import com.nick.teleportlocations.warp.PlayerWarpService;
 import java.time.Instant;
 import java.util.UUID;
@@ -158,8 +160,12 @@ final class PlayerLocationCommandTest {
                             serverWarpService,
                             spawnService,
                             chargeService,
+                            new TeleportAccessService(LandClaimsGateway.fixed(false, true)),
+                            new TeleportSafetyService(),
+                            new com.nick.teleportlocations.admin.AdminBypassService(),
                             new DialogMenuService(),
-                            new PaperDialogPresenter()
+                            new PaperDialogPresenter(),
+                            false
                     ),
                     warpService,
                     shopService,

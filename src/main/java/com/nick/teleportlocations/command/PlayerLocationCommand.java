@@ -1,5 +1,6 @@
 package com.nick.teleportlocations.command;
 
+import com.nick.teleportlocations.admin.AdminBypassService;
 import com.nick.teleportlocations.bukkit.BukkitLocations;
 import com.nick.teleportlocations.cost.ChargeResult;
 import com.nick.teleportlocations.dialog.DialogMenuService;
@@ -13,8 +14,12 @@ import com.nick.teleportlocations.serverwarp.ServerWarpService;
 import com.nick.teleportlocations.shop.ShopWarpResult;
 import com.nick.teleportlocations.shop.ShopWarpService;
 import com.nick.teleportlocations.spawn.SpawnService;
+import com.nick.teleportlocations.teleport.TeleportAccessResult;
+import com.nick.teleportlocations.teleport.TeleportAccessService;
 import com.nick.teleportlocations.teleport.TeleportChargeMessages;
 import com.nick.teleportlocations.teleport.TeleportChargeService;
+import com.nick.teleportlocations.teleport.TeleportSafetyResult;
+import com.nick.teleportlocations.teleport.TeleportSafetyService;
 import com.nick.teleportlocations.warp.PlayerWarpResult;
 import com.nick.teleportlocations.warp.PlayerWarpService;
 import java.util.Locale;
@@ -35,10 +40,14 @@ public final class PlayerLocationCommand implements CommandExecutor {
     private final ServerWarpService serverWarps;
     private final SpawnService spawn;
     private final TeleportChargeService charges;
+    private final TeleportAccessService access;
+    private final TeleportSafetyService safety;
+    private final AdminBypassService bypass;
     private final DialogMenuService dialogs;
     private final PaperDialogPresenter presenter;
+    private final boolean hideInaccessibleDestinations;
 
-    public PlayerLocationCommand(HomeService homes, PlayerWarpService warps, ShopWarpService shops, OutpostService outposts, ServerWarpService serverWarps, SpawnService spawn, TeleportChargeService charges, DialogMenuService dialogs, PaperDialogPresenter presenter) {
+    public PlayerLocationCommand(HomeService homes, PlayerWarpService warps, ShopWarpService shops, OutpostService outposts, ServerWarpService serverWarps, SpawnService spawn, TeleportChargeService charges, TeleportAccessService access, TeleportSafetyService safety, AdminBypassService bypass, DialogMenuService dialogs, PaperDialogPresenter presenter, boolean hideInaccessibleDestinations) {
         this.homes = homes;
         this.warps = warps;
         this.shops = shops;
@@ -46,8 +55,12 @@ public final class PlayerLocationCommand implements CommandExecutor {
         this.serverWarps = serverWarps;
         this.spawn = spawn;
         this.charges = charges;
+        this.access = access;
+        this.safety = safety;
+        this.bypass = bypass;
         this.dialogs = dialogs;
         this.presenter = presenter;
+        this.hideInaccessibleDestinations = hideInaccessibleDestinations;
     }
 
     @Override
@@ -70,11 +83,18 @@ public final class PlayerLocationCommand implements CommandExecutor {
             case "warps" -> presenter.show(player, dialogs.warpsMenu(
                     player.getUniqueId(),
                     serverWarps.visibleWarps(),
-                    warps.visibleWarps(player.getUniqueId())
+                    warps.visibleWarps(player.getUniqueId()),
+                    location -> canEnter(player, location, false),
+                    hideInaccessibleDestinations
             ));
             case "setshop" -> setShop(player, args);
             case "delshop" -> deleteShop(player, args);
-            case "shops" -> presenter.show(player, dialogs.shopWarpsMenu(player.getUniqueId(), shops.visibleShops(player.getUniqueId())));
+            case "shops" -> presenter.show(player, dialogs.shopWarpsMenu(
+                    player.getUniqueId(),
+                    shops.visibleShops(player.getUniqueId()),
+                    location -> canEnter(player, location, false),
+                    hideInaccessibleDestinations
+            ));
             case "setoutpost" -> setOutpost(player, args);
             case "outpost" -> teleportOutpost(player, args);
             case "deloutpost" -> deleteOutpost(player, args);
@@ -105,9 +125,11 @@ public final class PlayerLocationCommand implements CommandExecutor {
             player.sendMessage(Component.text("Home not found.", NamedTextColor.RED));
             return;
         }
-        Location destination = BukkitLocations.load(home.orElseThrow().position());
+        Location destination = safeLoad(player, home.orElseThrow(), "That home world is not loaded.");
         if (destination == null) {
-            player.sendMessage(Component.text("That home world is not loaded.", NamedTextColor.RED));
+            return;
+        }
+        if (!canEnter(player, home.orElseThrow(), true)) {
             return;
         }
         player.teleportAsync(destination);
@@ -155,9 +177,11 @@ public final class PlayerLocationCommand implements CommandExecutor {
             player.sendMessage(Component.text("Warp not found.", NamedTextColor.RED));
             return;
         }
-        Location destination = BukkitLocations.load(warp.orElseThrow().position());
+        Location destination = safeLoad(player, warp.orElseThrow(), "That warp world is not loaded.");
         if (destination == null) {
-            player.sendMessage(Component.text("That warp world is not loaded.", NamedTextColor.RED));
+            return;
+        }
+        if (!canEnter(player, warp.orElseThrow(), true)) {
             return;
         }
         if (!charge(player, warp.orElseThrow())) {
@@ -234,9 +258,11 @@ public final class PlayerLocationCommand implements CommandExecutor {
             player.sendMessage(Component.text("Outpost not found.", NamedTextColor.RED));
             return;
         }
-        Location destination = BukkitLocations.load(outpost.orElseThrow().position());
+        Location destination = safeLoad(player, outpost.orElseThrow(), "That outpost world is not loaded.");
         if (destination == null) {
-            player.sendMessage(Component.text("That outpost world is not loaded.", NamedTextColor.RED));
+            return;
+        }
+        if (!canEnter(player, outpost.orElseThrow(), true)) {
             return;
         }
         player.teleportAsync(destination);
@@ -257,9 +283,11 @@ public final class PlayerLocationCommand implements CommandExecutor {
             player.sendMessage(Component.text("Spawn has not been set.", NamedTextColor.RED));
             return;
         }
-        Location destination = BukkitLocations.load(configuredSpawn.orElseThrow().position());
+        Location destination = safeLoad(player, configuredSpawn.orElseThrow(), "The spawn world is not loaded.");
         if (destination == null) {
-            player.sendMessage(Component.text("The spawn world is not loaded.", NamedTextColor.RED));
+            return;
+        }
+        if (!canEnter(player, configuredSpawn.orElseThrow(), true)) {
             return;
         }
         player.teleportAsync(destination);
@@ -310,4 +338,33 @@ public final class PlayerLocationCommand implements CommandExecutor {
         }
     }
 
+    private Location safeLoad(Player player, TeleportLocation location, String missingWorldMessage) {
+        TeleportSafetyResult result = safety.validate(location.position());
+        if (!result.safe()) {
+            player.sendMessage(Component.text("That teleport destination is unsafe: " + result.reason() + ".", NamedTextColor.RED));
+            return null;
+        }
+        Location destination = BukkitLocations.load(location.position());
+        if (destination == null) {
+            player.sendMessage(Component.text(missingWorldMessage, NamedTextColor.RED));
+            return null;
+        }
+        return destination;
+    }
+
+    private boolean canEnter(Player player, TeleportLocation location, boolean notify) {
+        TeleportAccessResult result = access.canEnter(
+                player.getUniqueId(),
+                location.position(),
+                claimBypass(player)
+        );
+        if (!result.allowed() && notify) {
+            player.sendMessage(Component.text("You cannot teleport there because you do not have claim entry access.", NamedTextColor.RED));
+        }
+        return result.allowed();
+    }
+
+    private boolean claimBypass(Player player) {
+        return player.hasPermission("teleportlocations.admin.bypass.claims") && bypass.claims(player.getUniqueId());
+    }
 }

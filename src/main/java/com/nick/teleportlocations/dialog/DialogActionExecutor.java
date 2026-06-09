@@ -1,10 +1,15 @@
 package com.nick.teleportlocations.dialog;
 
+import com.nick.teleportlocations.admin.AdminBypassService;
 import com.nick.teleportlocations.bukkit.BukkitLocations;
 import com.nick.teleportlocations.cost.ChargeResult;
 import com.nick.teleportlocations.location.TeleportLocation;
+import com.nick.teleportlocations.teleport.TeleportAccessResult;
+import com.nick.teleportlocations.teleport.TeleportAccessService;
 import com.nick.teleportlocations.teleport.TeleportChargeMessages;
 import com.nick.teleportlocations.teleport.TeleportChargeService;
+import com.nick.teleportlocations.teleport.TeleportSafetyResult;
+import com.nick.teleportlocations.teleport.TeleportSafetyService;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Location;
@@ -14,11 +19,17 @@ public final class DialogActionExecutor implements DialogActionHandler {
     private final DialogActionRouter router;
     private final PaperDialogPresenter presenter;
     private final TeleportChargeService charges;
+    private final TeleportAccessService access;
+    private final TeleportSafetyService safety;
+    private final AdminBypassService bypass;
 
-    public DialogActionExecutor(DialogActionRouter router, PaperDialogPresenter presenter, TeleportChargeService charges) {
+    public DialogActionExecutor(DialogActionRouter router, PaperDialogPresenter presenter, TeleportChargeService charges, TeleportAccessService access, TeleportSafetyService safety, AdminBypassService bypass) {
         this.router = router;
         this.presenter = presenter;
         this.charges = charges;
+        this.access = access;
+        this.safety = safety;
+        this.bypass = bypass;
     }
 
     @Override
@@ -33,9 +44,23 @@ public final class DialogActionExecutor implements DialogActionHandler {
     }
 
     private void teleport(Player player, TeleportLocation location) {
+        TeleportSafetyResult safetyResult = safety.validate(location.position());
+        if (!safetyResult.safe()) {
+            player.sendMessage(Component.text("That teleport destination is unsafe: " + safetyResult.reason() + ".", NamedTextColor.RED));
+            return;
+        }
         Location destination = BukkitLocations.load(location.position());
         if (destination == null) {
             player.sendMessage(Component.text("That location world is not loaded.", NamedTextColor.RED));
+            return;
+        }
+        TeleportAccessResult accessResult = access.canEnter(
+                player.getUniqueId(),
+                location.position(),
+                player.hasPermission("teleportlocations.admin.bypass.claims") && bypass.claims(player.getUniqueId())
+        );
+        if (!accessResult.allowed()) {
+            player.sendMessage(Component.text("You cannot teleport there because you do not have claim entry access.", NamedTextColor.RED));
             return;
         }
         ChargeResult charge = charges.chargeIfNeeded(
