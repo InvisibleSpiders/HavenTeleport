@@ -12,6 +12,11 @@ public final class InMemoryElevatorRepository implements ElevatorRepository {
     private final Map<UUID, ElevatorBlock> blocks = new HashMap<>();
 
     @Override
+    public Optional<ElevatorBlock> findById(UUID id) {
+        return Optional.ofNullable(blocks.get(id));
+    }
+
+    @Override
     public Optional<ElevatorBlock> findAt(UUID worldId, int blockX, int blockY, int blockZ) {
         return blocks.values().stream()
                 .filter(block -> matches(block, worldId, blockX, blockY, blockZ))

@@ -7,6 +7,10 @@ import com.nick.teleportlocations.claim.LandClaimsGateway;
 import com.nick.teleportlocations.claim.MissingLandClaimsPolicy;
 import com.nick.teleportlocations.config.ConfigLoader;
 import com.nick.teleportlocations.config.PluginConfig;
+import com.nick.teleportlocations.elevator.ElevatorBlock;
+import com.nick.teleportlocations.elevator.ElevatorParticle;
+import com.nick.teleportlocations.elevator.ElevatorService;
+import com.nick.teleportlocations.elevator.InMemoryElevatorRepository;
 import com.nick.teleportlocations.home.HomeService;
 import com.nick.teleportlocations.limit.InMemoryLimitRepository;
 import com.nick.teleportlocations.limit.LimitService;
@@ -21,6 +25,7 @@ import com.nick.teleportlocations.shop.ShopWarpService;
 import com.nick.teleportlocations.storage.InMemoryLocationRepository;
 import com.nick.teleportlocations.warp.PlayerWarpService;
 import java.time.Instant;
+import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
@@ -212,6 +217,36 @@ final class DialogActionRouterTest {
         assertThat(fixture.shops.resolveVisibleShop(owner, "tools").orElseThrow().cost()).isEqualTo(CostSpec.free());
     }
 
+    @Test
+    void elevatorParticleActionUpdatesForOwnerWithParticlePermission() {
+        Fixture fixture = Fixture.create(Set.of("teleportlocations.elevator.particle.end_rod"));
+        UUID owner = UUID.randomUUID();
+        ElevatorBlock block = fixture.elevators.place(owner, position(), false).block().orElseThrow();
+
+        DialogActionRouteResult result = fixture.router.route(owner, "set-elevator-particle:" + block.id() + ":end_rod");
+
+        assertThat(result.status()).isEqualTo(DialogActionRouteResult.Status.MESSAGE);
+        assertThat(fixture.elevators.findAt(block.position()).orElseThrow().particle()).isEqualTo(ElevatorParticle.END_ROD);
+    }
+
+    @Test
+    void elevatorParticleActionRequiresOwnerOrAdminAndParticlePermission() {
+        UUID visitor = UUID.randomUUID();
+        Fixture fixture = Fixture.create(Set.of("teleportlocations.elevator.particle.end_rod"));
+        ElevatorBlock block = fixture.elevators.place(UUID.randomUUID(), position(), false).block().orElseThrow();
+        Fixture noPermissionFixture = Fixture.create(Set.of());
+        ElevatorBlock noPermissionBlock = noPermissionFixture.elevators.place(UUID.randomUUID(), position(), false).block().orElseThrow();
+
+        DialogActionRouteResult visitorResult = fixture.router.route(visitor, "set-elevator-particle:" + block.id() + ":end_rod");
+        DialogActionRouteResult noPermissionResult = noPermissionFixture.router.route(
+                noPermissionBlock.ownerId(),
+                "set-elevator-particle:" + noPermissionBlock.id() + ":end_rod"
+        );
+
+        assertThat(visitorResult.status()).isEqualTo(DialogActionRouteResult.Status.ACCESS_DENIED);
+        assertThat(noPermissionResult.status()).isEqualTo(DialogActionRouteResult.Status.ACCESS_DENIED);
+    }
+
     private static SavedPosition position() {
         return new SavedPosition(UUID.randomUUID(), "world", 1.0, 64.0, 2.0, 90.0f, 0.0f);
     }
@@ -222,9 +257,14 @@ final class DialogActionRouterTest {
             PlayerWarpService warps,
             ShopWarpService shops,
             OutpostService outposts,
-            ServerWarpService serverWarps
+            ServerWarpService serverWarps,
+            ElevatorService elevators
     ) {
         private static Fixture create() {
+            return create(Set.of());
+        }
+
+        private static Fixture create(Set<String> permissions) {
             PluginConfig config = ConfigLoader.fromResources();
             InMemoryLocationRepository locations = new InMemoryLocationRepository();
             LocationService locationService = new LocationService(locations, () -> Instant.EPOCH);
@@ -239,14 +279,29 @@ final class DialogActionRouterTest {
             ShopWarpService shopService = new ShopWarpService(locationService, limitService, creationPolicy);
             OutpostService outpostService = new OutpostService(locationService, limitService, creationPolicy);
             ServerWarpService serverWarpService = new ServerWarpService(locationService);
+            ElevatorService elevatorService = new ElevatorService(
+                    new InMemoryElevatorRepository(),
+                    LandClaimsGateway.fixedOwned(true, true, true),
+                    () -> Instant.EPOCH
+            );
             DialogMenuService menus = new DialogMenuService();
             return new Fixture(
-                    new DialogActionRouter(homeService, warpService, shopService, outpostService, serverWarpService, menus),
+                    new DialogActionRouter(
+                            homeService,
+                            warpService,
+                            shopService,
+                            outpostService,
+                            serverWarpService,
+                            elevatorService,
+                            menus,
+                            (viewer, permission) -> permissions.contains(permission)
+                    ),
                     homeService,
                     warpService,
                     shopService,
                     outpostService,
-                    serverWarpService
+                    serverWarpService,
+                    elevatorService
             );
         }
     }

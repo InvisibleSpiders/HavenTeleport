@@ -1,9 +1,12 @@
 package com.nick.teleportlocations.dialog;
 
+import com.nick.teleportlocations.elevator.ElevatorBlock;
+import com.nick.teleportlocations.elevator.ElevatorParticle;
 import com.nick.teleportlocations.location.TeleportLocation;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.function.Predicate;
 
 public final class DialogMenuService {
     public DialogMenuModel homesMenu(UUID viewerId, List<TeleportLocation> homes) {
@@ -105,6 +108,23 @@ public final class DialogMenuService {
         ));
         List<DialogInputModel> inputs = List.of(costInput(costType));
         return new DialogMenuModel(title, lines, actions, inputs);
+    }
+
+    public DialogMenuModel elevatorSettingsMenu(ElevatorBlock block, boolean canEdit, Predicate<ElevatorParticle> canSelectParticle) {
+        List<String> lines = new ArrayList<>();
+        List<DialogActionModel> actions = new ArrayList<>();
+        lines.add("Particle: " + title(block.particle().name()));
+        if (canEdit) {
+            for (ElevatorParticle particle : ElevatorParticle.values()) {
+                if (canSelectParticle.test(particle)) {
+                    actions.add(new DialogActionModel(
+                            "set-elevator-particle:" + block.id() + ":" + particle.name().toLowerCase(),
+                            title(particle.name())
+                    ));
+                }
+            }
+        }
+        return new DialogMenuModel("Elevator Settings", List.copyOf(lines), List.copyOf(actions));
     }
 
     private DialogInputModel costInput(String costType) {

@@ -58,7 +58,7 @@ The plugin jar is written to `build/libs/TeleportLocations-1.0.0-SNAPSHOT.jar`.
 
 `/ht` aliases: `/haventeleport`, `/tl`.
 
-Elevator placement, breaking, jump/sneak movement, recipe registration, cooldowns, and ambient particles are active. The particle selection dialog is still pending for the next UI slice.
+Elevator placement, breaking, jump/sneak movement, recipe registration, cooldowns, ambient particles, and the particle settings dialog are active.
 
 ## Permissions
 
@@ -104,6 +104,8 @@ CLC
 `E` is Echo Shard, `C` is Copper Ingot, and `L` is Lodestone. When placed, the block remains visually Lodestone, but right-click interaction is cancelled so it does not behave like a normal Lodestone.
 
 Placement is restricted to a player's own LandClaims claim unless an admin claim bypass mode is added later. Breaking follows claim build access, so trusted builders can remove elevators in claims where they can build. Players with claim access can use elevators. Jumping on an elevator moves to the nearest elevator above in the same X/Z column; sneaking moves to the nearest elevator below.
+
+Shift-right-click an elevator block to open its settings dialog. Owners and players with `teleportlocations.admin.elevator` can change the particle. The dialog only shows particle choices the player has permission to use, such as `teleportlocations.elevator.particle.wax_on` and `teleportlocations.elevator.particle.end_rod`.
 
 Elevator defaults are configured under `elevators` in `config.yml`:
 

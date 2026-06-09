@@ -22,6 +22,11 @@ public final class SqliteElevatorRepository implements ElevatorRepository {
     }
 
     @Override
+    public Optional<ElevatorBlock> findById(UUID id) {
+        return queryOne("SELECT * FROM teleport_elevator_blocks WHERE id = ?", statement -> statement.setString(1, id.toString()));
+    }
+
+    @Override
     public Optional<ElevatorBlock> findAt(UUID worldId, int blockX, int blockY, int blockZ) {
         return queryOne(
                 """

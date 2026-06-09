@@ -8,6 +8,9 @@ import com.nick.teleportlocations.elevator.ElevatorDirection;
 import com.nick.teleportlocations.elevator.ElevatorResult;
 import com.nick.teleportlocations.elevator.ElevatorService;
 import com.nick.teleportlocations.elevator.bukkit.ElevatorItemService;
+import com.nick.teleportlocations.dialog.DialogActionRouter;
+import com.nick.teleportlocations.dialog.DialogMenuService;
+import com.nick.teleportlocations.dialog.PaperDialogPresenter;
 import com.nick.teleportlocations.location.SavedPosition;
 import java.util.Optional;
 import net.kyori.adventure.text.Component;
@@ -29,11 +32,21 @@ public final class ElevatorListener implements Listener {
     private final ElevatorService elevators;
     private final ElevatorActivationService activations;
     private final ElevatorItemService itemService;
+    private final DialogMenuService menus;
+    private final PaperDialogPresenter presenter;
 
-    public ElevatorListener(ElevatorService elevators, ElevatorActivationService activations, ElevatorItemService itemService) {
+    public ElevatorListener(
+            ElevatorService elevators,
+            ElevatorActivationService activations,
+            ElevatorItemService itemService,
+            DialogMenuService menus,
+            PaperDialogPresenter presenter
+    ) {
         this.elevators = elevators;
         this.activations = activations;
         this.itemService = itemService;
+        this.menus = menus;
+        this.presenter = presenter;
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
@@ -97,12 +110,20 @@ public final class ElevatorListener implements Listener {
             return;
         }
         SavedPosition position = BukkitLocations.save(event.getClickedBlock().getLocation());
-        if (elevators.findAt(position).isEmpty()) {
+        Optional<ElevatorBlock> elevator = elevators.findAt(position);
+        if (elevator.isEmpty()) {
             return;
         }
         event.setCancelled(true);
         if (event.getPlayer().isSneaking() && event.getPlayer().hasPermission("teleportlocations.elevator.menu")) {
-            send(event.getPlayer(), "Elevator settings dialog is coming in the next UI slice.", NamedTextColor.YELLOW);
+            Player player = event.getPlayer();
+            ElevatorBlock block = elevator.orElseThrow();
+            boolean canEdit = block.ownerId().equals(player.getUniqueId()) || player.hasPermission("teleportlocations.admin.elevator");
+            presenter.show(player, menus.elevatorSettingsMenu(
+                    block,
+                    canEdit,
+                    particle -> player.hasPermission(DialogActionRouter.particlePermission(particle))
+            ));
         }
     }
 

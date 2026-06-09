@@ -69,12 +69,26 @@ final class ElevatorServiceTest {
     void storesParticleSelection() {
         UUID owner = UUID.randomUUID();
         ElevatorService service = new ElevatorService(new InMemoryElevatorRepository(), LandClaimsGateway.fixedOwned(true, true, true), () -> Instant.EPOCH);
-        service.place(owner, position(64), false);
+        ElevatorBlock block = service.place(owner, position(64), false).block().orElseThrow();
 
-        ElevatorResult result = service.setParticle(owner, position(64), ElevatorParticle.END_ROD, false);
+        ElevatorResult result = service.setParticle(owner, block.id(), ElevatorParticle.END_ROD, false);
 
         assertThat(result.status()).isEqualTo(ElevatorResult.Status.UPDATED);
         assertThat(service.findAt(position(64)).orElseThrow().particle()).isEqualTo(ElevatorParticle.END_ROD);
+    }
+
+    @Test
+    void onlyOwnerOrAdminBypassCanChangeParticleById() {
+        UUID owner = UUID.randomUUID();
+        UUID visitor = UUID.randomUUID();
+        ElevatorService service = new ElevatorService(new InMemoryElevatorRepository(), LandClaimsGateway.fixedOwned(true, true, true), () -> Instant.EPOCH);
+        ElevatorBlock block = service.place(owner, position(64), false).block().orElseThrow();
+
+        ElevatorResult denied = service.setParticle(visitor, block.id(), ElevatorParticle.END_ROD, false);
+        ElevatorResult admin = service.setParticle(visitor, block.id(), ElevatorParticle.END_ROD, true);
+
+        assertThat(denied.status()).isEqualTo(ElevatorResult.Status.ACCESS_DENIED);
+        assertThat(admin.status()).isEqualTo(ElevatorResult.Status.UPDATED);
     }
 
     @Test

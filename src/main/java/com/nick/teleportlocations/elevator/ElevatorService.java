@@ -92,6 +92,18 @@ public final class ElevatorService {
         Objects.requireNonNull(position, "position");
         Objects.requireNonNull(particle, "particle");
         Optional<ElevatorBlock> existing = findAt(position);
+        return setParticle(playerId, existing, particle, adminBypassClaims);
+    }
+
+    public ElevatorResult setParticle(UUID playerId, UUID blockId, ElevatorParticle particle, boolean adminBypassClaims) {
+        Objects.requireNonNull(playerId, "playerId");
+        Objects.requireNonNull(blockId, "blockId");
+        Objects.requireNonNull(particle, "particle");
+        Optional<ElevatorBlock> existing = repository.findById(blockId);
+        return setParticle(playerId, existing, particle, adminBypassClaims);
+    }
+
+    private ElevatorResult setParticle(UUID playerId, Optional<ElevatorBlock> existing, ElevatorParticle particle, boolean adminBypassClaims) {
         if (existing.isEmpty()) {
             return ElevatorResult.empty(ElevatorResult.Status.NOT_FOUND);
         }

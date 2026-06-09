@@ -1,5 +1,8 @@
 package com.nick.teleportlocations.dialog;
 
+import com.nick.teleportlocations.elevator.ElevatorParticle;
+import com.nick.teleportlocations.elevator.ElevatorResult;
+import com.nick.teleportlocations.elevator.ElevatorService;
 import com.nick.teleportlocations.home.HomeService;
 import com.nick.teleportlocations.home.HomeResult;
 import com.nick.teleportlocations.location.AccessMode;
@@ -13,8 +16,11 @@ import com.nick.teleportlocations.shop.ShopWarpResult;
 import com.nick.teleportlocations.serverwarp.ServerWarpService;
 import com.nick.teleportlocations.warp.PlayerWarpService;
 import com.nick.teleportlocations.warp.PlayerWarpResult;
+import java.util.Locale;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.BiPredicate;
 
 public final class DialogActionRouter {
     private final HomeService homes;
@@ -22,7 +28,9 @@ public final class DialogActionRouter {
     private final ShopWarpService shops;
     private final OutpostService outposts;
     private final ServerWarpService serverWarps;
+    private final ElevatorService elevators;
     private final DialogMenuService menus;
+    private final BiPredicate<UUID, String> permissions;
 
     public DialogActionRouter(
             HomeService homes,
@@ -32,12 +40,27 @@ public final class DialogActionRouter {
             ServerWarpService serverWarps,
             DialogMenuService menus
     ) {
+        this(homes, warps, shops, outposts, serverWarps, null, menus, (viewerId, permission) -> false);
+    }
+
+    public DialogActionRouter(
+            HomeService homes,
+            PlayerWarpService warps,
+            ShopWarpService shops,
+            OutpostService outposts,
+            ServerWarpService serverWarps,
+            ElevatorService elevators,
+            DialogMenuService menus,
+            BiPredicate<UUID, String> permissions
+    ) {
         this.homes = homes;
         this.warps = warps;
         this.shops = shops;
         this.outposts = outposts;
         this.serverWarps = serverWarps;
+        this.elevators = elevators;
         this.menus = menus;
+        this.permissions = Objects.requireNonNull(permissions, "permissions");
     }
 
     public DialogActionRouteResult route(UUID viewerId, String actionKey) {
@@ -67,6 +90,9 @@ public final class DialogActionRouter {
                     : DialogActionRouteResult.unknownAction();
             case "set-cost-input" -> parts.length == 4
                     ? setPlayerWarpCostFromInput(viewerId, parts[1], parts[2], parts[3], inputValues)
+                    : DialogActionRouteResult.unknownAction();
+            case "set-elevator-particle" -> parts.length == 3
+                    ? setElevatorParticle(viewerId, parts[1], parts[2])
                     : DialogActionRouteResult.unknownAction();
             default -> DialogActionRouteResult.unknownAction();
         };
@@ -177,6 +203,33 @@ public final class DialogActionRouter {
 
     private boolean supportsCustomCost(String costType) {
         return "money".equals(costType) || "xp-levels".equals(costType) || "xp-points".equals(costType);
+    }
+
+    private DialogActionRouteResult setElevatorParticle(UUID viewerId, String blockIdValue, String particleValue) {
+        if (elevators == null) {
+            return DialogActionRouteResult.unknownAction();
+        }
+        try {
+            UUID blockId = UUID.fromString(blockIdValue);
+            ElevatorParticle particle = ElevatorParticle.parse(particleValue);
+            if (!permissions.test(viewerId, particlePermission(particle))) {
+                return DialogActionRouteResult.accessDenied();
+            }
+            boolean adminBypass = permissions.test(viewerId, "teleportlocations.admin.elevator");
+            ElevatorResult result = elevators.setParticle(viewerId, blockId, particle, adminBypass);
+            return switch (result.status()) {
+                case UPDATED -> DialogActionRouteResult.message("Elevator particle updated.");
+                case NOT_FOUND -> DialogActionRouteResult.notFound();
+                case ACCESS_DENIED -> DialogActionRouteResult.accessDenied();
+                default -> DialogActionRouteResult.unknownAction();
+            };
+        } catch (IllegalArgumentException exception) {
+            return DialogActionRouteResult.unknownAction();
+        }
+    }
+
+    public static String particlePermission(ElevatorParticle particle) {
+        return "teleportlocations.elevator.particle." + particle.name().toLowerCase(Locale.ROOT);
     }
 
     private CostSpec parseCost(String type, String amount) {

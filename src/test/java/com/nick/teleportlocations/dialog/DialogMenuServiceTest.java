@@ -2,6 +2,8 @@ package com.nick.teleportlocations.dialog;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.nick.teleportlocations.elevator.ElevatorBlock;
+import com.nick.teleportlocations.elevator.ElevatorParticle;
 import com.nick.teleportlocations.location.AccessMode;
 import com.nick.teleportlocations.location.CostSpec;
 import com.nick.teleportlocations.location.OwnerRef;
@@ -129,6 +131,30 @@ final class DialogMenuServiceTest {
                 .containsExactly("set-cost-input:player_warp:base:money");
     }
 
+    @Test
+    void elevatorSettingsMenuShowsOnlyEditableAllowedParticles() {
+        UUID owner = UUID.randomUUID();
+        DialogMenuService service = new DialogMenuService();
+        ElevatorBlock block = elevator(owner, ElevatorParticle.WAX_ON);
+
+        DialogMenuModel model = service.elevatorSettingsMenu(block, true, particle -> particle == ElevatorParticle.WAX_ON);
+
+        assertThat(model.title()).isEqualTo("Elevator Settings");
+        assertThat(model.lines()).contains("Particle: Wax On");
+        assertThat(model.actions()).extracting(DialogActionModel::key)
+                .containsExactly("set-elevator-particle:" + block.id() + ":wax_on");
+    }
+
+    @Test
+    void elevatorSettingsMenuIsReadOnlyWithoutEditAccess() {
+        DialogMenuService service = new DialogMenuService();
+
+        DialogMenuModel model = service.elevatorSettingsMenu(elevator(UUID.randomUUID(), ElevatorParticle.END_ROD), false, particle -> true);
+
+        assertThat(model.lines()).contains("Particle: End Rod");
+        assertThat(model.actions()).isEmpty();
+    }
+
     private static TeleportLocation location(UUID owner) {
         return location(owner, "home");
     }
@@ -159,6 +185,17 @@ final class DialogMenuServiceTest {
                 VisibilityMode.LISTED,
                 CostSpec.free(),
                 false,
+                Instant.EPOCH
+        );
+    }
+
+    private static ElevatorBlock elevator(UUID owner, ElevatorParticle particle) {
+        return new ElevatorBlock(
+                UUID.randomUUID(),
+                owner,
+                new SavedPosition(UUID.randomUUID(), "world", 0.0, 64.0, 0.0, 0.0f, 0.0f),
+                particle,
+                Instant.EPOCH,
                 Instant.EPOCH
         );
     }

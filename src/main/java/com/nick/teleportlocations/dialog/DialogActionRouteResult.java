@@ -35,7 +35,7 @@ public record DialogActionRouteResult(
     }
 
     public static DialogActionRouteResult accessDenied() {
-        return new DialogActionRouteResult(Status.ACCESS_DENIED, Optional.empty(), Optional.empty(), "You cannot edit that location.");
+        return new DialogActionRouteResult(Status.ACCESS_DENIED, Optional.empty(), Optional.empty(), "You cannot edit that target.");
     }
 
     public static DialogActionRouteResult unknownAction() {

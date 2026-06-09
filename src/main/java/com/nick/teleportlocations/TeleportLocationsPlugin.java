@@ -19,12 +19,15 @@ import dev.invisiblespiders.haven.api.service.HavenDataSource;
 import dev.invisiblespiders.haven.api.service.HavenEconomyService;
 import java.io.File;
 import java.time.Instant;
+import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public final class TeleportLocationsPlugin extends JavaPlugin {
     private RuntimeServices services;
     private BukkitTask elevatorParticleTask;
+    private DialogMenuService dialogMenus;
+    private PaperDialogPresenter dialogPresenter;
 
     @Override
     public void onEnable() {
@@ -67,7 +70,7 @@ public final class TeleportLocationsPlugin extends JavaPlugin {
                 services.config().elevatorMaxDistance()
         );
         getServer().getPluginManager().registerEvents(
-                new ElevatorListener(services.elevatorService(), activations, elevatorItems),
+                new ElevatorListener(services.elevatorService(), activations, elevatorItems, dialogMenus, dialogPresenter),
                 this
         );
         if (services.config().elevatorParticlesEnabled()) {
@@ -95,17 +98,19 @@ public final class TeleportLocationsPlugin extends JavaPlugin {
                 services.serverWarpService(),
                 new BukkitPlayerLookup()
         ));
-        DialogMenuService dialogMenus = new DialogMenuService();
-        PaperDialogPresenter presenter = new PaperDialogPresenter();
+        dialogMenus = new DialogMenuService();
+        dialogPresenter = new PaperDialogPresenter();
         DialogActionRouter dialogActions = new DialogActionRouter(
                 services.homeService(),
                 services.playerWarpService(),
                 services.shopWarpService(),
                 services.outpostService(),
                 services.serverWarpService(),
-                dialogMenus
+                services.elevatorService(),
+                dialogMenus,
+                this::hasOnlinePermission
         );
-        presenter.setActionHandler(new DialogActionExecutor(dialogActions, presenter, services.teleportChargeService()));
+        dialogPresenter.setActionHandler(new DialogActionExecutor(dialogActions, dialogPresenter, services.teleportChargeService()));
         PlayerLocationCommand playerCommand = new PlayerLocationCommand(
                 services.homeService(),
                 services.playerWarpService(),
@@ -115,7 +120,7 @@ public final class TeleportLocationsPlugin extends JavaPlugin {
                 services.spawnService(),
                 services.teleportChargeService(),
                 dialogMenus,
-                presenter
+                dialogPresenter
         );
         getCommand("home").setExecutor(playerCommand);
         getCommand("homes").setExecutor(playerCommand);
@@ -133,5 +138,10 @@ public final class TeleportLocationsPlugin extends JavaPlugin {
         getCommand("outpost").setExecutor(playerCommand);
         getCommand("deloutpost").setExecutor(playerCommand);
         getCommand("spawn").setExecutor(playerCommand);
+    }
+
+    private boolean hasOnlinePermission(java.util.UUID playerId, String permission) {
+        Player player = getServer().getPlayer(playerId);
+        return player != null && player.hasPermission(permission);
     }
 }
