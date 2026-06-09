@@ -23,19 +23,22 @@ public final class AdminTeleportCommand implements CommandExecutor {
     private final ServerWarpService serverWarps;
     private final AdminBypassService bypass;
     private final PlayerLookup players;
+    private final OnlinePlayerLookup onlinePlayers;
 
     public AdminTeleportCommand(
             SpawnService spawn,
             LimitService limits,
             ServerWarpService serverWarps,
             AdminBypassService bypass,
-            PlayerLookup players
+            PlayerLookup players,
+            OnlinePlayerLookup onlinePlayers
     ) {
         this.spawn = spawn;
         this.limits = limits;
         this.serverWarps = serverWarps;
         this.bypass = bypass;
         this.players = players;
+        this.onlinePlayers = onlinePlayers;
     }
 
     @Override
@@ -54,6 +57,10 @@ public final class AdminTeleportCommand implements CommandExecutor {
         }
         if (isBypassCommand(args)) {
             handleBypass(sender, args);
+            return true;
+        }
+        if (isAdminTeleportCommand(args)) {
+            handleAdminTeleport(sender, args);
             return true;
         }
         sender.sendMessage(Component.text(CommandMessages.adminUsage(), NamedTextColor.YELLOW));
@@ -85,6 +92,12 @@ public final class AdminTeleportCommand implements CommandExecutor {
         return args.length >= 3
                 && "admin".equals(args[0].toLowerCase(Locale.ROOT))
                 && "bypass".equals(args[1].toLowerCase(Locale.ROOT));
+    }
+
+    private boolean isAdminTeleportCommand(String[] args) {
+        return args.length >= 2
+                && "admin".equals(args[0].toLowerCase(Locale.ROOT))
+                && "tp".equals(args[1].toLowerCase(Locale.ROOT));
     }
 
     private void setSpawn(CommandSender sender) {
@@ -238,6 +251,29 @@ public final class AdminTeleportCommand implements CommandExecutor {
             }
         }
         player.sendMessage(Component.text("Claim bypass is " + (enabled ? "enabled" : "disabled") + ".", enabled ? NamedTextColor.YELLOW : NamedTextColor.GREEN));
+    }
+
+    private void handleAdminTeleport(CommandSender sender, String[] args) {
+        if (!sender.hasPermission("teleportlocations.admin.teleport")) {
+            sender.sendMessage(Component.text("You do not have permission to teleport players.", NamedTextColor.RED));
+            return;
+        }
+        if (args.length < 4) {
+            sender.sendMessage(Component.text("Usage: /ht admin tp <player> <target>", NamedTextColor.YELLOW));
+            return;
+        }
+        Optional<Player> player = onlinePlayers.find(args[2]);
+        if (player.isEmpty()) {
+            sender.sendMessage(Component.text("Player " + args[2] + " is not online.", NamedTextColor.RED));
+            return;
+        }
+        Optional<Player> target = onlinePlayers.find(args[3]);
+        if (target.isEmpty()) {
+            sender.sendMessage(Component.text("Player " + args[3] + " is not online.", NamedTextColor.RED));
+            return;
+        }
+        player.orElseThrow().teleportAsync(target.orElseThrow().getLocation());
+        sender.sendMessage(Component.text("Teleported " + player.orElseThrow().getName() + " to " + target.orElseThrow().getName() + ".", NamedTextColor.GREEN));
     }
 
     private Optional<Integer> parseAmount(String input) {

@@ -5,6 +5,8 @@ import com.nick.teleportlocations.cost.ChargeResult;
 import com.nick.teleportlocations.location.TeleportLocation;
 import com.nick.teleportlocations.teleport.TeleportChargeMessages;
 import com.nick.teleportlocations.teleport.TeleportChargeService;
+import com.nick.teleportlocations.teleport.TeleportSafetyResult;
+import com.nick.teleportlocations.teleport.TeleportSafetyService;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Location;
@@ -14,11 +16,13 @@ public final class DialogActionExecutor implements DialogActionHandler {
     private final DialogActionRouter router;
     private final PaperDialogPresenter presenter;
     private final TeleportChargeService charges;
+    private final TeleportSafetyService safety;
 
-    public DialogActionExecutor(DialogActionRouter router, PaperDialogPresenter presenter, TeleportChargeService charges) {
+    public DialogActionExecutor(DialogActionRouter router, PaperDialogPresenter presenter, TeleportChargeService charges, TeleportSafetyService safety) {
         this.router = router;
         this.presenter = presenter;
         this.charges = charges;
+        this.safety = safety;
     }
 
     @Override
@@ -33,6 +37,11 @@ public final class DialogActionExecutor implements DialogActionHandler {
     }
 
     private void teleport(Player player, TeleportLocation location) {
+        TeleportSafetyResult safetyResult = safety.validate(location.position());
+        if (!safetyResult.safe()) {
+            player.sendMessage(Component.text("That teleport destination is unsafe: " + safetyResult.reason() + ".", NamedTextColor.RED));
+            return;
+        }
         Location destination = BukkitLocations.load(location.position());
         if (destination == null) {
             player.sendMessage(Component.text("That location world is not loaded.", NamedTextColor.RED));

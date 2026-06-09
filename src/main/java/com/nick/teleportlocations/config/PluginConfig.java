@@ -19,6 +19,11 @@ public record PluginConfig(
         int elevatorCooldownSeconds,
         boolean elevatorParticlesEnabled,
         String elevatorDefaultParticle,
-        int elevatorParticleIntervalTicks
+        int elevatorParticleIntervalTicks,
+        boolean tpaEnabled,
+        int tpaRequestTimeoutSeconds,
+        int tpaCooldownSeconds,
+        int tpaWarmupSeconds,
+        boolean tpaCancelWarmupOnMove
 ) {
 }

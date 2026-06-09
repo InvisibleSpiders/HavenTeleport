@@ -32,4 +32,16 @@ final class ElevatorCooldownServiceTest {
         assertThat(cooldowns.tryUse(playerId, true)).isTrue();
         assertThat(cooldowns.tryUse(playerId, false)).isTrue();
     }
+
+    @Test
+    void clearRemovesStoredCooldown() {
+        UUID playerId = UUID.randomUUID();
+        ElevatorCooldownService cooldowns = new ElevatorCooldownService(2, () -> Instant.EPOCH);
+
+        cooldowns.tryUse(playerId, false);
+        cooldowns.clear(playerId);
+
+        assertThat(cooldowns.remainingSeconds(playerId)).isZero();
+        assertThat(cooldowns.tryUse(playerId, false)).isTrue();
+    }
 }

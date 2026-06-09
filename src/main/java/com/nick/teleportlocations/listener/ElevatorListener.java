@@ -17,6 +17,7 @@ import java.util.Optional;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Location;
+import org.bukkit.Particle;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -27,6 +28,7 @@ import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerToggleSneakEvent;
 
 public final class ElevatorListener implements Listener {
@@ -98,7 +100,7 @@ public final class ElevatorListener implements Listener {
 
     @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
     public void onMove(PlayerMoveEvent event) {
-        if (event.getTo() == null || event.getTo().getY() <= event.getFrom().getY() + 0.1) {
+        if (event.getTo() == null || !changedBlock(event.getFrom(), event.getTo()) || event.getTo().getY() <= event.getFrom().getY()) {
             return;
         }
         activate(event.getPlayer(), blockBelow(event.getFrom()), ElevatorDirection.UP);
@@ -110,6 +112,11 @@ public final class ElevatorListener implements Listener {
             return;
         }
         activate(event.getPlayer(), blockBelow(event.getPlayer().getLocation()), ElevatorDirection.DOWN);
+    }
+
+    @EventHandler
+    public void onQuit(PlayerQuitEvent event) {
+        activations.clearCooldown(event.getPlayer().getUniqueId());
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
@@ -144,21 +151,32 @@ public final class ElevatorListener implements Listener {
         if (elevator.isEmpty() || !player.hasPermission("teleportlocations.elevator.use")) {
             return;
         }
+        boolean bypassClaims = claimBypass(player);
         ElevatorActivationResult result = activations.activate(
                 player.getUniqueId(),
                 source,
                 direction,
-                claimBypass(player),
+                bypassClaims,
                 player.hasPermission("teleportlocations.admin.bypass.cooldown")
         );
-        remindBypass(player, claimBypass(player));
         if (result.status() == ElevatorActivationResult.Status.ACCESS_DENIED) {
+            remindBypass(player, bypassClaims);
             send(player, "You do not have access to use that elevator.", NamedTextColor.RED);
+            return;
+        }
+        if (result.status() == ElevatorActivationResult.Status.NO_DESTINATION) {
+            showNoDestinationCue(sourceBlock);
+            send(player, "No elevator block found in that direction.", NamedTextColor.RED);
+            return;
+        }
+        if (result.status() == ElevatorActivationResult.Status.COOLDOWN) {
+            send(player, "Elevator is on cooldown for " + result.remainingCooldownSeconds() + "s.", NamedTextColor.YELLOW);
             return;
         }
         if (result.status() != ElevatorActivationResult.Status.TELEPORT) {
             return;
         }
+        remindBypass(player, bypassClaims);
         Location destination = destinationLocation(result.destination().orElseThrow(), player);
         if (destination != null) {
             player.teleportAsync(destination);
@@ -167,6 +185,24 @@ public final class ElevatorListener implements Listener {
 
     private static Block blockBelow(Location location) {
         return location.clone().subtract(0.0, 1.0, 0.0).getBlock();
+    }
+
+    private static void showNoDestinationCue(Block source) {
+        source.getWorld().spawnParticle(
+                Particle.WAX_OFF,
+                source.getLocation().add(0.5, 1.05, 0.5),
+                8,
+                0.25,
+                0.2,
+                0.25,
+                0.0
+        );
+    }
+
+    private static boolean changedBlock(Location from, Location to) {
+        return from.getBlockX() != to.getBlockX()
+                || from.getBlockY() != to.getBlockY()
+                || from.getBlockZ() != to.getBlockZ();
     }
 
     private static Location destinationLocation(ElevatorBlock block, Player player) {

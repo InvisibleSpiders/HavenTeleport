@@ -26,6 +26,7 @@ import com.nick.teleportlocations.shop.ShopWarpService;
 import com.nick.teleportlocations.spawn.SpawnService;
 import com.nick.teleportlocations.storage.InMemoryLocationRepository;
 import com.nick.teleportlocations.teleport.TeleportChargeService;
+import com.nick.teleportlocations.teleport.TeleportSafetyService;
 import com.nick.teleportlocations.warp.PlayerWarpService;
 import java.time.Instant;
 import java.util.UUID;
@@ -158,6 +159,7 @@ final class PlayerLocationCommandTest {
                             serverWarpService,
                             spawnService,
                             chargeService,
+                            new TeleportSafetyService(),
                             new DialogMenuService(),
                             new PaperDialogPresenter()
                     ),

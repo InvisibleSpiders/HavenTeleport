@@ -34,7 +34,12 @@ public final class ConfigLoader {
                 yaml.getInt("elevators.cooldown-seconds", 2),
                 yaml.getBoolean("elevators.particles.enabled", true),
                 yaml.getString("elevators.particles.default", "WAX_ON"),
-                yaml.getInt("elevators.particles.interval-ticks", 20)
+                yaml.getInt("elevators.particles.interval-ticks", 20),
+                yaml.getBoolean("tpa.enabled", true),
+                yaml.getInt("tpa.request-timeout-seconds", 60),
+                yaml.getInt("tpa.cooldown-seconds", 0),
+                yaml.getInt("tpa.warmup-seconds", 0),
+                yaml.getBoolean("tpa.cancel-warmup-on-move", true)
         );
     }
 

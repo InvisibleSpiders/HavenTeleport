@@ -41,4 +41,9 @@ public final class ElevatorCooldownService {
         long seconds = Duration.between(clock.get(), nextUse).toSeconds();
         return Math.max(0, seconds);
     }
+
+    public void clear(UUID playerId) {
+        Objects.requireNonNull(playerId, "playerId");
+        nextUseByPlayer.remove(playerId);
+    }
 }

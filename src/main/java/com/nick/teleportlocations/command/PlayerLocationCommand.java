@@ -15,6 +15,8 @@ import com.nick.teleportlocations.shop.ShopWarpService;
 import com.nick.teleportlocations.spawn.SpawnService;
 import com.nick.teleportlocations.teleport.TeleportChargeMessages;
 import com.nick.teleportlocations.teleport.TeleportChargeService;
+import com.nick.teleportlocations.teleport.TeleportSafetyResult;
+import com.nick.teleportlocations.teleport.TeleportSafetyService;
 import com.nick.teleportlocations.warp.PlayerWarpResult;
 import com.nick.teleportlocations.warp.PlayerWarpService;
 import java.util.Locale;
@@ -35,10 +37,11 @@ public final class PlayerLocationCommand implements CommandExecutor {
     private final ServerWarpService serverWarps;
     private final SpawnService spawn;
     private final TeleportChargeService charges;
+    private final TeleportSafetyService safety;
     private final DialogMenuService dialogs;
     private final PaperDialogPresenter presenter;
 
-    public PlayerLocationCommand(HomeService homes, PlayerWarpService warps, ShopWarpService shops, OutpostService outposts, ServerWarpService serverWarps, SpawnService spawn, TeleportChargeService charges, DialogMenuService dialogs, PaperDialogPresenter presenter) {
+    public PlayerLocationCommand(HomeService homes, PlayerWarpService warps, ShopWarpService shops, OutpostService outposts, ServerWarpService serverWarps, SpawnService spawn, TeleportChargeService charges, TeleportSafetyService safety, DialogMenuService dialogs, PaperDialogPresenter presenter) {
         this.homes = homes;
         this.warps = warps;
         this.shops = shops;
@@ -46,6 +49,7 @@ public final class PlayerLocationCommand implements CommandExecutor {
         this.serverWarps = serverWarps;
         this.spawn = spawn;
         this.charges = charges;
+        this.safety = safety;
         this.dialogs = dialogs;
         this.presenter = presenter;
     }
@@ -105,9 +109,8 @@ public final class PlayerLocationCommand implements CommandExecutor {
             player.sendMessage(Component.text("Home not found.", NamedTextColor.RED));
             return;
         }
-        Location destination = BukkitLocations.load(home.orElseThrow().position());
+        Location destination = safeLoad(player, home.orElseThrow(), "That home world is not loaded.");
         if (destination == null) {
-            player.sendMessage(Component.text("That home world is not loaded.", NamedTextColor.RED));
             return;
         }
         player.teleportAsync(destination);
@@ -155,9 +158,8 @@ public final class PlayerLocationCommand implements CommandExecutor {
             player.sendMessage(Component.text("Warp not found.", NamedTextColor.RED));
             return;
         }
-        Location destination = BukkitLocations.load(warp.orElseThrow().position());
+        Location destination = safeLoad(player, warp.orElseThrow(), "That warp world is not loaded.");
         if (destination == null) {
-            player.sendMessage(Component.text("That warp world is not loaded.", NamedTextColor.RED));
             return;
         }
         if (!charge(player, warp.orElseThrow())) {
@@ -234,9 +236,8 @@ public final class PlayerLocationCommand implements CommandExecutor {
             player.sendMessage(Component.text("Outpost not found.", NamedTextColor.RED));
             return;
         }
-        Location destination = BukkitLocations.load(outpost.orElseThrow().position());
+        Location destination = safeLoad(player, outpost.orElseThrow(), "That outpost world is not loaded.");
         if (destination == null) {
-            player.sendMessage(Component.text("That outpost world is not loaded.", NamedTextColor.RED));
             return;
         }
         player.teleportAsync(destination);
@@ -257,9 +258,8 @@ public final class PlayerLocationCommand implements CommandExecutor {
             player.sendMessage(Component.text("Spawn has not been set.", NamedTextColor.RED));
             return;
         }
-        Location destination = BukkitLocations.load(configuredSpawn.orElseThrow().position());
+        Location destination = safeLoad(player, configuredSpawn.orElseThrow(), "The spawn world is not loaded.");
         if (destination == null) {
-            player.sendMessage(Component.text("The spawn world is not loaded.", NamedTextColor.RED));
             return;
         }
         player.teleportAsync(destination);
@@ -310,4 +310,17 @@ public final class PlayerLocationCommand implements CommandExecutor {
         }
     }
 
+    private Location safeLoad(Player player, TeleportLocation location, String missingWorldMessage) {
+        TeleportSafetyResult result = safety.validate(location.position());
+        if (!result.safe()) {
+            player.sendMessage(Component.text("That teleport destination is unsafe: " + result.reason() + ".", NamedTextColor.RED));
+            return null;
+        }
+        Location destination = BukkitLocations.load(location.position());
+        if (destination == null) {
+            player.sendMessage(Component.text(missingWorldMessage, NamedTextColor.RED));
+            return null;
+        }
+        return destination;
+    }
 }

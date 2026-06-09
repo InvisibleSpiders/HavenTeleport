@@ -14,7 +14,11 @@ public final class BukkitPlayerResourceGateway implements PlayerResourceGateway 
         if (player == null || player.getLevel() < levels) {
             return false;
         }
-        player.setLevel(player.getLevel() - levels);
+        int currentLevel = player.getLevel();
+        if (currentLevel < levels) {
+            return false;
+        }
+        player.setLevel(currentLevel - levels);
         return true;
     }
 
@@ -24,7 +28,11 @@ public final class BukkitPlayerResourceGateway implements PlayerResourceGateway 
         if (player == null || player.getTotalExperience() < points) {
             return false;
         }
-        player.setTotalExperience(player.getTotalExperience() - points);
+        int currentPoints = player.getTotalExperience();
+        if (currentPoints < points) {
+            return false;
+        }
+        player.setTotalExperience(currentPoints - points);
         return true;
     }
 

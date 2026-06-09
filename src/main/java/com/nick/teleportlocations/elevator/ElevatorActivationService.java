@@ -34,8 +34,12 @@ public final class ElevatorActivationService {
             return ElevatorActivationResult.empty(ElevatorActivationResult.Status.NO_DESTINATION);
         }
         if (!cooldowns.tryUse(playerId, bypassCooldown)) {
-            return ElevatorActivationResult.empty(ElevatorActivationResult.Status.COOLDOWN);
+            return ElevatorActivationResult.cooldown(cooldowns.remainingSeconds(playerId));
         }
         return ElevatorActivationResult.destination(destination.get());
+    }
+
+    public void clearCooldown(UUID playerId) {
+        cooldowns.clear(playerId);
     }
 }
