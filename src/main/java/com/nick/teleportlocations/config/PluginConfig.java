@@ -20,6 +20,8 @@ public record PluginConfig(
         List<String> deathRespawnFallback,
         int elevatorMaxDistance,
         int elevatorCooldownSeconds,
+        int teleportBlockMaxDistance,
+        int teleportBlockCooldownSeconds,
         boolean elevatorParticlesEnabled,
         String elevatorDefaultParticle,
         int elevatorParticleIntervalTicks,

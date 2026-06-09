@@ -99,6 +99,12 @@ elevators:
     # How often elevator cue particles are emitted.
     interval-ticks: 20
 
+teleport-blocks:
+  # Maximum distance between two echo-shard linked teleport blocks.
+  max-distance: 64
+  # Cooldown after teleport block use to prevent rapid loops.
+  cooldown-seconds: 3
+
 tpa:
   # Enables player-to-player teleport request commands.
   enabled: true

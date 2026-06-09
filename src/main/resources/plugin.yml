@@ -131,6 +131,14 @@ permissions:
       teleportlocations.elevator.use: true
       teleportlocations.elevator.menu: true
       teleportlocations.elevator.particle.wax_on: true
+  teleportlocations.teleportblock:
+    description: Allows teleport block placement, breaking, use, and linking.
+    default: true
+    children:
+      teleportlocations.teleportblock.place: true
+      teleportlocations.teleportblock.break: true
+      teleportlocations.teleportblock.use: true
+      teleportlocations.teleportblock.link: true
   teleportlocations.admin:
     description: Grants all TeleportLocations admin permissions.
     default: op
@@ -165,6 +173,18 @@ permissions:
   teleportlocations.elevator.particle.end_rod:
     description: Allows selecting the End Rod elevator particle.
     default: op
+  teleportlocations.teleportblock.place:
+    description: Allows placing teleport blocks in owned claims.
+    default: true
+  teleportlocations.teleportblock.break:
+    description: Allows breaking teleport blocks where the player has build access.
+    default: true
+  teleportlocations.teleportblock.use:
+    description: Allows using teleport blocks where the player has claim access.
+    default: true
+  teleportlocations.teleportblock.link:
+    description: Allows linking teleport blocks with Echo Shards.
+    default: true
   teleportlocations.admin.elevator:
     description: Allows admin elevator management.
     default: op
