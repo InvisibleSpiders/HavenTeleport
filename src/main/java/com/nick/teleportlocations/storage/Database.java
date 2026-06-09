@@ -110,6 +110,7 @@ public final class Database implements AutoCloseable {
                         block_y INTEGER NOT NULL,
                         block_z INTEGER NOT NULL,
                         linked_block_id TEXT,
+                        target_location_id TEXT,
                         created_at TEXT NOT NULL,
                         updated_at TEXT NOT NULL,
                         CONSTRAINT teleport_blocks_position UNIQUE(world_id, block_x, block_y, block_z)
@@ -118,6 +119,10 @@ public final class Database implements AutoCloseable {
             statement.executeUpdate("""
                     CREATE INDEX IF NOT EXISTS teleport_blocks_link
                     ON teleport_blocks(linked_block_id)
+                    """);
+            statement.executeUpdate("""
+                    CREATE INDEX IF NOT EXISTS teleport_blocks_target_location
+                    ON teleport_blocks(target_location_id)
                     """);
         }
     }

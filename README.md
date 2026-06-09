@@ -98,7 +98,7 @@ Teleport block placement, breaking, Echo Shard linking, lit-state activation, co
 | `teleportlocations.teleportblock.place` | true | Allows placing teleport blocks in owned claims. |
 | `teleportlocations.teleportblock.break` | true | Allows breaking teleport blocks where the player has claim build access. |
 | `teleportlocations.teleportblock.use` | true | Allows using active linked teleport blocks where the player has claim access. |
-| `teleportlocations.teleportblock.link` | true | Allows linking two teleport blocks with an Echo Shard. |
+| `teleportlocations.teleportblock.link` | true | Allows linking two teleport blocks with an Echo Shard and setting owned saved-location targets. |
 | `teleportlocations.admin` | op | Parent permission for all admin permissions. |
 | `teleportlocations.admin.reload` | op via `teleportlocations.admin` | Reserved for reload/admin maintenance. |
 | `teleportlocations.admin.limits` | op via `teleportlocations.admin` | Allows editing player limits. |
@@ -107,6 +107,7 @@ Teleport block placement, breaking, Echo Shard linking, lit-state activation, co
 | `teleportlocations.admin.edit` | op via `teleportlocations.admin` | Reserved for admin location editing. |
 | `teleportlocations.admin.teleport` | op via `teleportlocations.admin` | Reserved for admin teleport tools. |
 | `teleportlocations.admin.elevator` | op via `teleportlocations.admin` | Reserved for admin elevator management. |
+| `teleportlocations.admin.teleportblock` | op via `teleportlocations.admin` | Allows setting admin teleport block targets while claim-bypass mode is active. |
 | `teleportlocations.admin.bypass.creation` | op via `teleportlocations.admin` | Bypass claim/location creation checks. |
 | `teleportlocations.admin.bypass.claims` | op via `teleportlocations.admin` | Allows toggling personal claim-bypass mode for protected elevator actions. |
 | `teleportlocations.admin.bypass.cost` | op via `teleportlocations.admin` | Bypass teleport costs. |
@@ -147,7 +148,9 @@ Teleport blocks are any waxed copper bulb variant placed inside a claim the play
 
 Right-click one teleport block with an Echo Shard, then right-click another teleport block with an Echo Shard to link them. Links must be within the configured max distance. Players need edit access to both blocks; admins can use active claim-bypass mode to override this and will receive a reminder message.
 
-Walking onto an active linked teleport block moves the player to the linked block if they have claim access at both ends. Cooldowns apply to prevent loops and lag. Shift-right-click currently reserves the destination menu entry point; home/warp/shop/admin destination menus are planned for the next teleport-block PR.
+Walking onto an active linked teleport block moves the player to the linked block if they have claim access at both ends. Cooldowns apply to prevent loops and lag.
+
+Shift-right-click a teleport block to open its destination menu. Players can target their own homes, player warps, and shop warps. Admins with `teleportlocations.admin.teleportblock` and active claim-bypass mode can target spawn, server warps, visible player warps, and visible shop warps. Saved-location targets run the same safety, claim-entry, and cost checks as normal teleport commands.
 
 Teleport block defaults are configured under `teleport-blocks` in `config.yml`:
 

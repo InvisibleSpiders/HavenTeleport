@@ -10,6 +10,7 @@ public record TeleportBlock(
         UUID ownerId,
         SavedPosition position,
         Optional<UUID> linkedBlockId,
+        Optional<UUID> targetLocationId,
         Instant createdAt,
         Instant updatedAt
 ) {
@@ -26,7 +27,11 @@ public record TeleportBlock(
     }
 
     public TeleportBlock withLink(Optional<UUID> linkedBlockId, Instant updatedAt) {
-        return new TeleportBlock(id, ownerId, position, linkedBlockId, createdAt, updatedAt);
+        return new TeleportBlock(id, ownerId, position, linkedBlockId, Optional.empty(), createdAt, updatedAt);
+    }
+
+    public TeleportBlock withTargetLocation(Optional<UUID> targetLocationId, Instant updatedAt) {
+        return new TeleportBlock(id, ownerId, position, Optional.empty(), targetLocationId, createdAt, updatedAt);
     }
 
     static int block(double coordinate) {

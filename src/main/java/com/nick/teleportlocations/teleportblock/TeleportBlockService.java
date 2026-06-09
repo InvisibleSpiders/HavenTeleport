@@ -2,6 +2,7 @@ package com.nick.teleportlocations.teleportblock;
 
 import com.nick.teleportlocations.claim.LandClaimsGateway;
 import com.nick.teleportlocations.location.SavedPosition;
+import com.nick.teleportlocations.location.TeleportLocation;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.Optional;
@@ -32,7 +33,7 @@ public final class TeleportBlockService {
             return TeleportBlockResult.of(TeleportBlockResult.Status.UPDATED, existing.get());
         }
         Instant now = clock.get();
-        TeleportBlock block = new TeleportBlock(UUID.randomUUID(), ownerId, normalized(position), Optional.empty(), now, now);
+        TeleportBlock block = new TeleportBlock(UUID.randomUUID(), ownerId, normalized(position), Optional.empty(), Optional.empty(), now, now);
         repository.save(block);
         return TeleportBlockResult.of(TeleportBlockResult.Status.PLACED, block);
     }
@@ -80,10 +81,33 @@ public final class TeleportBlockService {
         return adminBypassClaims || landClaims.canInteract(playerId, position, USE_ACTION);
     }
 
+    public TeleportBlockResult setTargetLocation(UUID playerId, UUID blockId, TeleportLocation target, boolean adminBypassClaims) {
+        Objects.requireNonNull(playerId, "playerId");
+        Objects.requireNonNull(blockId, "blockId");
+        Objects.requireNonNull(target, "target");
+        Optional<TeleportBlock> existing = repository.findById(blockId);
+        if (existing.isEmpty()) {
+            return TeleportBlockResult.empty(TeleportBlockResult.Status.NOT_FOUND);
+        }
+        TeleportBlock block = existing.get();
+        if (!canEdit(playerId, block, adminBypassClaims) || !canSetTarget(playerId, target, adminBypassClaims)) {
+            return TeleportBlockResult.empty(TeleportBlockResult.Status.ACCESS_DENIED);
+        }
+        TeleportBlock updated = block.withTargetLocation(Optional.of(target.id()), clock.get());
+        repository.save(updated);
+        return TeleportBlockResult.of(TeleportBlockResult.Status.UPDATED, updated);
+    }
+
     public Optional<TeleportBlock> linkedDestination(TeleportBlock block) {
         return repository.findById(block.id())
                 .or(() -> Optional.of(block))
                 .flatMap(current -> current.linkedBlockId().flatMap(repository::findById));
+    }
+
+    public Optional<UUID> targetLocationId(TeleportBlock block) {
+        return repository.findById(block.id())
+                .or(() -> Optional.of(block))
+                .flatMap(TeleportBlock::targetLocationId);
     }
 
     public Optional<TeleportBlock> findAt(SavedPosition position) {
@@ -98,6 +122,16 @@ public final class TeleportBlockService {
 
     private boolean canEdit(UUID playerId, TeleportBlock block, boolean adminBypassClaims) {
         return adminBypassClaims || block.ownerId().equals(playerId) || landClaims.canBuild(playerId, block.position());
+    }
+
+    private static boolean canSetTarget(UUID playerId, TeleportLocation target, boolean adminBypassClaims) {
+        if (adminBypassClaims) {
+            return true;
+        }
+        return switch (target.category()) {
+            case "home", "player_warp", "shop" -> target.owner().playerIdOptional().filter(playerId::equals).isPresent();
+            default -> false;
+        };
     }
 
     private void unlink(TeleportBlock block) {

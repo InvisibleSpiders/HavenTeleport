@@ -8,6 +8,7 @@ import com.nick.teleportlocations.home.HomeService;
 import com.nick.teleportlocations.home.HomeResult;
 import com.nick.teleportlocations.location.AccessMode;
 import com.nick.teleportlocations.location.CostSpec;
+import com.nick.teleportlocations.location.LocationService;
 import com.nick.teleportlocations.location.TeleportLocation;
 import com.nick.teleportlocations.location.VisibilityMode;
 import com.nick.teleportlocations.outpost.OutpostService;
@@ -15,6 +16,8 @@ import com.nick.teleportlocations.outpost.OutpostResult;
 import com.nick.teleportlocations.shop.ShopWarpService;
 import com.nick.teleportlocations.shop.ShopWarpResult;
 import com.nick.teleportlocations.serverwarp.ServerWarpService;
+import com.nick.teleportlocations.teleportblock.TeleportBlockResult;
+import com.nick.teleportlocations.teleportblock.TeleportBlockService;
 import com.nick.teleportlocations.warp.PlayerWarpService;
 import com.nick.teleportlocations.warp.PlayerWarpResult;
 import java.util.Locale;
@@ -30,6 +33,8 @@ public final class DialogActionRouter {
     private final OutpostService outposts;
     private final ServerWarpService serverWarps;
     private final ElevatorService elevators;
+    private final TeleportBlockService teleportBlocks;
+    private final LocationService locations;
     private final DialogMenuService menus;
     private final AdminBypassService bypass;
     private final BiPredicate<UUID, String> permissions;
@@ -42,20 +47,7 @@ public final class DialogActionRouter {
             ServerWarpService serverWarps,
             DialogMenuService menus
     ) {
-        this(homes, warps, shops, outposts, serverWarps, null, menus, new AdminBypassService(), (viewerId, permission) -> false);
-    }
-
-    public DialogActionRouter(
-            HomeService homes,
-            PlayerWarpService warps,
-            ShopWarpService shops,
-            OutpostService outposts,
-            ServerWarpService serverWarps,
-            ElevatorService elevators,
-            DialogMenuService menus,
-            BiPredicate<UUID, String> permissions
-    ) {
-        this(homes, warps, shops, outposts, serverWarps, elevators, menus, new AdminBypassService(), permissions);
+        this(homes, warps, shops, outposts, serverWarps, null, null, null, menus, new AdminBypassService(), (viewerId, permission) -> false);
     }
 
     public DialogActionRouter(
@@ -69,12 +61,43 @@ public final class DialogActionRouter {
             AdminBypassService bypass,
             BiPredicate<UUID, String> permissions
     ) {
+        this(homes, warps, shops, outposts, serverWarps, elevators, null, null, menus, bypass, permissions);
+    }
+
+    public DialogActionRouter(
+            HomeService homes,
+            PlayerWarpService warps,
+            ShopWarpService shops,
+            OutpostService outposts,
+            ServerWarpService serverWarps,
+            ElevatorService elevators,
+            DialogMenuService menus,
+            BiPredicate<UUID, String> permissions
+    ) {
+        this(homes, warps, shops, outposts, serverWarps, elevators, null, null, menus, new AdminBypassService(), permissions);
+    }
+
+    public DialogActionRouter(
+            HomeService homes,
+            PlayerWarpService warps,
+            ShopWarpService shops,
+            OutpostService outposts,
+            ServerWarpService serverWarps,
+            ElevatorService elevators,
+            TeleportBlockService teleportBlocks,
+            LocationService locations,
+            DialogMenuService menus,
+            AdminBypassService bypass,
+            BiPredicate<UUID, String> permissions
+    ) {
         this.homes = homes;
         this.warps = warps;
         this.shops = shops;
         this.outposts = outposts;
         this.serverWarps = serverWarps;
         this.elevators = elevators;
+        this.teleportBlocks = teleportBlocks;
+        this.locations = locations;
         this.menus = menus;
         this.bypass = Objects.requireNonNull(bypass, "bypass");
         this.permissions = Objects.requireNonNull(permissions, "permissions");
@@ -110,6 +133,9 @@ public final class DialogActionRouter {
                     : DialogActionRouteResult.unknownAction();
             case "set-elevator-particle" -> parts.length == 3
                     ? setElevatorParticle(viewerId, parts[1], parts[2])
+                    : DialogActionRouteResult.unknownAction();
+            case "set-teleport-block-target" -> parts.length == 3
+                    ? setTeleportBlockTarget(viewerId, parts[1], parts[2])
                     : DialogActionRouteResult.unknownAction();
             default -> DialogActionRouteResult.unknownAction();
         };
@@ -247,6 +273,33 @@ public final class DialogActionRouter {
 
     public static String particlePermission(ElevatorParticle particle) {
         return "teleportlocations.elevator.particle." + particle.name().toLowerCase(Locale.ROOT);
+    }
+
+    private DialogActionRouteResult setTeleportBlockTarget(UUID viewerId, String blockIdValue, String locationIdValue) {
+        if (teleportBlocks == null || locations == null) {
+            return DialogActionRouteResult.unknownAction();
+        }
+        if (!permissions.test(viewerId, "teleportlocations.teleportblock.link")) {
+            return DialogActionRouteResult.accessDenied();
+        }
+        try {
+            UUID blockId = UUID.fromString(blockIdValue);
+            UUID locationId = UUID.fromString(locationIdValue);
+            Optional<TeleportLocation> target = locations.findById(locationId);
+            if (target.isEmpty()) {
+                return DialogActionRouteResult.notFound();
+            }
+            boolean adminBypass = permissions.test(viewerId, "teleportlocations.admin.teleportblock") && bypass.claims(viewerId);
+            TeleportBlockResult result = teleportBlocks.setTargetLocation(viewerId, blockId, target.orElseThrow(), adminBypass);
+            return switch (result.status()) {
+                case UPDATED -> DialogActionRouteResult.message("Teleport block target updated.");
+                case NOT_FOUND -> DialogActionRouteResult.notFound();
+                case ACCESS_DENIED -> DialogActionRouteResult.accessDenied();
+                default -> DialogActionRouteResult.unknownAction();
+            };
+        } catch (IllegalArgumentException exception) {
+            return DialogActionRouteResult.unknownAction();
+        }
     }
 
     private CostSpec parseCost(String type, String amount) {

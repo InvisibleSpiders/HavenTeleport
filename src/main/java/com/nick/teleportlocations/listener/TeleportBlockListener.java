@@ -2,12 +2,28 @@ package com.nick.teleportlocations.listener;
 
 import com.nick.teleportlocations.admin.AdminBypassService;
 import com.nick.teleportlocations.bukkit.BukkitLocations;
+import com.nick.teleportlocations.cost.ChargeResult;
+import com.nick.teleportlocations.dialog.DialogMenuService;
+import com.nick.teleportlocations.dialog.PaperDialogPresenter;
 import com.nick.teleportlocations.elevator.ElevatorCooldownService;
+import com.nick.teleportlocations.home.HomeService;
 import com.nick.teleportlocations.location.SavedPosition;
+import com.nick.teleportlocations.location.TeleportLocation;
+import com.nick.teleportlocations.location.LocationService;
+import com.nick.teleportlocations.serverwarp.ServerWarpService;
+import com.nick.teleportlocations.shop.ShopWarpService;
 import com.nick.teleportlocations.teleport.ManagedTeleportService;
+import com.nick.teleportlocations.teleport.TeleportAccessResult;
+import com.nick.teleportlocations.teleport.TeleportAccessService;
+import com.nick.teleportlocations.teleport.TeleportChargeMessages;
+import com.nick.teleportlocations.teleport.TeleportChargeService;
+import com.nick.teleportlocations.teleport.TeleportSafetyResult;
+import com.nick.teleportlocations.teleport.TeleportSafetyService;
 import com.nick.teleportlocations.teleportblock.TeleportBlock;
 import com.nick.teleportlocations.teleportblock.TeleportBlockResult;
 import com.nick.teleportlocations.teleportblock.TeleportBlockService;
+import com.nick.teleportlocations.warp.PlayerWarpService;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -32,7 +48,17 @@ import org.bukkit.event.player.PlayerQuitEvent;
 
 public final class TeleportBlockListener implements Listener {
     private final TeleportBlockService teleportBlocks;
+    private final LocationService locations;
+    private final HomeService homes;
+    private final PlayerWarpService warps;
+    private final ShopWarpService shops;
+    private final ServerWarpService serverWarps;
+    private final TeleportSafetyService safety;
+    private final TeleportAccessService access;
+    private final TeleportChargeService charges;
     private final ElevatorCooldownService cooldowns;
+    private final DialogMenuService menus;
+    private final PaperDialogPresenter presenter;
     private final AdminBypassService bypass;
     private final ManagedTeleportService managedTeleports;
     private final int maxDistance;
@@ -40,13 +66,33 @@ public final class TeleportBlockListener implements Listener {
 
     public TeleportBlockListener(
             TeleportBlockService teleportBlocks,
+            LocationService locations,
+            HomeService homes,
+            PlayerWarpService warps,
+            ShopWarpService shops,
+            ServerWarpService serverWarps,
+            TeleportSafetyService safety,
+            TeleportAccessService access,
+            TeleportChargeService charges,
             ElevatorCooldownService cooldowns,
+            DialogMenuService menus,
+            PaperDialogPresenter presenter,
             AdminBypassService bypass,
             ManagedTeleportService managedTeleports,
             int maxDistance
     ) {
         this.teleportBlocks = teleportBlocks;
+        this.locations = locations;
+        this.homes = homes;
+        this.warps = warps;
+        this.shops = shops;
+        this.serverWarps = serverWarps;
+        this.safety = safety;
+        this.access = access;
+        this.charges = charges;
         this.cooldowns = cooldowns;
+        this.menus = menus;
+        this.presenter = presenter;
         this.bypass = bypass;
         this.managedTeleports = managedTeleports;
         this.maxDistance = Math.max(1, maxDistance);
@@ -119,7 +165,7 @@ public final class TeleportBlockListener implements Listener {
         Player player = event.getPlayer();
         if (player.isSneaking()) {
             event.setCancelled(true);
-            send(player, "Teleport block destination menus are coming in the next update.", NamedTextColor.YELLOW);
+            showSettings(player, position);
             return;
         }
         if (event.getItem() == null || event.getItem().getType() != Material.ECHO_SHARD) {
@@ -153,6 +199,11 @@ public final class TeleportBlockListener implements Listener {
             return;
         }
         Optional<TeleportBlock> destinationBlock = teleportBlocks.linkedDestination(source.orElseThrow());
+        Optional<TeleportLocation> targetLocation = teleportBlocks.targetLocationId(source.orElseThrow()).flatMap(locations::findById);
+        if (targetLocation.isPresent()) {
+            teleportToLocation(player, targetLocation.orElseThrow(), bypassClaims);
+            return;
+        }
         if (destinationBlock.isEmpty()) {
             managedTeleports.denied(player);
             send(player, "That teleport block is not linked.", NamedTextColor.RED);
@@ -170,6 +221,64 @@ public final class TeleportBlockListener implements Listener {
             return;
         }
         managedTeleports.teleport(player, destination.clone().add(0.5D, 1.0D, 0.5D));
+    }
+
+    private void teleportToLocation(Player player, TeleportLocation target, boolean bypassClaims) {
+        TeleportSafetyResult safetyResult = safety.validate(target.position());
+        if (!safetyResult.safe()) {
+            managedTeleports.denied(player);
+            send(player, "That teleport block target is unsafe: " + safetyResult.reason() + ".", NamedTextColor.RED);
+            return;
+        }
+        Location destination = BukkitLocations.load(target.position());
+        if (destination == null) {
+            managedTeleports.denied(player);
+            send(player, "That teleport block target world is not loaded.", NamedTextColor.RED);
+            return;
+        }
+        TeleportAccessResult accessResult = access.canEnter(player.getUniqueId(), target.position(), bypassClaims);
+        if (!accessResult.allowed()) {
+            managedTeleports.denied(player);
+            send(player, "You cannot enter that teleport block target.", NamedTextColor.RED);
+            return;
+        }
+        ChargeResult charge = charges.chargeIfNeeded(
+                player.getUniqueId(),
+                player.hasPermission("teleportlocations.admin.bypass.cost"),
+                target
+        );
+        if (!charge.success()) {
+            managedTeleports.denied(player);
+            send(player, TeleportChargeMessages.failure(charge.reason()), NamedTextColor.RED);
+            return;
+        }
+        managedTeleports.teleport(player, destination);
+    }
+
+    private void showSettings(Player player, SavedPosition position) {
+        Optional<TeleportBlock> block = teleportBlocks.findAt(position);
+        if (block.isEmpty()) {
+            return;
+        }
+        boolean bypassClaims = claimBypass(player);
+        remindBypass(player, bypassClaims);
+        boolean canEdit = player.hasPermission("teleportlocations.teleportblock.link");
+        ArrayList<TeleportLocation> playerTargets = new ArrayList<>();
+        playerTargets.addAll(homes.listHomes(player.getUniqueId()));
+        playerTargets.addAll(warps.ownerWarps(player.getUniqueId()));
+        playerTargets.addAll(shops.ownerShops(player.getUniqueId()));
+        ArrayList<TeleportLocation> adminTargets = new ArrayList<>();
+        if (player.hasPermission("teleportlocations.admin.teleportblock") && bypassClaims) {
+            spawnTarget().ifPresent(adminTargets::add);
+            adminTargets.addAll(serverWarps.visibleWarps());
+            adminTargets.addAll(warps.visibleWarps(player.getUniqueId()));
+            adminTargets.addAll(shops.visibleShops(player.getUniqueId()));
+        }
+        presenter.show(player, menus.teleportBlockSettingsMenu(block.orElseThrow(), playerTargets, adminTargets, canEdit));
+    }
+
+    private Optional<TeleportLocation> spawnTarget() {
+        return locations.list("spawn").stream().findFirst();
     }
 
     private void linkWithEchoShard(Player player, SavedPosition position) {

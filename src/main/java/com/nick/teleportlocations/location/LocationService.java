@@ -63,6 +63,10 @@ public final class LocationService {
         return repository.findByIdentity(owner, category, LocationName.normalize(name));
     }
 
+    public Optional<TeleportLocation> findById(UUID id) {
+        return repository.findById(id);
+    }
+
     public List<TeleportLocation> list(OwnerRef owner, String category) {
         return repository.findByOwnerAndCategory(owner, category);
     }
