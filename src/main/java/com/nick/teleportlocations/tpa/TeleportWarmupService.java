@@ -33,13 +33,23 @@ public final class TeleportWarmupService implements Listener {
             return;
         }
         UUID playerId = player.getUniqueId();
-        cancel(playerId);
+        cancel(playerId, false);
         player.sendMessage(Component.text("Teleporting in " + warmupSeconds + "s. Do not move.", NamedTextColor.YELLOW));
         BukkitTask task = plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
             warmups.remove(playerId);
             action.run();
         }, warmupSeconds * 20L);
         warmups.put(playerId, task);
+    }
+
+    public void cancel(UUID playerId, boolean notify, Player player) {
+        BukkitTask task = warmups.remove(playerId);
+        if (task != null) {
+            task.cancel();
+            if (notify) {
+                player.sendMessage(Component.text("Teleport cancelled.", NamedTextColor.RED));
+            }
+        }
     }
 
     public void cancel(UUID playerId, String message, Player player) {
@@ -50,7 +60,7 @@ public final class TeleportWarmupService implements Listener {
         }
     }
 
-    private void cancel(UUID playerId) {
+    private void cancel(UUID playerId, boolean notify) {
         BukkitTask task = warmups.remove(playerId);
         if (task != null) {
             task.cancel();
@@ -63,13 +73,13 @@ public final class TeleportWarmupService implements Listener {
             return;
         }
         if (changedBlock(event.getFrom(), event.getTo())) {
-            cancel(event.getPlayer().getUniqueId(), "Teleport cancelled: you moved.", event.getPlayer());
+            cancel(event.getPlayer().getUniqueId(), true, event.getPlayer());
         }
     }
 
     @EventHandler
     public void onQuit(PlayerQuitEvent event) {
-        cancel(event.getPlayer().getUniqueId());
+        cancel(event.getPlayer().getUniqueId(), false);
     }
 
     private static boolean changedBlock(Location from, Location to) {

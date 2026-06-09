@@ -59,8 +59,6 @@ tpa:
   warmup-seconds: 0
   # Moving during a non-zero warmup cancels the teleport.
   cancel-warmup-on-move: true
-  # Maximum pending outgoing requests a player can have at once.
-  max-outgoing-requests: 3
 
 categories:
   home:

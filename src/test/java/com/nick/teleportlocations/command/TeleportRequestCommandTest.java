@@ -58,38 +58,11 @@ final class TeleportRequestCommandTest {
     }
 
     @Test
-    void cancelRemovesOutgoingRequest() {
-        Player requester = player("Nova", UUID.randomUUID(), location("world"));
-        Player target = player("Ari", UUID.randomUUID(), location("world"));
-        TeleportRequestService requests = new TeleportRequestService(60, 0, 3, () -> Instant.EPOCH);
-        TeleportRequestCommand command = command(Map.of("Nova", requester, "Ari", target), requests, new TeleportWarmupService(mock(Plugin.class), 0, true));
-        command.onCommand(requester, command("tpa"), "tpa", new String[] {"Ari"});
-
-        command.onCommand(requester, command("tpcancel"), "tpcancel", new String[] {"Ari"});
-
-        assertThat(requests.pendingFor(target.getUniqueId(), requester.getUniqueId())).isEmpty();
-    }
-
-    @Test
-    void toggleBlocksIncomingRequests() {
-        Player requester = player("Nova", UUID.randomUUID(), location("world"));
-        Player target = player("Ari", UUID.randomUUID(), location("world"));
-        TeleportRequestService requests = new TeleportRequestService(60, 0, 3, () -> Instant.EPOCH);
-        TeleportRequestCommand command = command(Map.of("Nova", requester, "Ari", target), requests, new TeleportWarmupService(mock(Plugin.class), 0, true));
-
-        command.onCommand(target, command("tptoggle"), "tptoggle", new String[0]);
-        command.onCommand(requester, command("tpa"), "tpa", new String[] {"Ari"});
-
-        assertThat(requests.pendingFor(target.getUniqueId(), requester.getUniqueId())).isEmpty();
-    }
-
-    @Test
     void destinationQuitCancelsWarmupAndMessagesMovingPlayer() {
         Player requester = player("Nova", UUID.randomUUID(), location("world"));
         Player receiver = player("Ari", UUID.randomUUID(), location("world"));
-        TeleportRequestService requests = new TeleportRequestService(60, 0, 3, () -> Instant.EPOCH);
         TeleportWarmupService warmups = mock(TeleportWarmupService.class);
-        TeleportRequestCommand command = command(Map.of("Nova", requester, "Ari", receiver), requests, warmups);
+        TeleportRequestCommand command = command(Map.of("Nova", requester, "Ari", receiver), warmups);
         command.onCommand(requester, command("tpa"), "tpa", new String[] {"Ari"});
         command.onCommand(receiver, command("tpaccept"), "tpaccept", new String[] {"Nova"});
 
@@ -104,17 +77,13 @@ final class TeleportRequestCommandTest {
     }
 
     private static TeleportRequestCommand command(Map<String, Player> players) {
-        return command(
-                players,
-                new TeleportRequestService(60, 0, 3, () -> Instant.EPOCH),
-                new TeleportWarmupService(mock(Plugin.class), 0, true)
-        );
+        return command(players, new TeleportWarmupService(mock(Plugin.class), 0, true));
     }
 
-    private static TeleportRequestCommand command(Map<String, Player> players, TeleportRequestService requests, TeleportWarmupService warmups) {
+    private static TeleportRequestCommand command(Map<String, Player> players, TeleportWarmupService warmups) {
         return new TeleportRequestCommand(
                 new MapOnlinePlayerLookup(players),
-                requests,
+                new TeleportRequestService(60, 0, () -> Instant.EPOCH),
                 warmups,
                 true
         );

@@ -24,7 +24,6 @@ public record PluginConfig(
         int tpaRequestTimeoutSeconds,
         int tpaCooldownSeconds,
         int tpaWarmupSeconds,
-        boolean tpaCancelWarmupOnMove,
-        int tpaMaxOutgoingRequests
+        boolean tpaCancelWarmupOnMove
 ) {
 }

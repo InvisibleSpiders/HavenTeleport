@@ -39,8 +39,7 @@ public final class ConfigLoader {
                 yaml.getInt("tpa.request-timeout-seconds", 60),
                 yaml.getInt("tpa.cooldown-seconds", 0),
                 yaml.getInt("tpa.warmup-seconds", 0),
-                yaml.getBoolean("tpa.cancel-warmup-on-move", true),
-                yaml.getInt("tpa.max-outgoing-requests", 3)
+                yaml.getBoolean("tpa.cancel-warmup-on-move", true)
         );
     }
 

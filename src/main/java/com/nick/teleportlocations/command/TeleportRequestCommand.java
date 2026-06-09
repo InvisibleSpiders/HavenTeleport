@@ -1,7 +1,6 @@
 package com.nick.teleportlocations.command;
 
 import com.nick.teleportlocations.tpa.TeleportAcceptResult;
-import com.nick.teleportlocations.tpa.TeleportCancelResult;
 import com.nick.teleportlocations.tpa.TeleportDeclineResult;
 import com.nick.teleportlocations.tpa.TeleportRequest;
 import com.nick.teleportlocations.tpa.TeleportRequestResult;
@@ -61,9 +60,7 @@ public final class TeleportRequestCommand implements CommandExecutor, Listener {
             case "tpahere" -> request(player, args, TeleportRequestType.TPA_HERE, "teleportlocations.tpahere");
             case "tpaccept" -> accept(player, args);
             case "tpdecline" -> decline(player, args);
-            case "tpcancel" -> cancel(player, args);
-            case "tptoggle" -> toggle(player);
-            default -> player.sendMessage(Component.text("Usage: /tpa <player>, /tpahere <player>, /tpaccept [player], /tpdecline [player], /tpcancel [player], /tptoggle", NamedTextColor.YELLOW));
+            default -> player.sendMessage(Component.text("Usage: /tpa <player>, /tpahere <player>, /tpaccept [player], /tpdecline [player]", NamedTextColor.YELLOW));
         }
         return true;
     }
@@ -95,9 +92,6 @@ public final class TeleportRequestCommand implements CommandExecutor, Listener {
             }
             case SELF_REQUEST -> requester.sendMessage(Component.text("You cannot send a teleport request to yourself.", NamedTextColor.RED));
             case COOLDOWN -> requester.sendMessage(Component.text("Teleport requests are on cooldown for " + result.remainingCooldownSeconds() + "s.", NamedTextColor.YELLOW));
-            case ALREADY_PENDING -> requester.sendMessage(Component.text("You already have a pending teleport request to " + target.orElseThrow().getName() + ".", NamedTextColor.YELLOW));
-            case TARGET_DISABLED -> requester.sendMessage(Component.text(target.orElseThrow().getName() + " is not accepting teleport requests.", NamedTextColor.RED));
-            case OUTGOING_LIMIT -> requester.sendMessage(Component.text("You have too many pending outgoing teleport requests.", NamedTextColor.RED));
         }
     }
 
@@ -139,35 +133,6 @@ public final class TeleportRequestCommand implements CommandExecutor, Listener {
         if (requester != null) {
             requester.sendMessage(Component.text(receiver.getName() + " declined your teleport request.", NamedTextColor.RED));
         }
-    }
-
-    private void cancel(Player requester, String[] args) {
-        if (!requester.hasPermission("teleportlocations.tpcancel")) {
-            requester.sendMessage(Component.text("You do not have permission to cancel teleport requests.", NamedTextColor.RED));
-            return;
-        }
-        Optional<UUID> targetId = requesterId(args);
-        if (args.length > 0 && targetId.isEmpty()) {
-            requester.sendMessage(Component.text("Player " + args[0] + " is not online.", NamedTextColor.RED));
-            return;
-        }
-        TeleportCancelResult result = requests.cancelOutgoing(requester.getUniqueId(), targetId);
-        if (result.status() == TeleportCancelResult.Status.NOT_FOUND) {
-            requester.sendMessage(Component.text("No pending outgoing teleport request found.", NamedTextColor.RED));
-            return;
-        }
-        requester.sendMessage(Component.text("Teleport request cancelled.", NamedTextColor.YELLOW));
-        players.find(result.request().orElseThrow().targetId())
-                .ifPresent(target -> target.sendMessage(Component.text(requester.getName() + " cancelled their teleport request.", NamedTextColor.YELLOW)));
-    }
-
-    private void toggle(Player player) {
-        if (!player.hasPermission("teleportlocations.tptoggle")) {
-            player.sendMessage(Component.text("You do not have permission to toggle teleport requests.", NamedTextColor.RED));
-            return;
-        }
-        boolean enabled = requests.toggleIncoming(player.getUniqueId());
-        player.sendMessage(Component.text("Incoming teleport requests are now " + (enabled ? "enabled" : "disabled") + ".", enabled ? NamedTextColor.GREEN : NamedTextColor.YELLOW));
     }
 
     private Optional<UUID> requesterId(String[] args) {

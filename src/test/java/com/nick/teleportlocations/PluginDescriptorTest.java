@@ -20,15 +20,11 @@ final class PluginDescriptorTest {
         assertThat(descriptor).contains("  tpahere:");
         assertThat(descriptor).contains("  tpaccept:");
         assertThat(descriptor).contains("  tpdecline:");
-        assertThat(descriptor).contains("  tpcancel:");
-        assertThat(descriptor).contains("  tptoggle:");
         assertThat(descriptor).contains("  deloutpost:");
         assertThat(descriptor).contains("teleportlocations.tpa:");
         assertThat(descriptor).contains("teleportlocations.tpahere:");
         assertThat(descriptor).contains("teleportlocations.tpaccept:");
         assertThat(descriptor).contains("teleportlocations.tpdecline:");
-        assertThat(descriptor).contains("teleportlocations.tpcancel:");
-        assertThat(descriptor).contains("teleportlocations.tptoggle:");
         assertThat(descriptor).contains("teleportlocations.elevator:");
         assertThat(descriptor).contains("teleportlocations.elevator.particle.end_rod:");
     }

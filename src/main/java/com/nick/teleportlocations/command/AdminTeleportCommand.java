@@ -272,10 +272,8 @@ public final class AdminTeleportCommand implements CommandExecutor {
             sender.sendMessage(Component.text("Player " + args[3] + " is not online.", NamedTextColor.RED));
             return;
         }
-        Player playerToMove = player.orElseThrow();
-        Player destination = target.orElseThrow();
-        playerToMove.teleportAsync(destination.getLocation());
-        sender.sendMessage(Component.text("Teleported " + playerToMove.getName() + " to " + destination.getName() + ".", NamedTextColor.GREEN));
+        player.orElseThrow().teleportAsync(target.orElseThrow().getLocation());
+        sender.sendMessage(Component.text("Teleported " + player.orElseThrow().getName() + " to " + target.orElseThrow().getName() + ".", NamedTextColor.GREEN));
     }
 
     private Optional<Integer> parseAmount(String input) {

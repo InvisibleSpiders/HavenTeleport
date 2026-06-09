@@ -6,10 +6,7 @@ public record TeleportRequestResult(Status status, Optional<TeleportRequest> req
     public enum Status {
         REQUESTED,
         SELF_REQUEST,
-        COOLDOWN,
-        ALREADY_PENDING,
-        TARGET_DISABLED,
-        OUTGOING_LIMIT
+        COOLDOWN
     }
 
     public static TeleportRequestResult requested(TeleportRequest request) {
@@ -22,17 +19,5 @@ public record TeleportRequestResult(Status status, Optional<TeleportRequest> req
 
     public static TeleportRequestResult cooldown(long remainingSeconds) {
         return new TeleportRequestResult(Status.COOLDOWN, Optional.empty(), remainingSeconds);
-    }
-
-    public static TeleportRequestResult alreadyPending() {
-        return new TeleportRequestResult(Status.ALREADY_PENDING, Optional.empty(), 0);
-    }
-
-    public static TeleportRequestResult targetDisabled() {
-        return new TeleportRequestResult(Status.TARGET_DISABLED, Optional.empty(), 0);
-    }
-
-    public static TeleportRequestResult outgoingLimit() {
-        return new TeleportRequestResult(Status.OUTGOING_LIMIT, Optional.empty(), 0);
     }
 }

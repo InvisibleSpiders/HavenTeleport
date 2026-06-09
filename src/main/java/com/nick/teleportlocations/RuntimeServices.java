@@ -124,7 +124,6 @@ public record RuntimeServices(
         TeleportRequestService teleportRequestService = new TeleportRequestService(
                 config.tpaRequestTimeoutSeconds(),
                 config.tpaCooldownSeconds(),
-                config.tpaMaxOutgoingRequests(),
                 Instant::now
         );
         CreationPolicyService creationPolicyService = new CreationPolicyService(
