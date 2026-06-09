@@ -9,9 +9,11 @@ import com.nick.teleportlocations.teleport.TeleportAccessService;
 import com.nick.teleportlocations.teleport.TeleportChargeMessages;
 import com.nick.teleportlocations.teleport.TeleportChargeService;
 import com.nick.teleportlocations.teleport.ManagedTeleportService;
+import com.nick.teleportlocations.teleport.ScheduledTeleportService;
 import com.nick.teleportlocations.teleport.TeleportSafetyResult;
 import com.nick.teleportlocations.teleport.TeleportSafetyService;
 import com.nick.teleportlocations.teleport.effect.NoOpTeleportEffectService;
+import com.nick.teleportlocations.tpa.TeleportWarmupService;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Location;
@@ -25,6 +27,7 @@ public final class DialogActionExecutor implements DialogActionHandler {
     private final TeleportSafetyService safety;
     private final AdminBypassService bypass;
     private final ManagedTeleportService managedTeleports;
+    private final ScheduledTeleportService scheduledTeleports;
 
     public DialogActionExecutor(DialogActionRouter router, PaperDialogPresenter presenter, TeleportChargeService charges, TeleportAccessService access, TeleportSafetyService safety, AdminBypassService bypass) {
         this(
@@ -39,6 +42,19 @@ public final class DialogActionExecutor implements DialogActionHandler {
     }
 
     public DialogActionExecutor(DialogActionRouter router, PaperDialogPresenter presenter, TeleportChargeService charges, TeleportAccessService access, TeleportSafetyService safety, AdminBypassService bypass, ManagedTeleportService managedTeleports) {
+        this(
+                router,
+                presenter,
+                charges,
+                access,
+                safety,
+                bypass,
+                managedTeleports,
+                new ScheduledTeleportService(new TeleportWarmupService(null, 0, true), managedTeleports)
+        );
+    }
+
+    public DialogActionExecutor(DialogActionRouter router, PaperDialogPresenter presenter, TeleportChargeService charges, TeleportAccessService access, TeleportSafetyService safety, AdminBypassService bypass, ManagedTeleportService managedTeleports, ScheduledTeleportService scheduledTeleports) {
         this.router = router;
         this.presenter = presenter;
         this.charges = charges;
@@ -46,6 +62,7 @@ public final class DialogActionExecutor implements DialogActionHandler {
         this.safety = safety;
         this.bypass = bypass;
         this.managedTeleports = managedTeleports;
+        this.scheduledTeleports = scheduledTeleports;
     }
 
     @Override
@@ -92,7 +109,7 @@ public final class DialogActionExecutor implements DialogActionHandler {
             player.sendMessage(Component.text(TeleportChargeMessages.failure(charge.reason()), NamedTextColor.RED));
             return;
         }
-        managedTeleports.teleport(player, destination);
+        scheduledTeleports.teleport(player, destination);
         player.sendMessage(Component.text("Teleported to " + location.name() + ".", NamedTextColor.GREEN));
     }
 }

@@ -18,6 +18,7 @@ import com.nick.teleportlocations.listener.ElevatorListener;
 import com.nick.teleportlocations.listener.SpawnListener;
 import com.nick.teleportlocations.listener.TeleportBlockListener;
 import com.nick.teleportlocations.teleport.ManagedTeleportService;
+import com.nick.teleportlocations.teleport.ScheduledTeleportService;
 import com.nick.teleportlocations.teleport.effect.BukkitTeleportEffectService;
 import com.nick.teleportlocations.tpa.TeleportWarmupService;
 import dev.invisiblespiders.haven.api.HavenAPI;
@@ -118,6 +119,13 @@ public final class TeleportLocationsPlugin extends JavaPlugin {
     private DialogRuntime registerCommands() {
         DialogMenuService dialogMenus = new DialogMenuService();
         PaperDialogPresenter dialogPresenter = new PaperDialogPresenter();
+        TeleportWarmupService playerWarmups = new TeleportWarmupService(
+                this,
+                services.config().warmupSeconds(),
+                services.config().cancelOnMove()
+        );
+        ScheduledTeleportService scheduledTeleports = new ScheduledTeleportService(playerWarmups, managedTeleports);
+        getServer().getPluginManager().registerEvents(playerWarmups, this);
         getCommand("ht").setExecutor(new AdminTeleportCommand(
                 services.spawnService(),
                 services.limitService(),
@@ -171,7 +179,8 @@ public final class TeleportLocationsPlugin extends JavaPlugin {
                 services.teleportAccessService(),
                 services.teleportSafetyService(),
                 services.adminBypassService(),
-                managedTeleports
+                managedTeleports,
+                scheduledTeleports
         ));
         PlayerLocationCommand playerCommand = new PlayerLocationCommand(
                 services.homeService(),
@@ -187,7 +196,8 @@ public final class TeleportLocationsPlugin extends JavaPlugin {
                 dialogMenus,
                 dialogPresenter,
                 hideInaccessibleDestinations(),
-                managedTeleports
+                managedTeleports,
+                scheduledTeleports
         );
         getCommand("home").setExecutor(playerCommand);
         getCommand("homes").setExecutor(playerCommand);

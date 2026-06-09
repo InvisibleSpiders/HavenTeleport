@@ -188,6 +188,8 @@ This applies to homes, player warps, shop warps, outposts, server warps, spawn t
 
 Sound audiences can be `SELF` for only the teleporting player or `NEARBY` for players within the configured radius.
 
+Normal player teleports from `/home`, `/warp`, `/outpost`, `/spawn`, and dialog teleport actions honor `teleport.warmup-seconds` and `teleport.cancel-on-move`. Admin direct teleports, TPA internals, elevator movement, and teleport blocks keep their specialized timing/cooldown behavior.
+
 | Setting | Default | Description |
 | --- | --- | --- |
 | `teleport.effects.enabled` | `true` | Master switch for managed teleport particles and sounds. |
