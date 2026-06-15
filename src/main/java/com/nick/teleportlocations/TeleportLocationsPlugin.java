@@ -17,6 +17,7 @@ import com.nick.teleportlocations.elevator.bukkit.ElevatorParticleTask;
 import com.nick.teleportlocations.listener.ElevatorListener;
 import com.nick.teleportlocations.listener.SpawnListener;
 import com.nick.teleportlocations.listener.TeleportBlockListener;
+import com.nick.teleportlocations.shop.HavenTeleportWarpService;
 import com.nick.teleportlocations.teleport.ManagedTeleportService;
 import com.nick.teleportlocations.teleport.ScheduledTeleportService;
 import com.nick.teleportlocations.teleport.effect.BukkitTeleportEffectService;
@@ -24,9 +25,11 @@ import com.nick.teleportlocations.tpa.TeleportWarmupService;
 import dev.invisiblespiders.haven.api.HavenAPI;
 import dev.invisiblespiders.haven.api.service.HavenDataSource;
 import dev.invisiblespiders.haven.api.service.HavenEconomyService;
+import dev.invisiblespiders.haven.api.service.HavenWarpService;
 import java.io.File;
 import java.time.Instant;
 import org.bukkit.entity.Player;
+import org.bukkit.plugin.ServicePriority;
 import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -45,6 +48,12 @@ public final class TeleportLocationsPlugin extends JavaPlugin {
                 HavenAPI.optional(HavenEconomyService.class),
                 BukkitHavenClaimsGateway.discover(getServer().getServicesManager()),
                 getClassLoader()
+        );
+        getServer().getServicesManager().register(
+                HavenWarpService.class,
+                new HavenTeleportWarpService(services.shopWarpService()),
+                this,
+                ServicePriority.Normal
         );
         managedTeleports = new ManagedTeleportService(
                 new BukkitTeleportEffectService(services.config().teleportEffects(), getLogger()),
@@ -69,6 +78,7 @@ public final class TeleportLocationsPlugin extends JavaPlugin {
             elevatorParticleTask = null;
         }
         if (services != null) {
+            getServer().getServicesManager().unregisterAll(this);
             services.close();
             services = null;
         }

@@ -3,6 +3,7 @@ package com.nick.teleportlocations;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.nick.teleportlocations.claim.HavenClaimsGateway;
+import dev.invisiblespiders.haven.api.service.DataSourceHealth;
 import dev.invisiblespiders.haven.api.service.HavenDataSource;
 import java.io.PrintWriter;
 import java.nio.file.Files;
@@ -62,6 +63,11 @@ final class RuntimeServicesTest {
         @Override
         public DataSource getDataSource() {
             return dataSource;
+        }
+
+        @Override
+        public DataSourceHealth health() {
+            return new DataSourceHealth(true, true, 0, 0, 0, 0);
         }
 
         @Override

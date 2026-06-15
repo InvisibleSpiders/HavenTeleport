@@ -60,7 +60,17 @@ final class HavenEconomyGatewayTest {
         }
 
         @Override
-        public void deposit(UUID uuid, double amount) {
+        public boolean deposit(UUID uuid, double amount) {
+            return available;
+        }
+
+        @Override
+        public String getPreferredAdapter() {
+            return "money";
+        }
+
+        @Override
+        public void setMoneyCurrencyId(String currencyId) {
         }
 
         @Override
