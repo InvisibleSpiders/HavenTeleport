@@ -2,8 +2,8 @@ package com.nick.teleportlocations;
 
 import com.nick.teleportlocations.admin.AdminBypassService;
 import com.nick.teleportlocations.claim.CreationPolicyService;
-import com.nick.teleportlocations.claim.LandClaimsGateway;
-import com.nick.teleportlocations.claim.MissingLandClaimsPolicy;
+import com.nick.teleportlocations.claim.HavenClaimsGateway;
+import com.nick.teleportlocations.claim.MissingHavenClaimsPolicy;
 import com.nick.teleportlocations.cost.BukkitPlayerResourceGateway;
 import com.nick.teleportlocations.cost.EconomyGateway;
 import com.nick.teleportlocations.cost.HavenEconomyGateway;
@@ -30,9 +30,12 @@ import com.nick.teleportlocations.storage.LocationRepository;
 import com.nick.teleportlocations.storage.SqliteElevatorRepository;
 import com.nick.teleportlocations.storage.SqliteLimitRepository;
 import com.nick.teleportlocations.storage.SqliteLocationRepository;
+import com.nick.teleportlocations.storage.SqliteTeleportBlockRepository;
 import com.nick.teleportlocations.teleport.TeleportChargeService;
 import com.nick.teleportlocations.teleport.TeleportAccessService;
 import com.nick.teleportlocations.teleport.TeleportSafetyService;
+import com.nick.teleportlocations.teleportblock.TeleportBlockRepository;
+import com.nick.teleportlocations.teleportblock.TeleportBlockService;
 import com.nick.teleportlocations.tpa.TeleportRequestService;
 import com.nick.teleportlocations.warp.PlayerWarpService;
 import dev.invisiblespiders.haven.api.service.HavenDataSource;
@@ -48,6 +51,7 @@ public record RuntimeServices(
         LocationRepository locationRepository,
         LimitRepository limitRepository,
         ElevatorRepository elevatorRepository,
+        TeleportBlockRepository teleportBlockRepository,
         AdminBypassService adminBypassService,
         LocationService locationService,
         LimitService limitService,
@@ -65,6 +69,7 @@ public record RuntimeServices(
         OutpostService outpostService,
         ServerWarpService serverWarpService,
         ElevatorService elevatorService,
+        TeleportBlockService teleportBlockService,
         SpawnPolicyService spawnPolicyService,
         SpawnService spawnService
 ) implements AutoCloseable {
@@ -77,6 +82,7 @@ public record RuntimeServices(
         Objects.requireNonNull(locationRepository, "locationRepository");
         Objects.requireNonNull(limitRepository, "limitRepository");
         Objects.requireNonNull(elevatorRepository, "elevatorRepository");
+        Objects.requireNonNull(teleportBlockRepository, "teleportBlockRepository");
         Objects.requireNonNull(adminBypassService, "adminBypassService");
         Objects.requireNonNull(locationService, "locationService");
         Objects.requireNonNull(limitService, "limitService");
@@ -94,6 +100,7 @@ public record RuntimeServices(
         Objects.requireNonNull(outpostService, "outpostService");
         Objects.requireNonNull(serverWarpService, "serverWarpService");
         Objects.requireNonNull(elevatorService, "elevatorService");
+        Objects.requireNonNull(teleportBlockService, "teleportBlockService");
         Objects.requireNonNull(spawnPolicyService, "spawnPolicyService");
         Objects.requireNonNull(spawnService, "spawnService");
     }
@@ -101,7 +108,7 @@ public record RuntimeServices(
     public static RuntimeServices open(
             HavenDataSource dataSource,
             Optional<HavenEconomyService> economyService,
-            LandClaimsGateway landClaims,
+            HavenClaimsGateway havenClaims,
             ClassLoader classLoader
     ) {
         PluginConfig config = ConfigLoader.fromResources();
@@ -110,6 +117,7 @@ public record RuntimeServices(
         LocationRepository locations = new SqliteLocationRepository(database);
         LimitRepository limits = new SqliteLimitRepository(database);
         ElevatorRepository elevators = new SqliteElevatorRepository(database);
+        TeleportBlockRepository teleportBlocks = new SqliteTeleportBlockRepository(database);
         AdminBypassService adminBypassService = new AdminBypassService();
         LimitService limitService = new LimitService(config.categories(), limits);
         LocationService locationService = new LocationService(locations, Instant::now);
@@ -123,7 +131,7 @@ public record RuntimeServices(
                 config.treatMoneyCostsAsFreeWhenEconomyMissing()
         );
         TeleportChargeService teleportChargeService = new TeleportChargeService(teleportCostService);
-        TeleportAccessService teleportAccessService = new TeleportAccessService(landClaims);
+        TeleportAccessService teleportAccessService = new TeleportAccessService(havenClaims);
         TeleportSafetyService teleportSafetyService = new TeleportSafetyService();
         TeleportRequestService teleportRequestService = new TeleportRequestService(
                 config.tpaRequestTimeoutSeconds(),
@@ -132,8 +140,8 @@ public record RuntimeServices(
         );
         CreationPolicyService creationPolicyService = new CreationPolicyService(
                 config.categories(),
-                landClaims,
-                MissingLandClaimsPolicy.parse(config.landClaimsMissingPolicy())
+                havenClaims,
+                MissingHavenClaimsPolicy.parse(config.havenClaimsMissingPolicy())
         );
         HomeService homeService = new HomeService(locationService, limitService, creationPolicyService);
         PlayerWarpService playerWarpService = new PlayerWarpService(locationService, limitService, creationPolicyService);
@@ -142,10 +150,11 @@ public record RuntimeServices(
         ServerWarpService serverWarpService = new ServerWarpService(locationService);
         ElevatorService elevatorService = new ElevatorService(
                 elevators,
-                landClaims,
+                havenClaims,
                 ElevatorParticle.parse(config.elevatorDefaultParticle()),
                 Instant::now
         );
+        TeleportBlockService teleportBlockService = new TeleportBlockService(teleportBlocks, havenClaims, Instant::now);
         SpawnPolicyService spawnPolicyService = new SpawnPolicyService(spawnPolicy(config));
         SpawnService spawnService = new SpawnService(locationService, homeService);
         return new RuntimeServices(
@@ -154,6 +163,7 @@ public record RuntimeServices(
                 locations,
                 limits,
                 elevators,
+                teleportBlocks,
                 adminBypassService,
                 locationService,
                 limitService,
@@ -171,6 +181,7 @@ public record RuntimeServices(
                 outpostService,
                 serverWarpService,
                 elevatorService,
+                teleportBlockService,
                 spawnPolicyService,
                 spawnService
         );

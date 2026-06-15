@@ -1,6 +1,6 @@
 package com.nick.teleportlocations.elevator;
 
-import com.nick.teleportlocations.claim.LandClaimsGateway;
+import com.nick.teleportlocations.claim.HavenClaimsGateway;
 import com.nick.teleportlocations.location.SavedPosition;
 import java.time.Instant;
 import java.util.Comparator;
@@ -13,22 +13,22 @@ public final class ElevatorService {
     public static final String USE_ACTION = "teleportlocations.elevator.use";
 
     private final ElevatorRepository repository;
-    private final LandClaimsGateway landClaims;
+    private final HavenClaimsGateway havenClaims;
     private final ElevatorParticle defaultParticle;
     private final Supplier<Instant> clock;
 
-    public ElevatorService(ElevatorRepository repository, LandClaimsGateway landClaims, Supplier<Instant> clock) {
-        this(repository, landClaims, ElevatorParticle.WAX_ON, clock);
+    public ElevatorService(ElevatorRepository repository, HavenClaimsGateway havenClaims, Supplier<Instant> clock) {
+        this(repository, havenClaims, ElevatorParticle.WAX_ON, clock);
     }
 
     public ElevatorService(
             ElevatorRepository repository,
-            LandClaimsGateway landClaims,
+            HavenClaimsGateway havenClaims,
             ElevatorParticle defaultParticle,
             Supplier<Instant> clock
     ) {
         this.repository = Objects.requireNonNull(repository, "repository");
-        this.landClaims = Objects.requireNonNull(landClaims, "landClaims");
+        this.havenClaims = Objects.requireNonNull(havenClaims, "havenClaims");
         this.defaultParticle = Objects.requireNonNull(defaultParticle, "defaultParticle");
         this.clock = Objects.requireNonNull(clock, "clock");
     }
@@ -36,7 +36,7 @@ public final class ElevatorService {
     public ElevatorResult place(UUID ownerId, SavedPosition position, boolean adminBypassClaims) {
         Objects.requireNonNull(ownerId, "ownerId");
         Objects.requireNonNull(position, "position");
-        if (!adminBypassClaims && !landClaims.ownsClaimAt(ownerId, position)) {
+        if (!adminBypassClaims && !havenClaims.ownsClaimAt(ownerId, position)) {
             return ElevatorResult.empty(ElevatorResult.Status.CLAIM_DENIED);
         }
         Optional<ElevatorBlock> existing = findAt(position);
@@ -56,7 +56,7 @@ public final class ElevatorService {
         if (existing.isEmpty()) {
             return ElevatorResult.empty(ElevatorResult.Status.NOT_FOUND);
         }
-        if (!adminBypassClaims && !landClaims.canBuild(playerId, position)) {
+        if (!adminBypassClaims && !havenClaims.canBuild(playerId, position)) {
             return ElevatorResult.empty(ElevatorResult.Status.ACCESS_DENIED);
         }
         repository.delete(existing.get().id());
@@ -84,7 +84,7 @@ public final class ElevatorService {
         if (findAt(position).isEmpty()) {
             return false;
         }
-        return adminBypassClaims || landClaims.canInteract(playerId, position, USE_ACTION);
+        return adminBypassClaims || havenClaims.canInteract(playerId, position, USE_ACTION);
     }
 
     public ElevatorResult setParticle(UUID playerId, SavedPosition position, ElevatorParticle particle, boolean adminBypassClaims) {

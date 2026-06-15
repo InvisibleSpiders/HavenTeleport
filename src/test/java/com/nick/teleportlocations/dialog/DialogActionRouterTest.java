@@ -4,8 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.nick.teleportlocations.admin.AdminBypassService;
 import com.nick.teleportlocations.claim.CreationPolicyService;
-import com.nick.teleportlocations.claim.LandClaimsGateway;
-import com.nick.teleportlocations.claim.MissingLandClaimsPolicy;
+import com.nick.teleportlocations.claim.HavenClaimsGateway;
+import com.nick.teleportlocations.claim.MissingHavenClaimsPolicy;
 import com.nick.teleportlocations.config.ConfigLoader;
 import com.nick.teleportlocations.config.PluginConfig;
 import com.nick.teleportlocations.elevator.ElevatorBlock;
@@ -24,6 +24,9 @@ import com.nick.teleportlocations.outpost.OutpostService;
 import com.nick.teleportlocations.serverwarp.ServerWarpService;
 import com.nick.teleportlocations.shop.ShopWarpService;
 import com.nick.teleportlocations.storage.InMemoryLocationRepository;
+import com.nick.teleportlocations.teleportblock.InMemoryTeleportBlockRepository;
+import com.nick.teleportlocations.teleportblock.TeleportBlock;
+import com.nick.teleportlocations.teleportblock.TeleportBlockService;
 import com.nick.teleportlocations.warp.PlayerWarpService;
 import java.time.Instant;
 import java.util.Set;
@@ -266,6 +269,47 @@ final class DialogActionRouterTest {
         assertThat(withBypass.status()).isEqualTo(DialogActionRouteResult.Status.MESSAGE);
     }
 
+    @Test
+    void teleportBlockTargetActionSetsOwnedLocation() {
+        Fixture fixture = Fixture.create(Set.of("teleportlocations.teleportblock.link"));
+        UUID owner = UUID.randomUUID();
+        TeleportBlock block = fixture.teleportBlocks.place(owner, position(), false).block().orElseThrow();
+        fixture.homes.setHome(owner, "base", position(), true);
+        UUID homeId = fixture.homes.resolveHome(owner, "base").orElseThrow().id();
+
+        DialogActionRouteResult result = fixture.router.route(owner, "set-teleport-block-target:" + block.id() + ":" + homeId);
+
+        assertThat(result.status()).isEqualTo(DialogActionRouteResult.Status.MESSAGE);
+        assertThat(fixture.teleportBlocks.findAt(block.position()).orElseThrow().targetLocationId()).contains(homeId);
+    }
+
+    @Test
+    void adminToggleClaimsBypassActionRequiresPermission() {
+        UUID admin = UUID.randomUUID();
+        Fixture fixture = Fixture.create(Set.of("teleportlocations.admin.bypass.claims"));
+        Fixture denied = Fixture.create(Set.of());
+
+        DialogActionRouteResult deniedResult = denied.router.route(admin, "admin-toggle-claims-bypass");
+        DialogActionRouteResult result = fixture.router.route(admin, "admin-toggle-claims-bypass");
+
+        assertThat(deniedResult.status()).isEqualTo(DialogActionRouteResult.Status.ACCESS_DENIED);
+        assertThat(result.status()).isEqualTo(DialogActionRouteResult.Status.MESSAGE);
+        assertThat(fixture.bypass.claims(admin)).isTrue();
+    }
+
+    @Test
+    void adminServerWarpsActionShowsServerWarpMenu() {
+        UUID admin = UUID.randomUUID();
+        Fixture fixture = Fixture.create(Set.of("teleportlocations.admin.serverwarp"));
+        fixture.serverWarps.setWarp("spawn", position());
+
+        DialogActionRouteResult result = fixture.router.route(admin, "admin-show-server-warps");
+
+        assertThat(result.status()).isEqualTo(DialogActionRouteResult.Status.SHOW_MENU);
+        assertThat(result.menu()).isPresent();
+        assertThat(result.menu().orElseThrow().title()).isEqualTo("Server Warps");
+    }
+
     private static SavedPosition position() {
         return new SavedPosition(UUID.randomUUID(), "world", 1.0, 64.0, 2.0, 90.0f, 0.0f);
     }
@@ -278,6 +322,7 @@ final class DialogActionRouterTest {
             OutpostService outposts,
             ServerWarpService serverWarps,
             ElevatorService elevators,
+            TeleportBlockService teleportBlocks,
             AdminBypassService bypass
     ) {
         private static Fixture create() {
@@ -291,8 +336,8 @@ final class DialogActionRouterTest {
             LimitService limitService = new LimitService(config.categories(), new InMemoryLimitRepository());
             CreationPolicyService creationPolicy = new CreationPolicyService(
                     config.categories(),
-                    LandClaimsGateway.fixed(false, true),
-                    MissingLandClaimsPolicy.DENY_CLAIM_REQUIRED
+                    HavenClaimsGateway.fixed(false, true),
+                    MissingHavenClaimsPolicy.DENY_CLAIM_REQUIRED
             );
             HomeService homeService = new HomeService(locationService, limitService, creationPolicy);
             PlayerWarpService warpService = new PlayerWarpService(locationService, limitService, creationPolicy);
@@ -302,7 +347,12 @@ final class DialogActionRouterTest {
             AdminBypassService bypassService = new AdminBypassService();
             ElevatorService elevatorService = new ElevatorService(
                     new InMemoryElevatorRepository(),
-                    LandClaimsGateway.fixedOwned(true, true, true),
+                    HavenClaimsGateway.fixedOwned(true, true, true),
+                    () -> Instant.EPOCH
+            );
+            TeleportBlockService teleportBlockService = new TeleportBlockService(
+                    new InMemoryTeleportBlockRepository(),
+                    HavenClaimsGateway.fixedOwned(true, true, true),
                     () -> Instant.EPOCH
             );
             DialogMenuService menus = new DialogMenuService();
@@ -314,6 +364,8 @@ final class DialogActionRouterTest {
                             outpostService,
                             serverWarpService,
                             elevatorService,
+                            teleportBlockService,
+                            locationService,
                             menus,
                             bypassService,
                             (viewer, permission) -> permissions.contains(permission)
@@ -324,6 +376,7 @@ final class DialogActionRouterTest {
                     outpostService,
                     serverWarpService,
                     elevatorService,
+                    teleportBlockService,
                     bypassService
             );
         }

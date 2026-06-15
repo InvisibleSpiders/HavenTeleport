@@ -24,7 +24,7 @@ public final class ConfigLoader {
         YamlConfiguration yaml = loadResource("config.yml");
         return new PluginConfig(
                 loadCategories(yaml.getConfigurationSection("categories")),
-                yaml.getString("integrations.landclaims.missing-service-policy", "deny-claim-required"),
+                yaml.getString("integrations.havenclaims.missing-service-policy", "deny-claim-required"),
                 yaml.getBoolean("integrations.vaultunlocked.treat-money-costs-as-free-when-missing", false),
                 yaml.getInt("teleport.warmup-seconds", 3),
                 yaml.getBoolean("teleport.cancel-on-move", true),
@@ -37,6 +37,8 @@ public final class ConfigLoader {
                 yaml.getStringList("spawn.death-respawn.fallback"),
                 yaml.getInt("elevators.max-distance", 16),
                 yaml.getInt("elevators.cooldown-seconds", 2),
+                yaml.getInt("teleport-blocks.max-distance", 64),
+                yaml.getInt("teleport-blocks.cooldown-seconds", 3),
                 yaml.getBoolean("elevators.particles.enabled", true),
                 yaml.getString("elevators.particles.default", "WAX_ON"),
                 yaml.getInt("elevators.particles.interval-ticks", 20),

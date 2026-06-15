@@ -7,7 +7,7 @@ import java.util.Map;
 
 public record PluginConfig(
         Map<String, CategoryConfig> categories,
-        String landClaimsMissingPolicy,
+        String havenClaimsMissingPolicy,
         boolean treatMoneyCostsAsFreeWhenEconomyMissing,
         int warmupSeconds,
         boolean cancelOnMove,
@@ -20,6 +20,8 @@ public record PluginConfig(
         List<String> deathRespawnFallback,
         int elevatorMaxDistance,
         int elevatorCooldownSeconds,
+        int teleportBlockMaxDistance,
+        int teleportBlockCooldownSeconds,
         boolean elevatorParticlesEnabled,
         String elevatorDefaultParticle,
         int elevatorParticleIntervalTicks,

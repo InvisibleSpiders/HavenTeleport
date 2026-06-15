@@ -3,8 +3,8 @@ package com.nick.teleportlocations.outpost;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.nick.teleportlocations.claim.CreationPolicyService;
-import com.nick.teleportlocations.claim.LandClaimsGateway;
-import com.nick.teleportlocations.claim.MissingLandClaimsPolicy;
+import com.nick.teleportlocations.claim.HavenClaimsGateway;
+import com.nick.teleportlocations.claim.MissingHavenClaimsPolicy;
 import com.nick.teleportlocations.config.ConfigLoader;
 import com.nick.teleportlocations.config.PluginConfig;
 import com.nick.teleportlocations.limit.InMemoryLimitRepository;
@@ -21,7 +21,7 @@ import org.junit.jupiter.api.Test;
 final class OutpostServiceTest {
     @Test
     void createsPrivateHiddenOutpostInWilderness() {
-        Fixture fixture = Fixture.create(LandClaimsGateway.fixed(false, false));
+        Fixture fixture = Fixture.create(HavenClaimsGateway.fixed(false, false));
         UUID owner = UUID.randomUUID();
 
         OutpostResult result = fixture.service.setOutpost(owner, "camp", position(), false);
@@ -35,7 +35,7 @@ final class OutpostServiceTest {
 
     @Test
     void deniesOutpostCreationInsideClaim() {
-        Fixture fixture = Fixture.create(LandClaimsGateway.fixed(true, true));
+        Fixture fixture = Fixture.create(HavenClaimsGateway.fixed(true, true));
 
         OutpostResult result = fixture.service.setOutpost(UUID.randomUUID(), "camp", position(), false);
 
@@ -45,7 +45,7 @@ final class OutpostServiceTest {
 
     @Test
     void deniesNewOutpostWhenLimitReachedButAllowsUpdatingExistingOutpost() {
-        Fixture fixture = Fixture.create(LandClaimsGateway.fixed(false, false));
+        Fixture fixture = Fixture.create(HavenClaimsGateway.fixed(false, false));
         UUID owner = UUID.randomUUID();
         fixture.limits.setLimit(owner, "outpost", 1);
 
@@ -59,7 +59,7 @@ final class OutpostServiceTest {
 
     @Test
     void deletesOwnOutpost() {
-        Fixture fixture = Fixture.create(LandClaimsGateway.fixed(false, false));
+        Fixture fixture = Fixture.create(HavenClaimsGateway.fixed(false, false));
         UUID owner = UUID.randomUUID();
         fixture.service.setOutpost(owner, "camp", position(), false);
 
@@ -76,15 +76,15 @@ final class OutpostServiceTest {
     }
 
     private record Fixture(OutpostService service, LimitService limits) {
-        private static Fixture create(LandClaimsGateway landClaims) {
+        private static Fixture create(HavenClaimsGateway havenClaims) {
             PluginConfig config = ConfigLoader.fromResources();
             InMemoryLocationRepository locations = new InMemoryLocationRepository();
             LocationService locationService = new LocationService(locations, () -> Instant.EPOCH);
             LimitService limitService = new LimitService(config.categories(), new InMemoryLimitRepository());
             CreationPolicyService creationPolicy = new CreationPolicyService(
                     config.categories(),
-                    landClaims,
-                    MissingLandClaimsPolicy.DENY_CLAIM_REQUIRED
+                    havenClaims,
+                    MissingHavenClaimsPolicy.DENY_CLAIM_REQUIRED
             );
             return new Fixture(new OutpostService(locationService, limitService, creationPolicy), limitService);
         }

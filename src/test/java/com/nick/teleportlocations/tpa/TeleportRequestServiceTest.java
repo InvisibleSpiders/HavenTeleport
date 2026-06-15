@@ -96,4 +96,36 @@ final class TeleportRequestServiceTest {
 
         assertThat(allowed.status()).isEqualTo(TeleportRequestResult.Status.REQUESTED);
     }
+
+    @Test
+    void cancelOutgoingRemovesRequesterPendingRequests() {
+        TeleportRequestService service = new TeleportRequestService(60, 0, () -> Instant.EPOCH);
+        UUID requester = UUID.randomUUID();
+        UUID firstReceiver = UUID.randomUUID();
+        UUID secondReceiver = UUID.randomUUID();
+        service.request(requester, firstReceiver, TeleportRequestType.TPA, false);
+        service.request(requester, secondReceiver, TeleportRequestType.TPA_HERE, false);
+
+        assertThat(service.cancelOutgoing(requester))
+                .extracting(TeleportRequest::targetId)
+                .containsExactlyInAnyOrder(firstReceiver, secondReceiver);
+        assertThat(service.pendingFor(firstReceiver, requester)).isEmpty();
+        assertThat(service.pendingFor(secondReceiver, requester)).isEmpty();
+    }
+
+    @Test
+    void targetCanDisableIncomingRequests() {
+        TeleportRequestService service = new TeleportRequestService(60, 0, () -> Instant.EPOCH);
+        UUID requester = UUID.randomUUID();
+        UUID receiver = UUID.randomUUID();
+
+        assertThat(service.toggleIncomingRequests(receiver)).isFalse();
+        TeleportRequestResult blocked = service.request(requester, receiver, TeleportRequestType.TPA, false);
+
+        assertThat(blocked.status()).isEqualTo(TeleportRequestResult.Status.TARGET_DISABLED);
+        assertThat(service.pendingFor(receiver, requester)).isEmpty();
+        assertThat(service.toggleIncomingRequests(receiver)).isTrue();
+        assertThat(service.request(requester, receiver, TeleportRequestType.TPA, false).status())
+                .isEqualTo(TeleportRequestResult.Status.REQUESTED);
+    }
 }

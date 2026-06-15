@@ -7,7 +7,7 @@ import com.nick.teleportlocations.command.PlayerLocationCommand;
 import com.nick.teleportlocations.command.TeleportRequestCommand;
 import com.nick.teleportlocations.dialog.DialogActionExecutor;
 import com.nick.teleportlocations.dialog.DialogActionRouter;
-import com.nick.teleportlocations.claim.BukkitLandClaimsGateway;
+import com.nick.teleportlocations.claim.BukkitHavenClaimsGateway;
 import com.nick.teleportlocations.dialog.DialogMenuService;
 import com.nick.teleportlocations.dialog.PaperDialogPresenter;
 import com.nick.teleportlocations.elevator.ElevatorActivationService;
@@ -16,7 +16,9 @@ import com.nick.teleportlocations.elevator.bukkit.ElevatorItemService;
 import com.nick.teleportlocations.elevator.bukkit.ElevatorParticleTask;
 import com.nick.teleportlocations.listener.ElevatorListener;
 import com.nick.teleportlocations.listener.SpawnListener;
+import com.nick.teleportlocations.listener.TeleportBlockListener;
 import com.nick.teleportlocations.teleport.ManagedTeleportService;
+import com.nick.teleportlocations.teleport.ScheduledTeleportService;
 import com.nick.teleportlocations.teleport.effect.BukkitTeleportEffectService;
 import com.nick.teleportlocations.tpa.TeleportWarmupService;
 import dev.invisiblespiders.haven.api.HavenAPI;
@@ -41,7 +43,7 @@ public final class TeleportLocationsPlugin extends JavaPlugin {
         services = RuntimeServices.open(
                 HavenAPI.get(HavenDataSource.class),
                 HavenAPI.optional(HavenEconomyService.class),
-                BukkitLandClaimsGateway.discover(getServer().getServicesManager()),
+                BukkitHavenClaimsGateway.discover(getServer().getServicesManager()),
                 getClassLoader()
         );
         managedTeleports = new ManagedTeleportService(
@@ -56,6 +58,7 @@ public final class TeleportLocationsPlugin extends JavaPlugin {
                 managedTeleports
         ), this);
         registerElevators(dialogs);
+        registerTeleportBlocks(dialogs);
         getLogger().info("TeleportLocations enabled.");
     }
 
@@ -114,6 +117,15 @@ public final class TeleportLocationsPlugin extends JavaPlugin {
     }
 
     private DialogRuntime registerCommands() {
+        DialogMenuService dialogMenus = new DialogMenuService();
+        PaperDialogPresenter dialogPresenter = new PaperDialogPresenter();
+        TeleportWarmupService playerWarmups = new TeleportWarmupService(
+                this,
+                services.config().warmupSeconds(),
+                services.config().cancelOnMove()
+        );
+        ScheduledTeleportService scheduledTeleports = new ScheduledTeleportService(playerWarmups, managedTeleports);
+        getServer().getPluginManager().registerEvents(playerWarmups, this);
         getCommand("ht").setExecutor(new AdminTeleportCommand(
                 services.spawnService(),
                 services.limitService(),
@@ -121,7 +133,9 @@ public final class TeleportLocationsPlugin extends JavaPlugin {
                 services.adminBypassService(),
                 new BukkitPlayerLookup(),
                 new BukkitOnlinePlayerLookup(),
-                managedTeleports
+                managedTeleports,
+                dialogMenus,
+                dialogPresenter
         ));
         TeleportWarmupService tpaWarmups = new TeleportWarmupService(
                 this,
@@ -143,8 +157,8 @@ public final class TeleportLocationsPlugin extends JavaPlugin {
         getCommand("tpahere").setExecutor(tpaCommand);
         getCommand("tpaccept").setExecutor(tpaCommand);
         getCommand("tpdecline").setExecutor(tpaCommand);
-        DialogMenuService dialogMenus = new DialogMenuService();
-        PaperDialogPresenter dialogPresenter = new PaperDialogPresenter();
+        getCommand("tpcancel").setExecutor(tpaCommand);
+        getCommand("tptoggle").setExecutor(tpaCommand);
         DialogActionRouter dialogActions = new DialogActionRouter(
                 services.homeService(),
                 services.playerWarpService(),
@@ -152,6 +166,8 @@ public final class TeleportLocationsPlugin extends JavaPlugin {
                 services.outpostService(),
                 services.serverWarpService(),
                 services.elevatorService(),
+                services.teleportBlockService(),
+                services.locationService(),
                 dialogMenus,
                 services.adminBypassService(),
                 this::hasOnlinePermission
@@ -163,7 +179,8 @@ public final class TeleportLocationsPlugin extends JavaPlugin {
                 services.teleportAccessService(),
                 services.teleportSafetyService(),
                 services.adminBypassService(),
-                managedTeleports
+                managedTeleports,
+                scheduledTeleports
         ));
         PlayerLocationCommand playerCommand = new PlayerLocationCommand(
                 services.homeService(),
@@ -179,7 +196,8 @@ public final class TeleportLocationsPlugin extends JavaPlugin {
                 dialogMenus,
                 dialogPresenter,
                 hideInaccessibleDestinations(),
-                managedTeleports
+                managedTeleports,
+                scheduledTeleports
         );
         getCommand("home").setExecutor(playerCommand);
         getCommand("homes").setExecutor(playerCommand);
@@ -203,6 +221,29 @@ public final class TeleportLocationsPlugin extends JavaPlugin {
     private boolean hasOnlinePermission(java.util.UUID playerId, String permission) {
         Player player = getServer().getPlayer(playerId);
         return player != null && player.hasPermission(permission);
+    }
+
+    private void registerTeleportBlocks(DialogRuntime dialogs) {
+        getServer().getPluginManager().registerEvents(
+                new TeleportBlockListener(
+                        services.teleportBlockService(),
+                        services.locationService(),
+                        services.homeService(),
+                        services.playerWarpService(),
+                        services.shopWarpService(),
+                        services.serverWarpService(),
+                        services.teleportSafetyService(),
+                        services.teleportAccessService(),
+                        services.teleportChargeService(),
+                        new ElevatorCooldownService(services.config().teleportBlockCooldownSeconds(), Instant::now),
+                        dialogs.menus(),
+                        dialogs.presenter(),
+                        services.adminBypassService(),
+                        managedTeleports,
+                        services.config().teleportBlockMaxDistance()
+                ),
+                this
+        );
     }
 
     private boolean hideInaccessibleDestinations() {

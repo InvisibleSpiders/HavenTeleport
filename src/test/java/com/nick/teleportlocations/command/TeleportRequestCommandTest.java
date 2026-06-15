@@ -5,10 +5,11 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.when;
 
 import com.nick.teleportlocations.admin.AdminBypassService;
-import com.nick.teleportlocations.claim.LandClaimsGateway;
+import com.nick.teleportlocations.claim.HavenClaimsGateway;
 import com.nick.teleportlocations.teleport.TeleportAccessService;
 import com.nick.teleportlocations.tpa.TeleportRequestService;
 import com.nick.teleportlocations.tpa.TeleportWarmupService;
@@ -61,6 +62,54 @@ final class TeleportRequestCommandTest {
     }
 
     @Test
+    void tptoggleBlocksIncomingRequests() {
+        Player requester = player("Nova", UUID.randomUUID(), location("world"));
+        Player receiver = player("Ari", UUID.randomUUID(), location("world"));
+        TeleportRequestCommand command = command(Map.of("Nova", requester, "Ari", receiver));
+
+        command.onCommand(receiver, command("tptoggle"), "tptoggle", new String[0]);
+        command.onCommand(requester, command("tpa"), "tpa", new String[] {"Ari"});
+
+        ArgumentCaptor<Component> requesterMessages = ArgumentCaptor.forClass(Component.class);
+        verify(requester, atLeastOnce()).sendMessage(requesterMessages.capture());
+        assertThat(requesterMessages.getAllValues().stream()
+                .map(component -> PlainTextComponentSerializer.plainText().serialize(component)))
+                .anyMatch(message -> message.contains("Ari is not accepting teleport requests."));
+    }
+
+    @Test
+    void tpcancelCancelsOutgoingPendingRequest() {
+        Player requester = player("Nova", UUID.randomUUID(), location("world"));
+        Player receiver = player("Ari", UUID.randomUUID(), location("world"));
+        TeleportRequestCommand command = command(Map.of("Nova", requester, "Ari", receiver));
+        command.onCommand(requester, command("tpa"), "tpa", new String[] {"Ari"});
+
+        command.onCommand(requester, command("tpcancel"), "tpcancel", new String[0]);
+        command.onCommand(receiver, command("tpaccept"), "tpaccept", new String[] {"Nova"});
+
+        verify(requester, never()).teleportAsync(receiver.getLocation());
+        ArgumentCaptor<Component> receiverMessages = ArgumentCaptor.forClass(Component.class);
+        verify(receiver, atLeastOnce()).sendMessage(receiverMessages.capture());
+        assertThat(receiverMessages.getAllValues().stream()
+                .map(component -> PlainTextComponentSerializer.plainText().serialize(component)))
+                .anyMatch(message -> message.contains("Nova cancelled their teleport request."));
+    }
+
+    @Test
+    void tpcancelCancelsAcceptedWarmup() {
+        Player requester = player("Nova", UUID.randomUUID(), location("world"));
+        Player receiver = player("Ari", UUID.randomUUID(), location("world"));
+        TeleportWarmupService warmups = mock(TeleportWarmupService.class);
+        TeleportRequestCommand command = command(Map.of("Nova", requester, "Ari", receiver), warmups);
+        command.onCommand(requester, command("tpa"), "tpa", new String[] {"Ari"});
+        command.onCommand(receiver, command("tpaccept"), "tpaccept", new String[] {"Nova"});
+
+        command.onCommand(requester, command("tpcancel"), "tpcancel", new String[0]);
+
+        verify(warmups).cancel(requester.getUniqueId(), "Teleport cancelled.", requester);
+    }
+
+    @Test
     void destinationQuitCancelsWarmupAndMessagesMovingPlayer() {
         Player requester = player("Nova", UUID.randomUUID(), location("world"));
         Player receiver = player("Ari", UUID.randomUUID(), location("world"));
@@ -86,7 +135,7 @@ final class TeleportRequestCommandTest {
         TeleportRequestCommand command = command(
                 Map.of("Nova", requester, "Ari", receiver),
                 new TeleportWarmupService(mock(Plugin.class), 0, true),
-                new TeleportAccessService(LandClaimsGateway.fixed(true, false))
+                new TeleportAccessService(HavenClaimsGateway.fixed(true, false))
         );
         command.onCommand(requester, command("tpa"), "tpa", new String[] {"Ari"});
 
@@ -101,7 +150,7 @@ final class TeleportRequestCommandTest {
     }
 
     private static TeleportRequestCommand command(Map<String, Player> players, TeleportWarmupService warmups) {
-        return command(players, warmups, new TeleportAccessService(LandClaimsGateway.fixed(false, true)));
+        return command(players, warmups, new TeleportAccessService(HavenClaimsGateway.fixed(false, true)));
     }
 
     private static TeleportRequestCommand command(Map<String, Player> players, TeleportWarmupService warmups, TeleportAccessService access) {

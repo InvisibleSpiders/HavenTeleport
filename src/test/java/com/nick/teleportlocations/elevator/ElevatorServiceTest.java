@@ -2,7 +2,7 @@ package com.nick.teleportlocations.elevator;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.nick.teleportlocations.claim.LandClaimsGateway;
+import com.nick.teleportlocations.claim.HavenClaimsGateway;
 import com.nick.teleportlocations.location.SavedPosition;
 import java.time.Instant;
 import java.util.UUID;
@@ -14,13 +14,13 @@ final class ElevatorServiceTest {
     @Test
     void placesElevatorOnlyInOwnClaimUnlessAdminBypass() {
         UUID owner = UUID.randomUUID();
-        ElevatorService denied = new ElevatorService(new InMemoryElevatorRepository(), LandClaimsGateway.fixed(true, true), () -> Instant.EPOCH);
+        ElevatorService denied = new ElevatorService(new InMemoryElevatorRepository(), HavenClaimsGateway.fixed(true, true), () -> Instant.EPOCH);
 
         ElevatorResult deniedResult = denied.place(owner, position(64), false);
 
         assertThat(deniedResult.status()).isEqualTo(ElevatorResult.Status.CLAIM_DENIED);
 
-        ElevatorService allowed = new ElevatorService(new InMemoryElevatorRepository(), LandClaimsGateway.fixedOwned(true, true, true), () -> Instant.EPOCH);
+        ElevatorService allowed = new ElevatorService(new InMemoryElevatorRepository(), HavenClaimsGateway.fixedOwned(true, true, true), () -> Instant.EPOCH);
         ElevatorResult allowedResult = allowed.place(owner, position(64), false);
 
         assertThat(allowedResult.status()).isEqualTo(ElevatorResult.Status.PLACED);
@@ -31,7 +31,7 @@ final class ElevatorServiceTest {
     void buildAccessCanBreakElevator() {
         UUID owner = UUID.randomUUID();
         UUID trusted = UUID.randomUUID();
-        ElevatorService service = new ElevatorService(new InMemoryElevatorRepository(), LandClaimsGateway.fixedOwned(true, true, true), () -> Instant.EPOCH);
+        ElevatorService service = new ElevatorService(new InMemoryElevatorRepository(), HavenClaimsGateway.fixedOwned(true, true, true), () -> Instant.EPOCH);
         service.place(owner, position(64), false);
 
         ElevatorResult result = service.breakBlock(trusted, position(64), false);
@@ -43,11 +43,11 @@ final class ElevatorServiceTest {
     void claimAccessCanUseElevator() {
         UUID owner = UUID.randomUUID();
         UUID trusted = UUID.randomUUID();
-        ElevatorService service = new ElevatorService(new InMemoryElevatorRepository(), LandClaimsGateway.fixedOwned(true, true, true), () -> Instant.EPOCH);
+        ElevatorService service = new ElevatorService(new InMemoryElevatorRepository(), HavenClaimsGateway.fixedOwned(true, true, true), () -> Instant.EPOCH);
         service.place(owner, position(64), false);
 
         assertThat(service.canUse(trusted, position(64), false)).isTrue();
-        ElevatorService denied = new ElevatorService(new InMemoryElevatorRepository(), LandClaimsGateway.fixedOwned(true, false, true), () -> Instant.EPOCH);
+        ElevatorService denied = new ElevatorService(new InMemoryElevatorRepository(), HavenClaimsGateway.fixedOwned(true, false, true), () -> Instant.EPOCH);
         denied.place(owner, position(64), false);
         assertThat(denied.canUse(trusted, position(64), false)).isFalse();
     }
@@ -55,7 +55,7 @@ final class ElevatorServiceTest {
     @Test
     void findsNearestFloorAboveAndBelowWithinMaxDistance() {
         UUID owner = UUID.randomUUID();
-        ElevatorService service = new ElevatorService(new InMemoryElevatorRepository(), LandClaimsGateway.fixedOwned(true, true, true), () -> Instant.EPOCH);
+        ElevatorService service = new ElevatorService(new InMemoryElevatorRepository(), HavenClaimsGateway.fixedOwned(true, true, true), () -> Instant.EPOCH);
         service.place(owner, position(64), false);
         service.place(owner, position(70), false);
         service.place(owner, position(82), false);
@@ -68,7 +68,7 @@ final class ElevatorServiceTest {
     @Test
     void storesParticleSelection() {
         UUID owner = UUID.randomUUID();
-        ElevatorService service = new ElevatorService(new InMemoryElevatorRepository(), LandClaimsGateway.fixedOwned(true, true, true), () -> Instant.EPOCH);
+        ElevatorService service = new ElevatorService(new InMemoryElevatorRepository(), HavenClaimsGateway.fixedOwned(true, true, true), () -> Instant.EPOCH);
         ElevatorBlock block = service.place(owner, position(64), false).block().orElseThrow();
 
         ElevatorResult result = service.setParticle(owner, block.id(), ElevatorParticle.END_ROD, false);
@@ -81,7 +81,7 @@ final class ElevatorServiceTest {
     void onlyOwnerOrAdminBypassCanChangeParticleById() {
         UUID owner = UUID.randomUUID();
         UUID visitor = UUID.randomUUID();
-        ElevatorService service = new ElevatorService(new InMemoryElevatorRepository(), LandClaimsGateway.fixedOwned(true, true, true), () -> Instant.EPOCH);
+        ElevatorService service = new ElevatorService(new InMemoryElevatorRepository(), HavenClaimsGateway.fixedOwned(true, true, true), () -> Instant.EPOCH);
         ElevatorBlock block = service.place(owner, position(64), false).block().orElseThrow();
 
         ElevatorResult denied = service.setParticle(visitor, block.id(), ElevatorParticle.END_ROD, false);
@@ -96,7 +96,7 @@ final class ElevatorServiceTest {
         UUID owner = UUID.randomUUID();
         ElevatorService service = new ElevatorService(
                 new InMemoryElevatorRepository(),
-                LandClaimsGateway.fixedOwned(true, true, true),
+                HavenClaimsGateway.fixedOwned(true, true, true),
                 ElevatorParticle.END_ROD,
                 () -> Instant.EPOCH
         );

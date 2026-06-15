@@ -4,11 +4,11 @@
 - Install HavenCore.
 - Install `TeleportLocations-1.0.0-SNAPSHOT.jar`.
 - Confirm TeleportLocations loads after HavenCore.
-- Confirm the plugin loads without LandClaims or VaultUnlocked when HavenCore is installed.
+- Confirm the plugin loads without HavenClaims or VaultUnlocked when HavenCore is installed.
 - Confirm first join sends a new player to configured spawn.
 - Confirm login leaves players where they logged out by default.
 - Confirm death respawn uses main home, then bed spawn, then configured spawn, then vanilla world spawn.
-- Install LandClaims and confirm homes, player warps, and shop warps can be created in trusted claims.
+- Install HavenClaims and confirm homes, player warps, and shop warps can be created in trusted claims.
 - Confirm homes, player warps, and shop warps cannot be created in untrusted claims.
 - Confirm outposts can be created in wilderness and are limited separately.
 - Confirm `/home` teleports to main home.

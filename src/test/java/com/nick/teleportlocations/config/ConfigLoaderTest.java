@@ -15,6 +15,8 @@ final class ConfigLoaderTest {
         assertThat(config.categories()).containsKeys("home", "player_warp", "shop", "outpost", "server_warp");
         assertThat(config.elevatorMaxDistance()).isEqualTo(16);
         assertThat(config.elevatorCooldownSeconds()).isEqualTo(2);
+        assertThat(config.teleportBlockMaxDistance()).isEqualTo(64);
+        assertThat(config.teleportBlockCooldownSeconds()).isEqualTo(3);
         assertThat(config.elevatorParticlesEnabled()).isTrue();
         assertThat(config.elevatorDefaultParticle()).isEqualTo("WAX_ON");
         assertThat(config.elevatorParticleIntervalTicks()).isEqualTo(20);

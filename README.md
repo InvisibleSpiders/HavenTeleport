@@ -1,6 +1,6 @@
 # TeleportLocations
 
-TeleportLocations is a Paper plugin for homes, server warps, player warps, free public shop warps, outposts, spawn control, and elevator block foundations.
+TeleportLocations is a Paper plugin for homes, server warps, player warps, free public shop warps, outposts, spawn control, elevator blocks, and teleport block foundations.
 
 ## Build
 
@@ -15,7 +15,7 @@ The plugin jar is written to `build/libs/TeleportLocations-1.0.0-SNAPSHOT.jar`.
 - Paper 26.1+.
 - Java 25.
 - Required: HavenCore.
-- Optional: LandClaims.
+- Optional: HavenClaims.
 - Optional through HavenCore: VaultUnlocked for money-cost player warps.
 - TeleportLocations stores data through HavenCore's shared datasource and registers its own migrations at startup.
 
@@ -45,11 +45,14 @@ The plugin jar is written to `build/libs/TeleportLocations-1.0.0-SNAPSHOT.jar`.
 | `/tpahere <player>` | `teleportlocations.tpahere` | Ask another online player to teleport to you. |
 | `/tpaccept [player]` | `teleportlocations.tpaccept` | Accept the latest pending teleport request, or a named request. Alias: `/tpyes`. |
 | `/tpdecline [player]` | `teleportlocations.tpdecline` | Decline the latest pending teleport request, or a named request. Alias: `/tpno`. |
+| `/tpcancel` | `teleportlocations.tpcancel` | Cancel your outgoing pending request or accepted warmup. |
+| `/tptoggle` | `teleportlocations.tptoggle` | Toggle whether other players can send you teleport requests. |
 
 ### Admin Commands
 
 | Command | Permission | Description |
 | --- | --- | --- |
+| `/ht admin` | `teleportlocations.admin` | Open the HavenTeleport admin dialog. |
 | `/ht admin limits get <player> <category>` | `teleportlocations.admin.limits` | Show a player's resolved limit for a category. |
 | `/ht admin limits set <player> <category> <amount>` | `teleportlocations.admin.limits` | Set a player's explicit limit override. |
 | `/ht admin limits add <player> <category> <amount>` | `teleportlocations.admin.limits` | Increase a player's explicit limit override. |
@@ -66,6 +69,10 @@ The plugin jar is written to `build/libs/TeleportLocations-1.0.0-SNAPSHOT.jar`.
 
 Elevator placement, breaking, jump/sneak movement, recipe registration, cooldowns, ambient particles, and the particle settings dialog are active.
 
+Teleport block placement, breaking, Echo Shard linking, lit-state activation, cooldowns, and pad-to-pad movement are active.
+
+Admins can open `/ht admin` for a dialog entry point with claim-bypass controls and server warp browsing.
+
 ## Permissions
 
 | Permission | Default | Description |
@@ -81,6 +88,8 @@ Elevator placement, breaking, jump/sneak movement, recipe registration, cooldown
 | `teleportlocations.tpahere` | true | Allows sending `/tpahere` requests. |
 | `teleportlocations.tpaccept` | true | Allows accepting teleport requests. |
 | `teleportlocations.tpdecline` | true | Allows declining teleport requests. |
+| `teleportlocations.tpcancel` | true | Allows cancelling outgoing teleport requests and active warmups. |
+| `teleportlocations.tptoggle` | true | Allows toggling incoming teleport requests. |
 | `teleportlocations.elevator` | true | Parent permission for elevator placement, breaking, use, menu, and default particles. |
 | `teleportlocations.elevator.place` | true | Allows placing elevator blocks in owned claims. |
 | `teleportlocations.elevator.break` | true | Allows breaking elevator blocks where the player has claim build access. |
@@ -88,6 +97,11 @@ Elevator placement, breaking, jump/sneak movement, recipe registration, cooldown
 | `teleportlocations.elevator.menu` | true | Allows opening the elevator settings dialog once wired. |
 | `teleportlocations.elevator.particle.wax_on` | true | Allows selecting the default Wax On elevator particle. |
 | `teleportlocations.elevator.particle.end_rod` | op | Allows selecting the End Rod elevator particle. |
+| `teleportlocations.teleportblock` | true | Parent permission for teleport block placement, breaking, use, and linking. |
+| `teleportlocations.teleportblock.place` | true | Allows placing teleport blocks in owned claims. |
+| `teleportlocations.teleportblock.break` | true | Allows breaking teleport blocks where the player has claim build access. |
+| `teleportlocations.teleportblock.use` | true | Allows using active linked teleport blocks where the player has claim access. |
+| `teleportlocations.teleportblock.link` | true | Allows linking two teleport blocks with an Echo Shard and setting owned saved-location targets. |
 | `teleportlocations.admin` | op | Parent permission for all admin permissions. |
 | `teleportlocations.admin.reload` | op via `teleportlocations.admin` | Reserved for reload/admin maintenance. |
 | `teleportlocations.admin.limits` | op via `teleportlocations.admin` | Allows editing player limits. |
@@ -96,6 +110,7 @@ Elevator placement, breaking, jump/sneak movement, recipe registration, cooldown
 | `teleportlocations.admin.edit` | op via `teleportlocations.admin` | Reserved for admin location editing. |
 | `teleportlocations.admin.teleport` | op via `teleportlocations.admin` | Reserved for admin teleport tools. |
 | `teleportlocations.admin.elevator` | op via `teleportlocations.admin` | Reserved for admin elevator management. |
+| `teleportlocations.admin.teleportblock` | op via `teleportlocations.admin` | Allows setting admin teleport block targets while claim-bypass mode is active. |
 | `teleportlocations.admin.bypass.creation` | op via `teleportlocations.admin` | Bypass claim/location creation checks. |
 | `teleportlocations.admin.bypass.claims` | op via `teleportlocations.admin` | Allows toggling personal claim-bypass mode for protected elevator actions. |
 | `teleportlocations.admin.bypass.cost` | op via `teleportlocations.admin` | Bypass teleport costs. |
@@ -114,7 +129,7 @@ CLC
 
 `E` is Echo Shard, `C` is Copper Ingot, and `L` is Lodestone. When placed, the block remains visually Lodestone, but right-click interaction is cancelled so it does not behave like a normal Lodestone.
 
-Placement is restricted to a player's own LandClaims claim unless admin claim-bypass mode is active. Breaking follows claim build access, so trusted builders can remove elevators in claims where they can build. Players with claim access can use elevators. Jumping on an elevator moves to the nearest elevator above in the same X/Z column; sneaking moves to the nearest elevator below.
+Placement is restricted to a player's own HavenClaims claim unless admin claim-bypass mode is active. Breaking follows claim build access, so trusted builders can remove elevators in claims where they can build. Players with claim access can use elevators. Jumping on an elevator moves to the nearest elevator above in the same X/Z column; sneaking moves to the nearest elevator below.
 
 Shift-right-click an elevator block to open its settings dialog. Owners can change the particle. Admins need both `teleportlocations.admin.elevator` and active claim-bypass mode to edit someone else's elevator. The dialog only shows particle choices the player has permission to use, such as `teleportlocations.elevator.particle.wax_on` and `teleportlocations.elevator.particle.end_rod`.
 
@@ -130,6 +145,23 @@ Elevator defaults are configured under `elevators` in `config.yml`:
 | `elevators.particles.default` | `WAX_ON` | Default particle for newly placed elevator blocks. |
 | `elevators.particles.interval-ticks` | `20` | How often elevator cue particles are emitted. |
 
+## Teleport Blocks
+
+Teleport blocks are any waxed copper bulb variant placed inside a claim the player owns. The block remains a normal waxed copper bulb visually. Its lit state controls whether it is active, so redstone can toggle a linked pad on or off.
+
+Right-click one teleport block with an Echo Shard, then right-click another teleport block with an Echo Shard to link them. Links must be within the configured max distance. Players need edit access to both blocks; admins can use active claim-bypass mode to override this and will receive a reminder message.
+
+Walking onto an active linked teleport block moves the player to the linked block if they have claim access at both ends. Cooldowns apply to prevent loops and lag.
+
+Shift-right-click a teleport block to open its destination menu. Players can target their own homes, player warps, and shop warps. Admins with `teleportlocations.admin.teleportblock` and active claim-bypass mode can target spawn, server warps, visible player warps, and visible shop warps. Saved-location targets run the same safety, claim-entry, and cost checks as normal teleport commands.
+
+Teleport block defaults are configured under `teleport-blocks` in `config.yml`:
+
+| Setting | Default | Description |
+| --- | --- | --- |
+| `teleport-blocks.max-distance` | `64` | Maximum distance between two Echo Shard linked teleport blocks. |
+| `teleport-blocks.cooldown-seconds` | `3` | Cooldown after teleport block use. |
+
 ## Shop Warps
 
 Shop warps are always public, listed, and free. They cannot be configured with a cost or locked access.
@@ -142,6 +174,8 @@ Admins manage global server warps with `/ht admin serverwarp set <name>`, `/ht a
 
 Players can use `/tpa <player>` to request teleporting to another online player, or `/tpahere <player>` to request that another online player teleport to them. The receiving player gets a clickable chat message with `[Accept]` and `[Decline]` actions, and can also use `/tpaccept [player]` or `/tpdecline [player]`.
 
+Players can use `/tpcancel` to cancel their outgoing pending request or an accepted warmup before it completes. `/tptoggle` disables or re-enables incoming TPA/TPAHERE requests for the current session.
+
 TPA requests are stored in memory and expire automatically. Cooldown and warmup are disabled by default. When warmup is enabled, movement can cancel the pending teleport.
 
 Admins can use `/ht admin tp <player> <target>` to move one online player to another immediately. Admin direct teleports do not use TPA requests, cooldowns, or warmups.
@@ -153,6 +187,8 @@ Managed teleports can play configurable particles and sounds. Departure effects 
 This applies to homes, player warps, shop warps, outposts, server warps, spawn teleports, accepted TPA requests, admin direct teleports, and elevator movement. Death respawn sets the Bukkit respawn location directly, but invalid configured respawn targets still use the denied effect.
 
 Sound audiences can be `SELF` for only the teleporting player or `NEARBY` for players within the configured radius.
+
+Normal player teleports from `/home`, `/warp`, `/outpost`, `/spawn`, and dialog teleport actions honor `teleport.warmup-seconds` and `teleport.cancel-on-move`. Admin direct teleports, TPA internals, elevator movement, and teleport blocks keep their specialized timing/cooldown behavior.
 
 | Setting | Default | Description |
 | --- | --- | --- |
@@ -186,7 +222,7 @@ Player warp costs are enforced before teleporting through `/warp` or dialog acti
 
 ## Claim Entry Checks
 
-TeleportLocations checks LandClaims entry access before moving a player into a claimed destination. Claimed destinations use the LandClaims action key `teleportlocations.enter`. If the player cannot enter the destination claim, the teleport is cancelled before charging costs or moving the player.
+TeleportLocations checks HavenClaims entry access before moving a player into a claimed destination. Claimed destinations use the HavenClaims action key `teleportlocations.enter`. If the player cannot enter the destination claim, the teleport is cancelled before charging costs or moving the player.
 
 This applies to homes, player warps, shop warps, outposts, spawn, dialog teleport actions, accepted TPA requests, and elevator destinations. Admins with active claim-bypass mode can bypass the entry check.
 

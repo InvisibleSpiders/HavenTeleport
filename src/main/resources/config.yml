@@ -3,10 +3,10 @@
 # Player limits are not permission based. Admin commands store per-player overrides.
 
 integrations:
-  landclaims:
-    # allow: creation checks pass when LandClaims is missing.
-    # deny-claim-required: homes, player warps, and shops require LandClaims; wilderness outposts still work.
-    # deny-all: all non-admin creation is blocked while LandClaims is missing.
+  havenclaims:
+    # allow: creation checks pass when HavenClaims is missing.
+    # deny-claim-required: homes, player warps, and shops require HavenClaims; wilderness outposts still work.
+    # deny-all: all non-admin creation is blocked while HavenClaims is missing.
     missing-service-policy: deny-claim-required
   vaultunlocked:
     # If false, money costs are denied when VaultUnlocked is unavailable.
@@ -98,6 +98,12 @@ elevators:
     default: WAX_ON
     # How often elevator cue particles are emitted.
     interval-ticks: 20
+
+teleport-blocks:
+  # Maximum distance between two echo-shard linked teleport blocks.
+  max-distance: 64
+  # Cooldown after teleport block use to prevent rapid loops.
+  cooldown-seconds: 3
 
 tpa:
   # Enables player-to-player teleport request commands.
