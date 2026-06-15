@@ -1,7 +1,11 @@
 package com.nick.teleportlocations.dialog;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
+import io.papermc.paper.dialog.DialogResponseView;
 import java.util.List;
 import net.kyori.adventure.text.event.ClickCallback;
 import org.junit.jupiter.api.Test;
@@ -73,5 +77,35 @@ final class PaperDialogPresenterTest {
         assertThat(input.label()).isEqualTo("Name");
         assertThat(input.textInitial()).isEqualTo("Market");
         assertThat(input.maxLength()).isEqualTo(32);
+    }
+
+    @Test
+    void textInputModelsNormalizeNullInitialText() {
+        DialogInputModel input = DialogInputModel.text("name", "Name", null, 32);
+
+        assertThat(input.textInitial()).isEqualTo("");
+    }
+
+    @Test
+    void textInputModelsRejectNonPositiveMaxLength() {
+        assertThatThrownBy(() -> DialogInputModel.text("name", "Name", "Market", 0))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("maxLength must be positive");
+
+        assertThatThrownBy(() -> DialogInputModel.text("name", "Name", "Market", -1))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("maxLength must be positive");
+    }
+
+    @Test
+    void responseInputValuesProvideFloatAndTextValues() {
+        DialogResponseView response = mock(DialogResponseView.class);
+        when(response.getFloat("amount")).thenReturn(12.5f);
+        when(response.getText("name")).thenReturn("Market");
+
+        DialogInputValues values = PaperDialogPresenter.inputValues(response);
+
+        assertThat(values.getFloat("amount")).isEqualTo(12.5f);
+        assertThat(values.getText("name")).isEqualTo("Market");
     }
 }

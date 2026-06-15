@@ -88,7 +88,7 @@ public final class PaperDialogPresenter {
         };
     }
 
-    private static DialogInputValues inputValues(DialogResponseView response) {
+    static DialogInputValues inputValues(DialogResponseView response) {
         return new DialogInputValues() {
             @Override
             public Float getFloat(String key) {

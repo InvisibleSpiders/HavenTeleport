@@ -22,6 +22,20 @@ public record DialogInputModel(
     }
 
     public static DialogInputModel text(String key, String label, String initial, int maxLength) {
-        return new DialogInputModel(Kind.TEXT, key, label, 0.0f, 0.0f, 0.0f, 0.0f, null, initial, maxLength);
+        if (maxLength <= 0) {
+            throw new IllegalArgumentException("maxLength must be positive");
+        }
+        return new DialogInputModel(
+                Kind.TEXT,
+                key,
+                label,
+                0.0f,
+                0.0f,
+                0.0f,
+                0.0f,
+                null,
+                initial == null ? "" : initial,
+                maxLength
+        );
     }
 }
