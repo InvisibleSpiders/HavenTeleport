@@ -14,16 +14,16 @@ import org.junit.jupiter.api.Test;
 
 final class CreationPolicyServiceTest {
     @Test
-    void claimRequiredCategoryIsDeniedWhenLandClaimsMissingByDefault() {
-        CreationPolicyService service = new CreationPolicyService(categories(), LandClaimsGateway.missing(), MissingLandClaimsPolicy.DENY_CLAIM_REQUIRED);
+    void claimRequiredCategoryIsDeniedWhenHavenClaimsMissingByDefault() {
+        CreationPolicyService service = new CreationPolicyService(categories(), HavenClaimsGateway.missing(), MissingHavenClaimsPolicy.DENY_CLAIM_REQUIRED);
 
         assertThat(service.canCreate(UUID.randomUUID(), "home", position(), false).allowed()).isFalse();
     }
 
     @Test
     void wildernessOutpostIsAllowedOnlyOutsideClaims() {
-        CreationPolicyService outside = new CreationPolicyService(categories(), LandClaimsGateway.fixed(false, false), MissingLandClaimsPolicy.DENY_CLAIM_REQUIRED);
-        CreationPolicyService inside = new CreationPolicyService(categories(), LandClaimsGateway.fixed(true, true), MissingLandClaimsPolicy.DENY_CLAIM_REQUIRED);
+        CreationPolicyService outside = new CreationPolicyService(categories(), HavenClaimsGateway.fixed(false, false), MissingHavenClaimsPolicy.DENY_CLAIM_REQUIRED);
+        CreationPolicyService inside = new CreationPolicyService(categories(), HavenClaimsGateway.fixed(true, true), MissingHavenClaimsPolicy.DENY_CLAIM_REQUIRED);
 
         assertThat(outside.canCreate(UUID.randomUUID(), "outpost", position(), false).allowed()).isTrue();
         assertThat(inside.canCreate(UUID.randomUUID(), "outpost", position(), false).allowed()).isFalse();
@@ -31,7 +31,7 @@ final class CreationPolicyServiceTest {
 
     @Test
     void adminBypassAllowsCreation() {
-        CreationPolicyService service = new CreationPolicyService(categories(), LandClaimsGateway.missing(), MissingLandClaimsPolicy.DENY_ALL);
+        CreationPolicyService service = new CreationPolicyService(categories(), HavenClaimsGateway.missing(), MissingHavenClaimsPolicy.DENY_ALL);
 
         assertThat(service.canCreate(UUID.randomUUID(), "home", position(), true).allowed()).isTrue();
     }

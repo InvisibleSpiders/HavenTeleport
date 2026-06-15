@@ -19,7 +19,7 @@ tasks.withType<JavaCompile>().configureEach {
 dependencies {
     compileOnly("io.papermc.paper:paper-api:26.1.2.build.69-stable")
     compileOnly(files("libs/haven-api.jar"))
-    compileOnly(files("libs/landclaims-api.jar"))
+    compileOnly(files("libs/havenclaims-api.jar"))
 
     testImplementation("org.junit.jupiter:junit-jupiter:5.12.2")
     testImplementation("org.assertj:assertj-core:3.27.3")

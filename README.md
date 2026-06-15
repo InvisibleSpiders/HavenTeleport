@@ -15,7 +15,7 @@ The plugin jar is written to `build/libs/TeleportLocations-1.0.0-SNAPSHOT.jar`.
 - Paper 26.1+.
 - Java 25.
 - Required: HavenCore.
-- Optional: LandClaims.
+- Optional: HavenClaims.
 - Optional through HavenCore: VaultUnlocked for money-cost player warps.
 - TeleportLocations stores data through HavenCore's shared datasource and registers its own migrations at startup.
 
@@ -129,7 +129,7 @@ CLC
 
 `E` is Echo Shard, `C` is Copper Ingot, and `L` is Lodestone. When placed, the block remains visually Lodestone, but right-click interaction is cancelled so it does not behave like a normal Lodestone.
 
-Placement is restricted to a player's own LandClaims claim unless admin claim-bypass mode is active. Breaking follows claim build access, so trusted builders can remove elevators in claims where they can build. Players with claim access can use elevators. Jumping on an elevator moves to the nearest elevator above in the same X/Z column; sneaking moves to the nearest elevator below.
+Placement is restricted to a player's own HavenClaims claim unless admin claim-bypass mode is active. Breaking follows claim build access, so trusted builders can remove elevators in claims where they can build. Players with claim access can use elevators. Jumping on an elevator moves to the nearest elevator above in the same X/Z column; sneaking moves to the nearest elevator below.
 
 Shift-right-click an elevator block to open its settings dialog. Owners can change the particle. Admins need both `teleportlocations.admin.elevator` and active claim-bypass mode to edit someone else's elevator. The dialog only shows particle choices the player has permission to use, such as `teleportlocations.elevator.particle.wax_on` and `teleportlocations.elevator.particle.end_rod`.
 
@@ -222,7 +222,7 @@ Player warp costs are enforced before teleporting through `/warp` or dialog acti
 
 ## Claim Entry Checks
 
-TeleportLocations checks LandClaims entry access before moving a player into a claimed destination. Claimed destinations use the LandClaims action key `teleportlocations.enter`. If the player cannot enter the destination claim, the teleport is cancelled before charging costs or moving the player.
+TeleportLocations checks HavenClaims entry access before moving a player into a claimed destination. Claimed destinations use the HavenClaims action key `teleportlocations.enter`. If the player cannot enter the destination claim, the teleport is cancelled before charging costs or moving the player.
 
 This applies to homes, player warps, shop warps, outposts, spawn, dialog teleport actions, accepted TPA requests, and elevator destinations. Admins with active claim-bypass mode can bypass the entry check.
 

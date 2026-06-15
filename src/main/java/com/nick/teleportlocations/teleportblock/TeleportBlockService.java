@@ -1,6 +1,6 @@
 package com.nick.teleportlocations.teleportblock;
 
-import com.nick.teleportlocations.claim.LandClaimsGateway;
+import com.nick.teleportlocations.claim.HavenClaimsGateway;
 import com.nick.teleportlocations.location.SavedPosition;
 import com.nick.teleportlocations.location.TeleportLocation;
 import java.time.Instant;
@@ -13,19 +13,19 @@ public final class TeleportBlockService {
     public static final String USE_ACTION = "teleportlocations.teleportblock.use";
 
     private final TeleportBlockRepository repository;
-    private final LandClaimsGateway landClaims;
+    private final HavenClaimsGateway havenClaims;
     private final Supplier<Instant> clock;
 
-    public TeleportBlockService(TeleportBlockRepository repository, LandClaimsGateway landClaims, Supplier<Instant> clock) {
+    public TeleportBlockService(TeleportBlockRepository repository, HavenClaimsGateway havenClaims, Supplier<Instant> clock) {
         this.repository = Objects.requireNonNull(repository, "repository");
-        this.landClaims = Objects.requireNonNull(landClaims, "landClaims");
+        this.havenClaims = Objects.requireNonNull(havenClaims, "havenClaims");
         this.clock = Objects.requireNonNull(clock, "clock");
     }
 
     public TeleportBlockResult place(UUID ownerId, SavedPosition position, boolean adminBypassClaims) {
         Objects.requireNonNull(ownerId, "ownerId");
         Objects.requireNonNull(position, "position");
-        if (!adminBypassClaims && !landClaims.ownsClaimAt(ownerId, position)) {
+        if (!adminBypassClaims && !havenClaims.ownsClaimAt(ownerId, position)) {
             return TeleportBlockResult.empty(TeleportBlockResult.Status.CLAIM_DENIED);
         }
         Optional<TeleportBlock> existing = findAt(position);
@@ -45,7 +45,7 @@ public final class TeleportBlockService {
         if (existing.isEmpty()) {
             return TeleportBlockResult.empty(TeleportBlockResult.Status.NOT_FOUND);
         }
-        if (!adminBypassClaims && !landClaims.canBuild(playerId, position)) {
+        if (!adminBypassClaims && !havenClaims.canBuild(playerId, position)) {
             return TeleportBlockResult.empty(TeleportBlockResult.Status.ACCESS_DENIED);
         }
         unlink(existing.get());
@@ -78,7 +78,7 @@ public final class TeleportBlockService {
     }
 
     public boolean canUse(UUID playerId, SavedPosition position, boolean adminBypassClaims) {
-        return adminBypassClaims || landClaims.canInteract(playerId, position, USE_ACTION);
+        return adminBypassClaims || havenClaims.canInteract(playerId, position, USE_ACTION);
     }
 
     public TeleportBlockResult setTargetLocation(UUID playerId, UUID blockId, TeleportLocation target, boolean adminBypassClaims) {
@@ -121,7 +121,7 @@ public final class TeleportBlockService {
     }
 
     private boolean canEdit(UUID playerId, TeleportBlock block, boolean adminBypassClaims) {
-        return adminBypassClaims || block.ownerId().equals(playerId) || landClaims.canBuild(playerId, block.position());
+        return adminBypassClaims || block.ownerId().equals(playerId) || havenClaims.canBuild(playerId, block.position());
     }
 
     private static boolean canSetTarget(UUID playerId, TeleportLocation target, boolean adminBypassClaims) {

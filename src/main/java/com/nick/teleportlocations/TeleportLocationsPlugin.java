@@ -7,7 +7,7 @@ import com.nick.teleportlocations.command.PlayerLocationCommand;
 import com.nick.teleportlocations.command.TeleportRequestCommand;
 import com.nick.teleportlocations.dialog.DialogActionExecutor;
 import com.nick.teleportlocations.dialog.DialogActionRouter;
-import com.nick.teleportlocations.claim.BukkitLandClaimsGateway;
+import com.nick.teleportlocations.claim.BukkitHavenClaimsGateway;
 import com.nick.teleportlocations.dialog.DialogMenuService;
 import com.nick.teleportlocations.dialog.PaperDialogPresenter;
 import com.nick.teleportlocations.elevator.ElevatorActivationService;
@@ -43,7 +43,7 @@ public final class TeleportLocationsPlugin extends JavaPlugin {
         services = RuntimeServices.open(
                 HavenAPI.get(HavenDataSource.class),
                 HavenAPI.optional(HavenEconomyService.class),
-                BukkitLandClaimsGateway.discover(getServer().getServicesManager()),
+                BukkitHavenClaimsGateway.discover(getServer().getServicesManager()),
                 getClassLoader()
         );
         managedTeleports = new ManagedTeleportService(

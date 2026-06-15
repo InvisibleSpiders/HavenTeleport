@@ -10,8 +10,8 @@ import com.nick.teleportlocations.category.CategoryConfig;
 import com.nick.teleportlocations.category.CreationZone;
 import com.nick.teleportlocations.category.OwnerKind;
 import com.nick.teleportlocations.claim.CreationPolicyService;
-import com.nick.teleportlocations.claim.LandClaimsGateway;
-import com.nick.teleportlocations.claim.MissingLandClaimsPolicy;
+import com.nick.teleportlocations.claim.HavenClaimsGateway;
+import com.nick.teleportlocations.claim.MissingHavenClaimsPolicy;
 import com.nick.teleportlocations.dialog.DialogMenuModel;
 import com.nick.teleportlocations.dialog.DialogMenuService;
 import com.nick.teleportlocations.dialog.PaperDialogPresenter;
@@ -225,8 +225,8 @@ final class AdminTeleportCommandTest {
             LocationService locationService = new LocationService(new InMemoryLocationRepository(), () -> Instant.EPOCH);
             CreationPolicyService creationPolicy = new CreationPolicyService(
                     categories(),
-                    LandClaimsGateway.fixed(true, true),
-                    MissingLandClaimsPolicy.DENY_CLAIM_REQUIRED
+                    HavenClaimsGateway.fixed(true, true),
+                    MissingHavenClaimsPolicy.DENY_CLAIM_REQUIRED
             );
             HomeService homeService = new HomeService(locationService, limitService, creationPolicy);
             SpawnService spawnService = new SpawnService(locationService, homeService);

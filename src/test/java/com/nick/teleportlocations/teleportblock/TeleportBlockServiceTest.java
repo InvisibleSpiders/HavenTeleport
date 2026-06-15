@@ -2,7 +2,7 @@ package com.nick.teleportlocations.teleportblock;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.nick.teleportlocations.claim.LandClaimsGateway;
+import com.nick.teleportlocations.claim.HavenClaimsGateway;
 import com.nick.teleportlocations.location.AccessMode;
 import com.nick.teleportlocations.location.CostSpec;
 import com.nick.teleportlocations.location.OwnerRef;
@@ -19,13 +19,13 @@ final class TeleportBlockServiceTest {
     @Test
     void placesOnlyInOwnClaimUnlessAdminBypass() {
         UUID owner = UUID.randomUUID();
-        TeleportBlockService denied = new TeleportBlockService(new InMemoryTeleportBlockRepository(), LandClaimsGateway.fixed(true, true), () -> Instant.EPOCH);
+        TeleportBlockService denied = new TeleportBlockService(new InMemoryTeleportBlockRepository(), HavenClaimsGateway.fixed(true, true), () -> Instant.EPOCH);
 
         TeleportBlockResult deniedResult = denied.place(owner, position(0, 64, 0), false);
 
         assertThat(deniedResult.status()).isEqualTo(TeleportBlockResult.Status.CLAIM_DENIED);
 
-        TeleportBlockService allowed = new TeleportBlockService(new InMemoryTeleportBlockRepository(), LandClaimsGateway.fixedOwned(true, true, true), () -> Instant.EPOCH);
+        TeleportBlockService allowed = new TeleportBlockService(new InMemoryTeleportBlockRepository(), HavenClaimsGateway.fixedOwned(true, true, true), () -> Instant.EPOCH);
         TeleportBlockResult allowedResult = allowed.place(owner, position(0, 64, 0), false);
 
         assertThat(allowedResult.status()).isEqualTo(TeleportBlockResult.Status.PLACED);
@@ -36,7 +36,7 @@ final class TeleportBlockServiceTest {
     void buildAccessCanBreakTeleportBlock() {
         UUID owner = UUID.randomUUID();
         UUID trusted = UUID.randomUUID();
-        TeleportBlockService service = new TeleportBlockService(new InMemoryTeleportBlockRepository(), LandClaimsGateway.fixedOwned(true, true, true), () -> Instant.EPOCH);
+        TeleportBlockService service = new TeleportBlockService(new InMemoryTeleportBlockRepository(), HavenClaimsGateway.fixedOwned(true, true, true), () -> Instant.EPOCH);
         service.place(owner, position(0, 64, 0), false);
 
         TeleportBlockResult result = service.breakBlock(trusted, position(0, 64, 0), false);
@@ -47,7 +47,7 @@ final class TeleportBlockServiceTest {
     @Test
     void linksTwoEditableBlocksWithinDistance() {
         UUID owner = UUID.randomUUID();
-        TeleportBlockService service = new TeleportBlockService(new InMemoryTeleportBlockRepository(), LandClaimsGateway.fixedOwned(true, true, true), () -> Instant.EPOCH);
+        TeleportBlockService service = new TeleportBlockService(new InMemoryTeleportBlockRepository(), HavenClaimsGateway.fixedOwned(true, true, true), () -> Instant.EPOCH);
         TeleportBlock first = service.place(owner, position(0, 64, 0), false).block().orElseThrow();
         TeleportBlock second = service.place(owner, position(8, 64, 0), false).block().orElseThrow();
 
@@ -61,7 +61,7 @@ final class TeleportBlockServiceTest {
     @Test
     void rejectsLinksBeyondConfiguredDistance() {
         UUID owner = UUID.randomUUID();
-        TeleportBlockService service = new TeleportBlockService(new InMemoryTeleportBlockRepository(), LandClaimsGateway.fixedOwned(true, true, true), () -> Instant.EPOCH);
+        TeleportBlockService service = new TeleportBlockService(new InMemoryTeleportBlockRepository(), HavenClaimsGateway.fixedOwned(true, true, true), () -> Instant.EPOCH);
         TeleportBlock first = service.place(owner, position(0, 64, 0), false).block().orElseThrow();
         TeleportBlock second = service.place(owner, position(65, 64, 0), false).block().orElseThrow();
 
@@ -75,7 +75,7 @@ final class TeleportBlockServiceTest {
     @Test
     void linkedDestinationResolvesOtherBlock() {
         UUID owner = UUID.randomUUID();
-        TeleportBlockService service = new TeleportBlockService(new InMemoryTeleportBlockRepository(), LandClaimsGateway.fixedOwned(true, true, true), () -> Instant.EPOCH);
+        TeleportBlockService service = new TeleportBlockService(new InMemoryTeleportBlockRepository(), HavenClaimsGateway.fixedOwned(true, true, true), () -> Instant.EPOCH);
         TeleportBlock first = service.place(owner, position(0, 64, 0), false).block().orElseThrow();
         TeleportBlock second = service.place(owner, position(4, 64, 0), false).block().orElseThrow();
         service.link(owner, first.position(), second.position(), false, 64);
@@ -86,7 +86,7 @@ final class TeleportBlockServiceTest {
     @Test
     void ownerCanSetOwnLocationTargetAndClearBlockLink() {
         UUID owner = UUID.randomUUID();
-        TeleportBlockService service = new TeleportBlockService(new InMemoryTeleportBlockRepository(), LandClaimsGateway.fixedOwned(true, true, true), () -> Instant.EPOCH);
+        TeleportBlockService service = new TeleportBlockService(new InMemoryTeleportBlockRepository(), HavenClaimsGateway.fixedOwned(true, true, true), () -> Instant.EPOCH);
         TeleportBlock first = service.place(owner, position(0, 64, 0), false).block().orElseThrow();
         TeleportBlock second = service.place(owner, position(4, 64, 0), false).block().orElseThrow();
         service.link(owner, first.position(), second.position(), false, 64);
@@ -103,7 +103,7 @@ final class TeleportBlockServiceTest {
     @Test
     void regularPlayerCannotSetServerLocationTarget() {
         UUID owner = UUID.randomUUID();
-        TeleportBlockService service = new TeleportBlockService(new InMemoryTeleportBlockRepository(), LandClaimsGateway.fixedOwned(true, true, true), () -> Instant.EPOCH);
+        TeleportBlockService service = new TeleportBlockService(new InMemoryTeleportBlockRepository(), HavenClaimsGateway.fixedOwned(true, true, true), () -> Instant.EPOCH);
         TeleportBlock block = service.place(owner, position(0, 64, 0), false).block().orElseThrow();
 
         TeleportBlockResult result = service.setTargetLocation(owner, block.id(), serverLocation(), false);

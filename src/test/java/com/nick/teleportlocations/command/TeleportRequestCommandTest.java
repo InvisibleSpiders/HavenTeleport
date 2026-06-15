@@ -9,7 +9,7 @@ import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.when;
 
 import com.nick.teleportlocations.admin.AdminBypassService;
-import com.nick.teleportlocations.claim.LandClaimsGateway;
+import com.nick.teleportlocations.claim.HavenClaimsGateway;
 import com.nick.teleportlocations.teleport.TeleportAccessService;
 import com.nick.teleportlocations.tpa.TeleportRequestService;
 import com.nick.teleportlocations.tpa.TeleportWarmupService;
@@ -135,7 +135,7 @@ final class TeleportRequestCommandTest {
         TeleportRequestCommand command = command(
                 Map.of("Nova", requester, "Ari", receiver),
                 new TeleportWarmupService(mock(Plugin.class), 0, true),
-                new TeleportAccessService(LandClaimsGateway.fixed(true, false))
+                new TeleportAccessService(HavenClaimsGateway.fixed(true, false))
         );
         command.onCommand(requester, command("tpa"), "tpa", new String[] {"Ari"});
 
@@ -150,7 +150,7 @@ final class TeleportRequestCommandTest {
     }
 
     private static TeleportRequestCommand command(Map<String, Player> players, TeleportWarmupService warmups) {
-        return command(players, warmups, new TeleportAccessService(LandClaimsGateway.fixed(false, true)));
+        return command(players, warmups, new TeleportAccessService(HavenClaimsGateway.fixed(false, true)));
     }
 
     private static TeleportRequestCommand command(Map<String, Player> players, TeleportWarmupService warmups, TeleportAccessService access) {

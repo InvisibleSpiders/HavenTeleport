@@ -8,12 +8,12 @@ import java.util.UUID;
 
 public final class CreationPolicyService {
     private final Map<String, CategoryConfig> categories;
-    private final LandClaimsGateway landClaims;
-    private final MissingLandClaimsPolicy missingPolicy;
+    private final HavenClaimsGateway havenClaims;
+    private final MissingHavenClaimsPolicy missingPolicy;
 
-    public CreationPolicyService(Map<String, CategoryConfig> categories, LandClaimsGateway landClaims, MissingLandClaimsPolicy missingPolicy) {
+    public CreationPolicyService(Map<String, CategoryConfig> categories, HavenClaimsGateway havenClaims, MissingHavenClaimsPolicy missingPolicy) {
         this.categories = Map.copyOf(categories);
-        this.landClaims = landClaims;
+        this.havenClaims = havenClaims;
         this.missingPolicy = missingPolicy;
     }
 
@@ -22,15 +22,15 @@ public final class CreationPolicyService {
             return ClaimAccess.allow();
         }
         CategoryConfig category = categories.get(categoryKey);
-        if (!landClaims.available()) {
+        if (!havenClaims.available()) {
             return handleMissing(category.creationZone());
         }
         if (category.creationZone() == CreationZone.TRUSTED_CLAIM) {
             String actionKey = "teleportlocations.create." + categoryKey;
-            return landClaims.canInteract(playerId, position, actionKey) ? ClaimAccess.allow() : ClaimAccess.deny("claim-denied");
+            return havenClaims.canInteract(playerId, position, actionKey) ? ClaimAccess.allow() : ClaimAccess.deny("claim-denied");
         }
         if (category.creationZone() == CreationZone.WILDERNESS) {
-            return landClaims.hasClaimAt(position) ? ClaimAccess.deny("claimed-land") : ClaimAccess.allow();
+            return havenClaims.hasClaimAt(position) ? ClaimAccess.deny("claimed-land") : ClaimAccess.allow();
         }
         if (category.creationZone() == CreationZone.ADMIN) {
             return ClaimAccess.deny("admin-only");
@@ -39,12 +39,12 @@ public final class CreationPolicyService {
     }
 
     private ClaimAccess handleMissing(CreationZone zone) {
-        if (missingPolicy == MissingLandClaimsPolicy.ALLOW) {
+        if (missingPolicy == MissingHavenClaimsPolicy.ALLOW) {
             return ClaimAccess.allow();
         }
-        if (missingPolicy == MissingLandClaimsPolicy.DENY_ALL) {
-            return ClaimAccess.deny("landclaims-missing");
+        if (missingPolicy == MissingHavenClaimsPolicy.DENY_ALL) {
+            return ClaimAccess.deny("havenclaims-missing");
         }
-        return zone == CreationZone.WILDERNESS ? ClaimAccess.allow() : ClaimAccess.deny("landclaims-missing");
+        return zone == CreationZone.WILDERNESS ? ClaimAccess.allow() : ClaimAccess.deny("havenclaims-missing");
     }
 }

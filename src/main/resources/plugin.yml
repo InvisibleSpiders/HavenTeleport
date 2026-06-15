@@ -7,7 +7,7 @@ description: Homes, warps, shops, outposts, and spawn control.
 depend:
   - HavenCore
 softdepend:
-  - LandClaims
+  - HavenClaims
 commands:
   ht:
     description: HavenTeleport admin and utility commands.

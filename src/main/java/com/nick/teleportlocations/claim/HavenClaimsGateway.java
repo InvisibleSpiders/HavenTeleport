@@ -3,7 +3,7 @@ package com.nick.teleportlocations.claim;
 import com.nick.teleportlocations.location.SavedPosition;
 import java.util.UUID;
 
-public interface LandClaimsGateway {
+public interface HavenClaimsGateway {
     boolean available();
 
     boolean hasClaimAt(SavedPosition position);
@@ -18,8 +18,8 @@ public interface LandClaimsGateway {
         return false;
     }
 
-    static LandClaimsGateway missing() {
-        return new LandClaimsGateway() {
+    static HavenClaimsGateway missing() {
+        return new HavenClaimsGateway() {
             @Override
             public boolean available() {
                 return false;
@@ -37,8 +37,8 @@ public interface LandClaimsGateway {
         };
     }
 
-    static LandClaimsGateway fixed(boolean hasClaim, boolean canInteract) {
-        return new LandClaimsGateway() {
+    static HavenClaimsGateway fixed(boolean hasClaim, boolean canInteract) {
+        return new HavenClaimsGateway() {
             @Override
             public boolean available() {
                 return true;
@@ -56,8 +56,8 @@ public interface LandClaimsGateway {
         };
     }
 
-    static LandClaimsGateway fixedOwned(boolean hasClaim, boolean canInteract, boolean ownsClaim) {
-        return new LandClaimsGateway() {
+    static HavenClaimsGateway fixedOwned(boolean hasClaim, boolean canInteract, boolean ownsClaim) {
+        return new HavenClaimsGateway() {
             @Override
             public boolean available() {
                 return true;

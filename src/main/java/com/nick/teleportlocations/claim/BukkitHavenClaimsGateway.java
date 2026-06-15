@@ -1,6 +1,6 @@
 package com.nick.teleportlocations.claim;
 
-import com.nick.landclaims.api.LandClaimsApi;
+import com.invisiblespiders.havenclaims.api.HavenClaimsApi;
 import com.nick.teleportlocations.location.SavedPosition;
 import java.util.Objects;
 import java.util.UUID;
@@ -10,16 +10,16 @@ import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.ServicesManager;
 
-public final class BukkitLandClaimsGateway implements LandClaimsGateway {
-    private final LandClaimsApi api;
+public final class BukkitHavenClaimsGateway implements HavenClaimsGateway {
+    private final HavenClaimsApi api;
 
-    private BukkitLandClaimsGateway(LandClaimsApi api) {
+    private BukkitHavenClaimsGateway(HavenClaimsApi api) {
         this.api = api;
     }
 
-    public static LandClaimsGateway discover(ServicesManager servicesManager) {
-        LandClaimsApi api = servicesManager.load(LandClaimsApi.class);
-        return api == null ? LandClaimsGateway.missing() : new BukkitLandClaimsGateway(api);
+    public static HavenClaimsGateway discover(ServicesManager servicesManager) {
+        HavenClaimsApi api = servicesManager.load(HavenClaimsApi.class);
+        return api == null ? HavenClaimsGateway.missing() : new BukkitHavenClaimsGateway(api);
     }
 
     public static String createActionKey(String category) {

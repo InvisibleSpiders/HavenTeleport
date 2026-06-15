@@ -3,10 +3,10 @@
 # Player limits are not permission based. Admin commands store per-player overrides.
 
 integrations:
-  landclaims:
-    # allow: creation checks pass when LandClaims is missing.
-    # deny-claim-required: homes, player warps, and shops require LandClaims; wilderness outposts still work.
-    # deny-all: all non-admin creation is blocked while LandClaims is missing.
+  havenclaims:
+    # allow: creation checks pass when HavenClaims is missing.
+    # deny-claim-required: homes, player warps, and shops require HavenClaims; wilderness outposts still work.
+    # deny-all: all non-admin creation is blocked while HavenClaims is missing.
     missing-service-policy: deny-claim-required
   vaultunlocked:
     # If false, money costs are denied when VaultUnlocked is unavailable.

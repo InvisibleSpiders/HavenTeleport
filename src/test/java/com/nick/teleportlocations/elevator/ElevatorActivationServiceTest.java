@@ -2,7 +2,7 @@ package com.nick.teleportlocations.elevator;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.nick.teleportlocations.claim.LandClaimsGateway;
+import com.nick.teleportlocations.claim.HavenClaimsGateway;
 import com.nick.teleportlocations.location.SavedPosition;
 import java.time.Instant;
 import java.util.UUID;
@@ -73,7 +73,7 @@ final class ElevatorActivationServiceTest {
     private static ElevatorService elevatorService(boolean canInteract) {
         return new ElevatorService(
                 new InMemoryElevatorRepository(),
-                LandClaimsGateway.fixedOwned(true, canInteract, true),
+                HavenClaimsGateway.fixedOwned(true, canInteract, true),
                 () -> Instant.EPOCH
         );
     }

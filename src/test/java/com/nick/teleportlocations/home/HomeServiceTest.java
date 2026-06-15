@@ -3,8 +3,8 @@ package com.nick.teleportlocations.home;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.nick.teleportlocations.claim.CreationPolicyService;
-import com.nick.teleportlocations.claim.LandClaimsGateway;
-import com.nick.teleportlocations.claim.MissingLandClaimsPolicy;
+import com.nick.teleportlocations.claim.HavenClaimsGateway;
+import com.nick.teleportlocations.claim.MissingHavenClaimsPolicy;
 import com.nick.teleportlocations.config.ConfigLoader;
 import com.nick.teleportlocations.config.PluginConfig;
 import com.nick.teleportlocations.limit.InMemoryLimitRepository;
@@ -19,7 +19,7 @@ import org.junit.jupiter.api.Test;
 final class HomeServiceTest {
     @Test
     void createsFirstHomeAsMainHome() {
-        Fixture fixture = Fixture.create(LandClaimsGateway.fixed(true, true));
+        Fixture fixture = Fixture.create(HavenClaimsGateway.fixed(true, true));
         UUID playerId = UUID.randomUUID();
 
         HomeResult result = fixture.service.setHome(playerId, "base", position(), false);
@@ -32,7 +32,7 @@ final class HomeServiceTest {
 
     @Test
     void deniesNewHomeWhenLimitReachedButAllowsUpdatingExistingHome() {
-        Fixture fixture = Fixture.create(LandClaimsGateway.fixed(true, true));
+        Fixture fixture = Fixture.create(HavenClaimsGateway.fixed(true, true));
         UUID playerId = UUID.randomUUID();
         fixture.limits.setLimit(playerId, "home", 1);
 
@@ -46,7 +46,7 @@ final class HomeServiceTest {
 
     @Test
     void deniesHomeCreationOutsideTrustedClaim() {
-        Fixture fixture = Fixture.create(LandClaimsGateway.fixed(true, false));
+        Fixture fixture = Fixture.create(HavenClaimsGateway.fixed(true, false));
 
         HomeResult result = fixture.service.setHome(UUID.randomUUID(), "base", position(), false);
 
@@ -56,7 +56,7 @@ final class HomeServiceTest {
 
     @Test
     void canSetMainHomeAndDeleteHome() {
-        Fixture fixture = Fixture.create(LandClaimsGateway.fixed(true, true));
+        Fixture fixture = Fixture.create(HavenClaimsGateway.fixed(true, true));
         UUID playerId = UUID.randomUUID();
         fixture.service.setHome(playerId, "base", position(), false);
         fixture.service.setHome(playerId, "secret", movedPosition(), false);
@@ -76,15 +76,15 @@ final class HomeServiceTest {
     }
 
     private record Fixture(HomeService service, LimitService limits) {
-        private static Fixture create(LandClaimsGateway landClaims) {
+        private static Fixture create(HavenClaimsGateway havenClaims) {
             PluginConfig config = ConfigLoader.fromResources();
             InMemoryLocationRepository locations = new InMemoryLocationRepository();
             LocationService locationService = new LocationService(locations, () -> Instant.EPOCH);
             LimitService limitService = new LimitService(config.categories(), new InMemoryLimitRepository());
             CreationPolicyService creationPolicy = new CreationPolicyService(
                     config.categories(),
-                    landClaims,
-                    MissingLandClaimsPolicy.DENY_CLAIM_REQUIRED
+                    havenClaims,
+                    MissingHavenClaimsPolicy.DENY_CLAIM_REQUIRED
             );
             return new Fixture(new HomeService(locationService, limitService, creationPolicy), limitService);
         }

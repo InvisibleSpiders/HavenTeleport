@@ -7,7 +7,7 @@ import java.util.Map;
 
 public record PluginConfig(
         Map<String, CategoryConfig> categories,
-        String landClaimsMissingPolicy,
+        String havenClaimsMissingPolicy,
         boolean treatMoneyCostsAsFreeWhenEconomyMissing,
         int warmupSeconds,
         boolean cancelOnMove,

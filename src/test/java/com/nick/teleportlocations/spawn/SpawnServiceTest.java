@@ -3,8 +3,8 @@ package com.nick.teleportlocations.spawn;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.nick.teleportlocations.claim.CreationPolicyService;
-import com.nick.teleportlocations.claim.LandClaimsGateway;
-import com.nick.teleportlocations.claim.MissingLandClaimsPolicy;
+import com.nick.teleportlocations.claim.HavenClaimsGateway;
+import com.nick.teleportlocations.claim.MissingHavenClaimsPolicy;
 import com.nick.teleportlocations.config.ConfigLoader;
 import com.nick.teleportlocations.config.PluginConfig;
 import com.nick.teleportlocations.home.HomeService;
@@ -69,8 +69,8 @@ final class SpawnServiceTest {
                     limitService,
                     new CreationPolicyService(
                             config.categories(),
-                            LandClaimsGateway.fixed(true, true),
-                            MissingLandClaimsPolicy.DENY_CLAIM_REQUIRED
+                            HavenClaimsGateway.fixed(true, true),
+                            MissingHavenClaimsPolicy.DENY_CLAIM_REQUIRED
                     )
             );
             return new Fixture(new SpawnService(locationService, homeService), homeService);

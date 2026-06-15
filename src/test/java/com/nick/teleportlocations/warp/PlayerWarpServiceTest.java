@@ -3,8 +3,8 @@ package com.nick.teleportlocations.warp;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.nick.teleportlocations.claim.CreationPolicyService;
-import com.nick.teleportlocations.claim.LandClaimsGateway;
-import com.nick.teleportlocations.claim.MissingLandClaimsPolicy;
+import com.nick.teleportlocations.claim.HavenClaimsGateway;
+import com.nick.teleportlocations.claim.MissingHavenClaimsPolicy;
 import com.nick.teleportlocations.config.ConfigLoader;
 import com.nick.teleportlocations.config.PluginConfig;
 import com.nick.teleportlocations.limit.InMemoryLimitRepository;
@@ -22,7 +22,7 @@ import org.junit.jupiter.api.Test;
 final class PlayerWarpServiceTest {
     @Test
     void createsPublicListedWarp() {
-        Fixture fixture = Fixture.create(LandClaimsGateway.fixed(true, true));
+        Fixture fixture = Fixture.create(HavenClaimsGateway.fixed(true, true));
         UUID owner = UUID.randomUUID();
 
         PlayerWarpResult result = fixture.service.setWarp(owner, "market", position(), false);
@@ -36,7 +36,7 @@ final class PlayerWarpServiceTest {
 
     @Test
     void deniesNewWarpWhenLimitReachedButAllowsUpdatingExistingWarp() {
-        Fixture fixture = Fixture.create(LandClaimsGateway.fixed(true, true));
+        Fixture fixture = Fixture.create(HavenClaimsGateway.fixed(true, true));
         UUID owner = UUID.randomUUID();
         fixture.limits.setLimit(owner, "player_warp", 1);
 
@@ -50,7 +50,7 @@ final class PlayerWarpServiceTest {
 
     @Test
     void deniesWarpCreationOutsideTrustedClaim() {
-        Fixture fixture = Fixture.create(LandClaimsGateway.fixed(true, false));
+        Fixture fixture = Fixture.create(HavenClaimsGateway.fixed(true, false));
 
         PlayerWarpResult result = fixture.service.setWarp(UUID.randomUUID(), "market", position(), false);
 
@@ -60,7 +60,7 @@ final class PlayerWarpServiceTest {
 
     @Test
     void resolvesVisiblePublicWarpAndDeletesOwnWarp() {
-        Fixture fixture = Fixture.create(LandClaimsGateway.fixed(true, true));
+        Fixture fixture = Fixture.create(HavenClaimsGateway.fixed(true, true));
         UUID owner = UUID.randomUUID();
         UUID viewer = UUID.randomUUID();
         fixture.service.setWarp(owner, "market", position(), false);
@@ -72,7 +72,7 @@ final class PlayerWarpServiceTest {
 
     @Test
     void updatesWarpAccessAndVisibility() {
-        Fixture fixture = Fixture.create(LandClaimsGateway.fixed(true, true));
+        Fixture fixture = Fixture.create(HavenClaimsGateway.fixed(true, true));
         UUID owner = UUID.randomUUID();
         fixture.service.setWarp(owner, "market", position(), false);
 
@@ -88,7 +88,7 @@ final class PlayerWarpServiceTest {
 
     @Test
     void ownerCanStillSeeHiddenPrivateWarpButStrangersCannot() {
-        Fixture fixture = Fixture.create(LandClaimsGateway.fixed(true, true));
+        Fixture fixture = Fixture.create(HavenClaimsGateway.fixed(true, true));
         UUID owner = UUID.randomUUID();
         fixture.service.setWarp(owner, "market", position(), false);
         fixture.service.setAccess(owner, "market", AccessMode.PRIVATE);
@@ -100,7 +100,7 @@ final class PlayerWarpServiceTest {
 
     @Test
     void updatesWarpCost() {
-        Fixture fixture = Fixture.create(LandClaimsGateway.fixed(true, true));
+        Fixture fixture = Fixture.create(HavenClaimsGateway.fixed(true, true));
         UUID owner = UUID.randomUUID();
         fixture.service.setWarp(owner, "market", position(), false);
 
@@ -119,15 +119,15 @@ final class PlayerWarpServiceTest {
     }
 
     private record Fixture(PlayerWarpService service, LimitService limits) {
-        private static Fixture create(LandClaimsGateway landClaims) {
+        private static Fixture create(HavenClaimsGateway havenClaims) {
             PluginConfig config = ConfigLoader.fromResources();
             InMemoryLocationRepository locations = new InMemoryLocationRepository();
             LocationService locationService = new LocationService(locations, () -> Instant.EPOCH);
             LimitService limitService = new LimitService(config.categories(), new InMemoryLimitRepository());
             CreationPolicyService creationPolicy = new CreationPolicyService(
                     config.categories(),
-                    landClaims,
-                    MissingLandClaimsPolicy.DENY_CLAIM_REQUIRED
+                    havenClaims,
+                    MissingHavenClaimsPolicy.DENY_CLAIM_REQUIRED
             );
             return new Fixture(new PlayerWarpService(locationService, limitService, creationPolicy), limitService);
         }

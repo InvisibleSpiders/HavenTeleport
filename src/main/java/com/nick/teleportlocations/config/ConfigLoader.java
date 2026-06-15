@@ -24,7 +24,7 @@ public final class ConfigLoader {
         YamlConfiguration yaml = loadResource("config.yml");
         return new PluginConfig(
                 loadCategories(yaml.getConfigurationSection("categories")),
-                yaml.getString("integrations.landclaims.missing-service-policy", "deny-claim-required"),
+                yaml.getString("integrations.havenclaims.missing-service-policy", "deny-claim-required"),
                 yaml.getBoolean("integrations.vaultunlocked.treat-money-costs-as-free-when-missing", false),
                 yaml.getInt("teleport.warmup-seconds", 3),
                 yaml.getBoolean("teleport.cancel-on-move", true),

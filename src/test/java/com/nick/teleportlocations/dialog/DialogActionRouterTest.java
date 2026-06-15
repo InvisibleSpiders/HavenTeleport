@@ -4,8 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.nick.teleportlocations.admin.AdminBypassService;
 import com.nick.teleportlocations.claim.CreationPolicyService;
-import com.nick.teleportlocations.claim.LandClaimsGateway;
-import com.nick.teleportlocations.claim.MissingLandClaimsPolicy;
+import com.nick.teleportlocations.claim.HavenClaimsGateway;
+import com.nick.teleportlocations.claim.MissingHavenClaimsPolicy;
 import com.nick.teleportlocations.config.ConfigLoader;
 import com.nick.teleportlocations.config.PluginConfig;
 import com.nick.teleportlocations.elevator.ElevatorBlock;
@@ -336,8 +336,8 @@ final class DialogActionRouterTest {
             LimitService limitService = new LimitService(config.categories(), new InMemoryLimitRepository());
             CreationPolicyService creationPolicy = new CreationPolicyService(
                     config.categories(),
-                    LandClaimsGateway.fixed(false, true),
-                    MissingLandClaimsPolicy.DENY_CLAIM_REQUIRED
+                    HavenClaimsGateway.fixed(false, true),
+                    MissingHavenClaimsPolicy.DENY_CLAIM_REQUIRED
             );
             HomeService homeService = new HomeService(locationService, limitService, creationPolicy);
             PlayerWarpService warpService = new PlayerWarpService(locationService, limitService, creationPolicy);
@@ -347,12 +347,12 @@ final class DialogActionRouterTest {
             AdminBypassService bypassService = new AdminBypassService();
             ElevatorService elevatorService = new ElevatorService(
                     new InMemoryElevatorRepository(),
-                    LandClaimsGateway.fixedOwned(true, true, true),
+                    HavenClaimsGateway.fixedOwned(true, true, true),
                     () -> Instant.EPOCH
             );
             TeleportBlockService teleportBlockService = new TeleportBlockService(
                     new InMemoryTeleportBlockRepository(),
-                    LandClaimsGateway.fixedOwned(true, true, true),
+                    HavenClaimsGateway.fixedOwned(true, true, true),
                     () -> Instant.EPOCH
             );
             DialogMenuService menus = new DialogMenuService();
