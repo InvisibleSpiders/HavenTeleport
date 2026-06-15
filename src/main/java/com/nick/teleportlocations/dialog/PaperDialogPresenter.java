@@ -16,6 +16,11 @@ import org.bukkit.entity.Player;
 public final class PaperDialogPresenter {
     private DialogActionHandler actionHandler = DialogActionHandler.noop();
 
+    enum DialogKind {
+        MULTI_ACTION,
+        NOTICE
+    }
+
     public void setActionHandler(DialogActionHandler actionHandler) {
         this.actionHandler = actionHandler;
     }
@@ -43,7 +48,7 @@ public final class PaperDialogPresenter {
         List<ActionButton> actions = model.actions().stream()
                 .map(action -> ActionButton.builder(Component.text(action.label()))
                         .tooltip(Component.text(action.key()))
-                        .action(DialogAction.customClick((response, audience) -> handleClick(audience, action.key(), response::getFloat), (ClickCallback.Options) null))
+                        .action(DialogAction.customClick((response, audience) -> handleClick(audience, action.key(), response::getFloat), callbackOptions()))
                         .build())
                 .toList();
         return Dialog.create(builder -> builder.empty()
@@ -51,7 +56,25 @@ public final class PaperDialogPresenter {
                         .body(body)
                         .inputs(inputs)
                         .build())
-                .type(DialogType.multiAction(actions).build()));
+                .type(paperDialogType(dialogTypeFor(model), actions)));
+    }
+
+    static ClickCallback.Options callbackOptions() {
+        return ClickCallback.Options.builder()
+                .uses(ClickCallback.UNLIMITED_USES)
+                .lifetime(ClickCallback.DEFAULT_LIFETIME)
+                .build();
+    }
+
+    static DialogKind dialogTypeFor(DialogMenuModel model) {
+        return model.actions().isEmpty() ? DialogKind.NOTICE : DialogKind.MULTI_ACTION;
+    }
+
+    private static DialogType paperDialogType(DialogKind kind, List<ActionButton> actions) {
+        return switch (kind) {
+            case NOTICE -> DialogType.notice();
+            case MULTI_ACTION -> DialogType.multiAction(actions).build();
+        };
     }
 
     private void handleClick(Audience audience, String actionKey, DialogInputValues inputValues) {
