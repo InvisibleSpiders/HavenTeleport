@@ -24,7 +24,7 @@ dependencyResolutionManagement {
                     .get()
             }
         }
-        maven("https://maven.pkg.github.com/InvisibleSpiders/HavenClaims") {
+        maven("https://maven.pkg.github.com/InvisibleSpiders/landclaiming") {
             credentials {
                 username = providers.gradleProperty("gpr.user")
                     .orElse(providers.environmentVariable("GITHUB_ACTOR"))

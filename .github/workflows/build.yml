@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: read
+  packages: read
 
 jobs:
   build:
@@ -24,6 +25,17 @@ jobs:
           distribution: temurin
           java-version: '25'
           cache: gradle
+
+      - name: Check out HavenClaims
+        uses: actions/checkout@v4
+        with:
+          repository: InvisibleSpiders/landclaiming
+          path: .deps/landclaiming
+
+      - name: Publish HavenClaims API locally
+        run: |
+          chmod +x .deps/landclaiming/gradlew
+          .deps/landclaiming/gradlew -p .deps/landclaiming :havenclaims-api:publishToMavenLocal --no-daemon
 
       - name: Build
         run: |

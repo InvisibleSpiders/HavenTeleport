@@ -45,7 +45,7 @@ final class PluginDescriptorTest {
         String build = Files.readString(Path.of("build.gradle.kts"));
 
         assertThat(build).contains("dev.invisiblespiders.haven:haven-api");
-        assertThat(build).contains("com.invisiblespiders.havenclaims:havenclaims-api");
+        assertThat(build).contains("com.invisiblespiders:havenclaims-api");
         assertThat(build).doesNotContain("libs/haven-api.jar");
         assertThat(build).doesNotContain("libs/havenclaims-api.jar");
     }
