@@ -26,6 +26,17 @@ jobs:
           java-version: '25'
           cache: gradle
 
+      - name: Check out HavenCore
+        uses: actions/checkout@v4
+        with:
+          repository: InvisibleSpiders/HavenCore
+          path: .deps/HavenCore
+
+      - name: Publish HavenCore API locally
+        run: |
+          chmod +x .deps/HavenCore/gradlew
+          .deps/HavenCore/gradlew -p .deps/HavenCore :haven-api:publishToMavenLocal --no-daemon
+
       - name: Check out HavenClaims
         uses: actions/checkout@v4
         with:
@@ -41,6 +52,9 @@ jobs:
         run: |
           chmod +x ./gradlew
           ./gradlew clean test build --no-daemon
+        env:
+          GITHUB_ACTOR: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload plugin jar
         uses: actions/upload-artifact@v4
