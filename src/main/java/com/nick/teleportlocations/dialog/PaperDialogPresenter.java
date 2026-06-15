@@ -1,6 +1,7 @@
 package com.nick.teleportlocations.dialog;
 
 import io.papermc.paper.dialog.Dialog;
+import io.papermc.paper.dialog.DialogResponseView;
 import io.papermc.paper.registry.data.dialog.ActionButton;
 import io.papermc.paper.registry.data.dialog.DialogBase;
 import io.papermc.paper.registry.data.dialog.action.DialogAction;
@@ -34,21 +35,12 @@ public final class PaperDialogPresenter {
                 .<DialogBody>map(line -> DialogBody.plainMessage(Component.text(line)))
                 .toList();
         List<DialogInput> inputs = model.inputs().stream()
-                .<DialogInput>map(input -> DialogInput.numberRange(
-                                input.key(),
-                                Component.text(input.label()),
-                                input.min(),
-                                input.max()
-                        )
-                        .step(input.step())
-                        .initial(input.initial())
-                        .labelFormat(input.labelFormat())
-                        .build())
+                .map(PaperDialogPresenter::toPaperInput)
                 .toList();
         List<ActionButton> actions = model.actions().stream()
                 .map(action -> ActionButton.builder(Component.text(action.label()))
                         .tooltip(Component.text(action.key()))
-                        .action(DialogAction.customClick((response, audience) -> handleClick(audience, action.key(), response::getFloat), callbackOptions()))
+                        .action(DialogAction.customClick((response, audience) -> handleClick(audience, action.key(), inputValues(response)), callbackOptions()))
                         .build())
                 .toList();
         return Dialog.create(builder -> builder.empty()
@@ -57,6 +49,25 @@ public final class PaperDialogPresenter {
                         .inputs(inputs)
                         .build())
                 .type(paperDialogType(dialogTypeFor(model), actions)));
+    }
+
+    private static DialogInput toPaperInput(DialogInputModel input) {
+        return switch (input.kind()) {
+            case NUMBER -> DialogInput.numberRange(
+                            input.key(),
+                            Component.text(input.label()),
+                            input.min(),
+                            input.max()
+                    )
+                    .step(input.step())
+                    .initial(input.initial())
+                    .labelFormat(input.labelFormat())
+                    .build();
+            case TEXT -> DialogInput.text(input.key(), Component.text(input.label()))
+                    .initial(input.textInitial())
+                    .maxLength(input.maxLength())
+                    .build();
+        };
     }
 
     static ClickCallback.Options callbackOptions() {
@@ -74,6 +85,20 @@ public final class PaperDialogPresenter {
         return switch (kind) {
             case NOTICE -> DialogType.notice();
             case MULTI_ACTION -> DialogType.multiAction(actions).build();
+        };
+    }
+
+    private static DialogInputValues inputValues(DialogResponseView response) {
+        return new DialogInputValues() {
+            @Override
+            public Float getFloat(String key) {
+                return response.getFloat(key);
+            }
+
+            @Override
+            public String getText(String key) {
+                return response.getText(key);
+            }
         };
     }
 
