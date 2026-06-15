@@ -18,6 +18,10 @@ public interface HavenClaimsGateway {
         return false;
     }
 
+    default boolean canVisitorsEnter(SavedPosition position) {
+        return false;
+    }
+
     static HavenClaimsGateway missing() {
         return new HavenClaimsGateway() {
             @Override
@@ -81,6 +85,11 @@ public interface HavenClaimsGateway {
             @Override
             public boolean ownsClaimAt(UUID playerId, SavedPosition position) {
                 return ownsClaim;
+            }
+
+            @Override
+            public boolean canVisitorsEnter(SavedPosition position) {
+                return hasClaim && canInteract;
             }
         };
     }
