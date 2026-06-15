@@ -15,9 +15,24 @@ final class TeleportLocationTest {
     }
 
     @Test
-    void rejectsColonNamesForCommandKeys() {
-        assertThatThrownBy(() -> LocationName.normalize("market:west"))
-                .isInstanceOf(LocationValidationException.class)
+    void normalizesColonNamesForLookup() {
+        assertThat(LocationName.normalize("  Market:West  ")).isEqualTo("market:west");
+    }
+
+    @Test
+    void rejectsColonNamesForStoredLocations() {
+        assertThatThrownBy(() -> TeleportLocation.create(
+                UUID.randomUUID(),
+                "player_warp",
+                OwnerRef.player(UUID.randomUUID()),
+                "market:west",
+                position(),
+                AccessMode.PUBLIC,
+                VisibilityMode.LISTED,
+                CostSpec.free(),
+                false,
+                Instant.EPOCH
+        )).isInstanceOf(LocationValidationException.class)
                 .hasMessage("Location names cannot contain ':'.");
     }
 

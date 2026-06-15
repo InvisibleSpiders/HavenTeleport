@@ -62,6 +62,21 @@ final class PlayerWarpServiceTest {
     }
 
     @Test
+    void rejectsInvalidWarpNamesWithoutThrowing() {
+        Fixture fixture = Fixture.create(HavenClaimsGateway.fixed(true, true));
+        UUID owner = UUID.randomUUID();
+        fixture.service.setWarp(owner, "market", position(), false);
+
+        PlayerWarpResult create = fixture.service.setWarp(owner, "market:west", movedPosition(), false);
+        PlayerWarpResult rename = fixture.service.rename(owner, "market", "market:west");
+
+        assertThat(create.status()).isEqualTo(PlayerWarpResult.Status.INVALID_NAME);
+        assertThat(rename.status()).isEqualTo(PlayerWarpResult.Status.INVALID_NAME);
+        assertThat(fixture.service.ownerWarps(owner)).extracting("name").containsExactly("market");
+        assertThat(fixture.service.resolveVisibleWarp(owner, "market:west")).isEmpty();
+    }
+
+    @Test
     void resolvesVisiblePublicWarpAndDeletesOwnWarp() {
         Fixture fixture = Fixture.create(HavenClaimsGateway.fixed(true, true));
         UUID owner = UUID.randomUUID();

@@ -8,10 +8,12 @@ public final class LocationName {
 
     public static String normalize(String input) {
         String trimmed = input == null ? "" : input.trim().toLowerCase(Locale.ROOT);
-        String normalized = trimmed.replaceAll("\\s+", "_");
-        if (normalized.contains(":")) {
+        return trimmed.replaceAll("\\s+", "_");
+    }
+
+    public static void validateForStorage(String normalizedName) {
+        if (normalizedName.contains(":")) {
             throw new LocationValidationException("Location names cannot contain ':'.");
         }
-        return normalized;
     }
 }

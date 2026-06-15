@@ -5,6 +5,7 @@ import com.nick.teleportlocations.bukkit.BukkitLocations;
 import com.nick.teleportlocations.dialog.DialogMenuService;
 import com.nick.teleportlocations.dialog.PaperDialogPresenter;
 import com.nick.teleportlocations.limit.LimitService;
+import com.nick.teleportlocations.location.LocationValidationException;
 import com.nick.teleportlocations.serverwarp.ServerWarpResult;
 import com.nick.teleportlocations.serverwarp.ServerWarpService;
 import com.nick.teleportlocations.spawn.SpawnResult;
@@ -102,31 +103,35 @@ public final class AdminTeleportCommand implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (isLimitCommand(args)) {
-            handleLimits(sender, args);
-            return true;
+        try {
+            if (isLimitCommand(args)) {
+                handleLimits(sender, args);
+                return true;
+            }
+            if (isAdminMenu(args)) {
+                showAdminMenu(sender);
+                return true;
+            }
+            if (isSetSpawn(args)) {
+                setSpawn(sender);
+                return true;
+            }
+            if (isServerWarpCommand(args)) {
+                handleServerWarp(sender, args);
+                return true;
+            }
+            if (isBypassCommand(args)) {
+                handleBypass(sender, args);
+                return true;
+            }
+            if (isAdminTeleportCommand(args)) {
+                handleAdminTeleport(sender, args);
+                return true;
+            }
+            sender.sendMessage(Component.text(CommandMessages.adminUsage(), NamedTextColor.YELLOW));
+        } catch (LocationValidationException exception) {
+            sender.sendMessage(Component.text(exception.getMessage(), NamedTextColor.RED));
         }
-        if (isAdminMenu(args)) {
-            showAdminMenu(sender);
-            return true;
-        }
-        if (isSetSpawn(args)) {
-            setSpawn(sender);
-            return true;
-        }
-        if (isServerWarpCommand(args)) {
-            handleServerWarp(sender, args);
-            return true;
-        }
-        if (isBypassCommand(args)) {
-            handleBypass(sender, args);
-            return true;
-        }
-        if (isAdminTeleportCommand(args)) {
-            handleAdminTeleport(sender, args);
-            return true;
-        }
-        sender.sendMessage(Component.text(CommandMessages.adminUsage(), NamedTextColor.YELLOW));
         return true;
     }
 

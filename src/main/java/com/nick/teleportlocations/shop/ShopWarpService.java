@@ -7,6 +7,7 @@ import com.nick.teleportlocations.location.AccessMode;
 import com.nick.teleportlocations.location.CostSpec;
 import com.nick.teleportlocations.location.CreateLocationRequest;
 import com.nick.teleportlocations.location.LocationName;
+import com.nick.teleportlocations.location.LocationValidationException;
 import com.nick.teleportlocations.location.LocationService;
 import com.nick.teleportlocations.location.OwnerRef;
 import com.nick.teleportlocations.location.SavedPosition;
@@ -37,6 +38,9 @@ public final class ShopWarpService {
         }
 
         OwnerRef owner = OwnerRef.player(ownerId);
+        if (!validStorageName(name)) {
+            return ShopWarpResult.invalidName();
+        }
         Optional<TeleportLocation> existing = locations.find(owner, CATEGORY, name);
         List<TeleportLocation> ownerShops = locations.list(owner, CATEGORY);
         if (existing.isEmpty() && reachedLimit(ownerId, ownerShops.size())) {
@@ -82,6 +86,9 @@ public final class ShopWarpService {
             return ShopWarpResult.notFound();
         }
         TeleportLocation shop = existing.orElseThrow();
+        if (!validStorageName(newName)) {
+            return ShopWarpResult.invalidName();
+        }
         Optional<TeleportLocation> duplicate = locations.find(owner, CATEGORY, newName)
                 .filter(location -> !location.id().equals(shop.id()));
         if (duplicate.isPresent()) {
@@ -115,5 +122,14 @@ public final class ShopWarpService {
     private boolean reachedLimit(UUID ownerId, int existingShops) {
         int limit = limits.resolveLimit(ownerId, CATEGORY);
         return limit >= 0 && existingShops >= limit;
+    }
+
+    private boolean validStorageName(String name) {
+        try {
+            LocationName.validateForStorage(LocationName.normalize(name));
+            return true;
+        } catch (LocationValidationException exception) {
+            return false;
+        }
     }
 }

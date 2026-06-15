@@ -32,6 +32,8 @@ public record TeleportLocation(
         if (mainHome && !"home".equals(category)) {
             throw new LocationValidationException("Only homes can be marked as main homes.");
         }
+        String normalizedName = LocationName.normalize(name);
+        LocationName.validateForStorage(normalizedName);
         AccessMode finalAccess = accessMode;
         VisibilityMode finalVisibility = visibilityMode;
         CostSpec finalCost = cost;
@@ -45,7 +47,7 @@ public record TeleportLocation(
                 category,
                 owner,
                 name,
-                LocationName.normalize(name),
+                normalizedName,
                 position,
                 finalAccess,
                 finalVisibility,

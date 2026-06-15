@@ -63,6 +63,21 @@ final class ShopWarpServiceTest {
     }
 
     @Test
+    void rejectsInvalidShopNamesWithoutThrowing() {
+        Fixture fixture = Fixture.create(HavenClaimsGateway.fixedOwned(true, true, true));
+        UUID owner = UUID.randomUUID();
+        fixture.service.setShop(owner, "tools", position(), false);
+
+        ShopWarpResult create = fixture.service.setShop(owner, "tools:west", movedPosition(), false);
+        ShopWarpResult rename = fixture.service.rename(owner, "tools", "tools:west");
+
+        assertThat(create.status()).isEqualTo(ShopWarpResult.Status.INVALID_NAME);
+        assertThat(rename.status()).isEqualTo(ShopWarpResult.Status.INVALID_NAME);
+        assertThat(fixture.service.ownerShops(owner)).extracting("name").containsExactly("tools");
+        assertThat(fixture.service.resolveVisibleShop(owner, "tools:west")).isEmpty();
+    }
+
+    @Test
     void resolvesVisibleShopAndDeletesOwnShop() {
         Fixture fixture = Fixture.create(HavenClaimsGateway.fixed(true, true));
         UUID owner = UUID.randomUUID();

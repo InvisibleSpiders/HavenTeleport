@@ -11,6 +11,7 @@ public record ShopWarpResult(Status status, String messageKey, Optional<Teleport
         NOT_FOUND,
         LIMIT_REACHED,
         DUPLICATE_NAME,
+        INVALID_NAME,
         CLAIM_DENIED
     }
 
@@ -36,6 +37,10 @@ public record ShopWarpResult(Status status, String messageKey, Optional<Teleport
 
     public static ShopWarpResult duplicateName() {
         return new ShopWarpResult(Status.DUPLICATE_NAME, "duplicate-name", Optional.empty());
+    }
+
+    public static ShopWarpResult invalidName() {
+        return new ShopWarpResult(Status.INVALID_NAME, "invalid-name", Optional.empty());
     }
 
     public static ShopWarpResult claimDenied(String messageKey) {

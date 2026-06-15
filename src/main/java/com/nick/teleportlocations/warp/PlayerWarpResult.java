@@ -11,6 +11,7 @@ public record PlayerWarpResult(Status status, String messageKey, Optional<Telepo
         NOT_FOUND,
         LIMIT_REACHED,
         DUPLICATE_NAME,
+        INVALID_NAME,
         CLAIM_DENIED
     }
 
@@ -36,6 +37,10 @@ public record PlayerWarpResult(Status status, String messageKey, Optional<Telepo
 
     public static PlayerWarpResult duplicateName() {
         return new PlayerWarpResult(Status.DUPLICATE_NAME, "duplicate-name", Optional.empty());
+    }
+
+    public static PlayerWarpResult invalidName() {
+        return new PlayerWarpResult(Status.INVALID_NAME, "invalid-name", Optional.empty());
     }
 
     public static PlayerWarpResult claimDenied(String messageKey) {
