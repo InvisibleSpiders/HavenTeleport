@@ -39,4 +39,4 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "teleport-locations"
+rootProject.name = "HavenTeleport"

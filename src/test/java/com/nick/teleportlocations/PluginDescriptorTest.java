@@ -16,6 +16,7 @@ final class PluginDescriptorTest {
                 StandardCharsets.UTF_8
         );
 
+        assertThat(descriptor).contains("name: HavenTeleport");
         assertThat(descriptor).contains("  ht:");
         assertThat(descriptor).contains("aliases: [haventeleport, tl]");
         assertThat(descriptor).contains("  tpa:");
@@ -48,5 +49,16 @@ final class PluginDescriptorTest {
         assertThat(build).contains("com.invisiblespiders:havenclaims-api");
         assertThat(build).doesNotContain("libs/haven-api.jar");
         assertThat(build).doesNotContain("libs/havenclaims-api.jar");
+    }
+
+    @Test
+    void buildProducesHavenTeleportArtifact() throws IOException {
+        String build = Files.readString(Path.of("build.gradle.kts"));
+        String workflow = Files.readString(Path.of(".github/workflows/build.yml"));
+
+        assertThat(build).contains("archiveBaseName.set(\"HavenTeleport\")");
+        assertThat(workflow).contains("name: HavenTeleport");
+        assertThat(workflow).contains("path: build/libs/HavenTeleport-*.jar");
+        assertThat(build).doesNotContain("archiveBaseName.set(\"TeleportLocations\")");
     }
 }

@@ -1,4 +1,4 @@
-prefix: "<aqua>TeleportLocations</aqua> <gray>|</gray>"
+prefix: "<aqua>HavenTeleport</aqua> <gray>|</gray>"
 no-permission: "<red>You do not have permission to do that.</red>"
 player-only: "<red>Only players can use this command.</red>"
 home-missing: "<red>You do not have a home named <name>.</red>"

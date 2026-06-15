@@ -1,4 +1,4 @@
-# TeleportLocations main configuration.
+# HavenTeleport main configuration.
 # Categories control limits, creation zones, default access, visibility, and cost support.
 # Player limits are not permission based. Admin commands store per-player overrides.
 

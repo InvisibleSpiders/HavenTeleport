@@ -46,7 +46,7 @@ tasks.jar {
 }
 
 tasks.shadowJar {
-    archiveBaseName.set("TeleportLocations")
+    archiveBaseName.set("HavenTeleport")
     archiveVersion.set(project.version.toString())
     archiveClassifier.set("")
 }

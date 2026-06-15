@@ -68,7 +68,7 @@ public final class TeleportLocationsPlugin extends JavaPlugin {
         ), this);
         registerElevators(dialogs);
         registerTeleportBlocks(dialogs);
-        getLogger().info("TeleportLocations enabled.");
+        getLogger().info("HavenTeleport enabled.");
     }
 
     @Override
@@ -82,7 +82,7 @@ public final class TeleportLocationsPlugin extends JavaPlugin {
             services.close();
             services = null;
         }
-        getLogger().info("TeleportLocations disabled.");
+        getLogger().info("HavenTeleport disabled.");
     }
 
     private void registerElevators(DialogRuntime dialogs) {

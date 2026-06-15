@@ -59,7 +59,7 @@ jobs:
       - name: Upload plugin jar
         uses: actions/upload-artifact@v4
         with:
-          name: TeleportLocations
-          path: build/libs/TeleportLocations-*.jar
+          name: HavenTeleport
+          path: build/libs/HavenTeleport-*.jar
           if-no-files-found: error
           retention-days: 14
