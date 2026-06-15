@@ -67,7 +67,13 @@ public final class DialogActionExecutor implements DialogActionHandler {
 
     @Override
     public void handle(Player player, String actionKey, DialogInputValues inputValues) {
-        DialogActionRouteResult result = router.route(player.getUniqueId(), actionKey, inputValues);
+        DialogActionRouteResult result = router.route(
+                player.getUniqueId(),
+                actionKey,
+                inputValues,
+                BukkitLocations.save(player.getLocation()),
+                player.hasPermission("teleportlocations.admin.bypass.creation")
+        );
         switch (result.status()) {
             case TELEPORT -> teleport(player, result.location().orElseThrow());
             case SHOW_MENU -> presenter.show(player, result.menu().orElseThrow());
