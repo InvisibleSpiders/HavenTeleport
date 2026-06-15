@@ -118,17 +118,22 @@ final class DialogMenuServiceTest {
     }
 
     @Test
-    void editMenuShowsShopInvariantAsFixedState() {
+    void editMenuShowsShopSpecificActionsWithoutWarpSettings() {
         UUID owner = UUID.randomUUID();
         DialogMenuService service = new DialogMenuService();
 
         DialogMenuModel model = service.editMenu(location(owner, "shop"));
 
         assertThat(model.title()).isEqualTo("Edit Shop");
-        assertThat(model.lines()).contains("Access: Public", "Visibility: Listed", "Cost: Free");
-        assertThat(model.actions()).extracting(DialogActionModel::key).containsExactly("delete:shop:base");
+        assertThat(model.lines()).containsExactly("Name: base", "Location: world (0, 64, 0)");
+        assertThat(model.actions()).extracting(DialogActionModel::key).containsExactly(
+                "show-rename-menu:shop:base",
+                "relocate:shop:base",
+                "show-delete-confirm:shop:base"
+        );
+        assertThat(model.actions()).extracting(DialogActionModel::label).containsExactly("Rename", "Relocate", "Delete");
         assertThat(model.actions()).extracting(DialogActionModel::key)
-                .noneMatch(key -> key.startsWith("set-access:") || key.startsWith("set-visibility:"));
+                .noneMatch(key -> key.contains("access") || key.contains("visibility") || key.contains("cost"));
     }
 
     @Test
@@ -143,19 +148,80 @@ final class DialogMenuServiceTest {
     }
 
     @Test
-    void editMenuIncludesDeleteActionForPlayerWarps() {
+    void editMenuShowsPlayerWarpHubActions() {
         UUID owner = UUID.randomUUID();
         DialogMenuService service = new DialogMenuService();
 
         DialogMenuModel model = service.editMenu(location(owner, "player_warp"));
 
+        assertThat(model.lines()).containsExactly(
+                "Name: base",
+                "Access: Private",
+                "Visibility: Hidden",
+                "Cost: Free"
+        );
+        assertThat(model.actions()).extracting(DialogActionModel::key).containsExactly(
+                "show-access-menu:player_warp:base",
+                "show-visibility-menu:player_warp:base",
+                "show-cost-menu:player_warp:base",
+                "show-rename-menu:player_warp:base",
+                "relocate:player_warp:base",
+                "show-delete-confirm:player_warp:base"
+        );
+        assertThat(model.actions()).extracting(DialogActionModel::label).containsExactly(
+                "Access",
+                "Visibility",
+                "Cost",
+                "Rename",
+                "Relocate",
+                "Delete"
+        );
+    }
+
+    @Test
+    void accessMenuIncludesPlayerWarpAccessActions() {
+        UUID owner = UUID.randomUUID();
+        DialogMenuService service = new DialogMenuService();
+
+        DialogMenuModel model = service.accessMenu(location(owner, "player_warp"));
+
+        assertThat(model.title()).isEqualTo("Access");
+        assertThat(model.lines()).containsExactly("Name: base", "Access: Private");
         assertThat(model.actions()).extracting(DialogActionModel::key).containsExactly(
                 "set-access:player_warp:base:public",
                 "set-access:player_warp:base:trusted",
-                "set-access:player_warp:base:private",
+                "set-access:player_warp:base:private"
+        );
+        assertThat(model.actions()).extracting(DialogActionModel::label).containsExactly("Public", "Trusted", "Private");
+    }
+
+    @Test
+    void visibilityMenuIncludesPlayerWarpVisibilityActions() {
+        UUID owner = UUID.randomUUID();
+        DialogMenuService service = new DialogMenuService();
+
+        DialogMenuModel model = service.visibilityMenu(location(owner, "player_warp"));
+
+        assertThat(model.title()).isEqualTo("Visibility");
+        assertThat(model.lines()).containsExactly("Name: base", "Visibility: Hidden");
+        assertThat(model.actions()).extracting(DialogActionModel::key).containsExactly(
                 "set-visibility:player_warp:base:listed",
                 "set-visibility:player_warp:base:unlisted",
-                "set-visibility:player_warp:base:hidden",
+                "set-visibility:player_warp:base:hidden"
+        );
+        assertThat(model.actions()).extracting(DialogActionModel::label).containsExactly("Listed", "Unlisted", "Hidden");
+    }
+
+    @Test
+    void costMenuIncludesPlayerWarpPresetAndCustomCostActions() {
+        UUID owner = UUID.randomUUID();
+        DialogMenuService service = new DialogMenuService();
+
+        DialogMenuModel model = service.costMenu(location(owner, "player_warp"));
+
+        assertThat(model.title()).isEqualTo("Cost");
+        assertThat(model.lines()).containsExactly("Name: base", "Cost: Free");
+        assertThat(model.actions()).extracting(DialogActionModel::key).containsExactly(
                 "set-cost:player_warp:base:free:0",
                 "set-cost:player_warp:base:money:10",
                 "set-cost:player_warp:base:money:50",
@@ -166,9 +232,39 @@ final class DialogMenuServiceTest {
                 "set-cost:player_warp:base:xp-points:500",
                 "show-cost-editor:player_warp:base:money",
                 "show-cost-editor:player_warp:base:xp-levels",
-                "show-cost-editor:player_warp:base:xp-points",
-                "delete:player_warp:base"
+                "show-cost-editor:player_warp:base:xp-points"
         );
+    }
+
+    @Test
+    void renameMenuIncludesNameInputAndSubmitAction() {
+        UUID owner = UUID.randomUUID();
+        DialogMenuService service = new DialogMenuService();
+
+        DialogMenuModel model = service.renameMenu(location(owner, "player_warp"));
+
+        assertThat(model.title()).isEqualTo("Rename Player Warp");
+        assertThat(model.lines()).containsExactly("Name: base");
+        assertThat(model.actions()).extracting(DialogActionModel::key)
+                .containsExactly("rename-input:player_warp:base");
+        assertThat(model.actions()).extracting(DialogActionModel::label).containsExactly("Rename");
+        assertThat(model.inputs()).containsExactly(DialogInputModel.text("name", "Name", "base", 32));
+    }
+
+    @Test
+    void deleteConfirmMenuIncludesConfirmAndCancelActions() {
+        UUID owner = UUID.randomUUID();
+        DialogMenuService service = new DialogMenuService();
+
+        DialogMenuModel model = service.deleteConfirmMenu(location(owner, "shop"));
+
+        assertThat(model.title()).isEqualTo("Delete Shop");
+        assertThat(model.lines()).containsExactly("Name: base");
+        assertThat(model.actions()).extracting(DialogActionModel::key).containsExactly(
+                "confirm-delete:shop:base",
+                "cancel-delete:shop:base"
+        );
+        assertThat(model.actions()).extracting(DialogActionModel::label).containsExactly("Confirm Delete", "Cancel");
     }
 
     @Test
