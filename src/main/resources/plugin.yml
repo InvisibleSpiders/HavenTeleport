@@ -1,4 +1,4 @@
-name: TeleportLocations
+name: HavenTeleport
 version: '${version}'
 main: com.nick.teleportlocations.TeleportLocationsPlugin
 api-version: '26.1'
@@ -84,7 +84,7 @@ commands:
     usage: /tptoggle
 permissions:
   teleportlocations.use:
-    description: Allows basic TeleportLocations usage.
+    description: Allows basic HavenTeleport usage.
     default: true
   teleportlocations.menu:
     description: Allows opening location menus.
@@ -140,7 +140,7 @@ permissions:
       teleportlocations.teleportblock.use: true
       teleportlocations.teleportblock.link: true
   teleportlocations.admin:
-    description: Grants all TeleportLocations admin permissions.
+    description: Grants all HavenTeleport admin permissions.
     default: op
     children:
       teleportlocations.admin.reload: true

@@ -204,7 +204,7 @@ public record RuntimeServices(
         try {
             database.close();
         } catch (Exception exception) {
-            throw new IllegalStateException("Could not close TeleportLocations database", exception);
+            throw new IllegalStateException("Could not close HavenTeleport database", exception);
         }
     }
 }

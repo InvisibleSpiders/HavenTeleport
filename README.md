@@ -1,6 +1,6 @@
-# TeleportLocations
+# HavenTeleport
 
-TeleportLocations is a Paper plugin for homes, server warps, player warps, free public shop warps, outposts, spawn control, elevator blocks, and teleport block foundations.
+HavenTeleport is a Paper plugin for homes, server warps, player warps, free public shop warps, outposts, spawn control, elevator blocks, and teleport block foundations.
 
 ## Build
 
@@ -8,7 +8,7 @@ TeleportLocations is a Paper plugin for homes, server warps, player warps, free 
 .\gradlew.bat build
 ```
 
-The plugin jar is written to `build/libs/TeleportLocations-1.0.0-SNAPSHOT.jar`.
+The plugin jar is written to `build/libs/HavenTeleport-1.0.0-SNAPSHOT.jar`.
 
 ## Runtime
 
@@ -17,7 +17,7 @@ The plugin jar is written to `build/libs/TeleportLocations-1.0.0-SNAPSHOT.jar`.
 - Required: HavenCore.
 - Optional: HavenClaims.
 - Optional through HavenCore: VaultUnlocked for money-cost player warps.
-- TeleportLocations stores data through HavenCore's shared datasource and registers its own migrations at startup.
+- HavenTeleport stores data through HavenCore's shared datasource and registers its own migrations at startup.
 
 ## Commands
 
@@ -77,7 +77,7 @@ Admins can open `/ht admin` for a dialog entry point with claim-bypass controls 
 
 | Permission | Default | Description |
 | --- | --- | --- |
-| `teleportlocations.use` | true | Allows basic TeleportLocations usage. |
+| `teleportlocations.use` | true | Allows basic HavenTeleport usage. |
 | `teleportlocations.menu` | true | Allows opening location dialogs. |
 | `teleportlocations.home` | true | Allows home commands. |
 | `teleportlocations.warp` | true | Allows warp commands. |
@@ -222,7 +222,7 @@ Player warp costs are enforced before teleporting through `/warp` or dialog acti
 
 ## Claim Entry Checks
 
-TeleportLocations checks HavenClaims entry access before moving a player into a claimed destination. Claimed destinations use the HavenClaims action key `teleportlocations.enter`. If the player cannot enter the destination claim, the teleport is cancelled before charging costs or moving the player.
+HavenTeleport checks HavenClaims entry access before moving a player into a claimed destination. Claimed destinations use the HavenClaims action key `teleportlocations.enter`. If the player cannot enter the destination claim, the teleport is cancelled before charging costs or moving the player.
 
 This applies to homes, player warps, shop warps, outposts, spawn, dialog teleport actions, accepted TPA requests, and elevator destinations. Admins with active claim-bypass mode can bypass the entry check.
 
