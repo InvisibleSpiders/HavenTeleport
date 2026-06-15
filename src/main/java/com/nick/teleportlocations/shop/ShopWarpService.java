@@ -75,6 +75,32 @@ public final class ShopWarpService {
         return locations.list(OwnerRef.player(ownerId), CATEGORY);
     }
 
+    public ShopWarpResult rename(UUID ownerId, String currentName, String newName) {
+        OwnerRef owner = OwnerRef.player(ownerId);
+        Optional<TeleportLocation> existing = locations.find(owner, CATEGORY, currentName);
+        if (existing.isEmpty()) {
+            return ShopWarpResult.notFound();
+        }
+        if (locations.find(owner, CATEGORY, newName).isPresent()) {
+            return ShopWarpResult.duplicateName();
+        }
+        TeleportLocation shop = existing.orElseThrow();
+        return ShopWarpResult.updated(locations.replace(shop, newName, shop.position()));
+    }
+
+    public ShopWarpResult relocate(UUID ownerId, String name, SavedPosition position, boolean adminBypass) {
+        Optional<TeleportLocation> existing = locations.find(OwnerRef.player(ownerId), CATEGORY, name);
+        if (existing.isEmpty()) {
+            return ShopWarpResult.notFound();
+        }
+        ClaimAccess claimAccess = creationPolicy.canCreatePublicShop(ownerId, position, adminBypass);
+        if (!claimAccess.allowed()) {
+            return ShopWarpResult.claimDenied(claimAccess.reason());
+        }
+        TeleportLocation shop = existing.orElseThrow();
+        return ShopWarpResult.updated(locations.replace(shop, shop.name(), position));
+    }
+
     public ShopWarpResult deleteShop(UUID ownerId, String name) {
         Optional<TeleportLocation> shop = locations.find(OwnerRef.player(ownerId), CATEGORY, name);
         if (shop.isEmpty()) {

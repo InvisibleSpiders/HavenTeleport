@@ -73,6 +73,32 @@ public final class PlayerWarpService {
         return locations.list(OwnerRef.player(ownerId), CATEGORY);
     }
 
+    public PlayerWarpResult rename(UUID ownerId, String currentName, String newName) {
+        OwnerRef owner = OwnerRef.player(ownerId);
+        Optional<TeleportLocation> existing = locations.find(owner, CATEGORY, currentName);
+        if (existing.isEmpty()) {
+            return PlayerWarpResult.notFound();
+        }
+        if (locations.find(owner, CATEGORY, newName).isPresent()) {
+            return PlayerWarpResult.duplicateName();
+        }
+        TeleportLocation warp = existing.orElseThrow();
+        return PlayerWarpResult.updated(locations.replace(warp, newName, warp.position()));
+    }
+
+    public PlayerWarpResult relocate(UUID ownerId, String name, SavedPosition position, boolean adminBypass) {
+        Optional<TeleportLocation> existing = locations.find(OwnerRef.player(ownerId), CATEGORY, name);
+        if (existing.isEmpty()) {
+            return PlayerWarpResult.notFound();
+        }
+        ClaimAccess claimAccess = creationPolicy.canCreate(ownerId, CATEGORY, position, adminBypass);
+        if (!claimAccess.allowed()) {
+            return PlayerWarpResult.claimDenied(claimAccess.reason());
+        }
+        TeleportLocation warp = existing.orElseThrow();
+        return PlayerWarpResult.updated(locations.replace(warp, warp.name(), position));
+    }
+
     public PlayerWarpResult deleteWarp(UUID ownerId, String name) {
         Optional<TeleportLocation> warp = locations.find(OwnerRef.player(ownerId), CATEGORY, name);
         if (warp.isEmpty()) {

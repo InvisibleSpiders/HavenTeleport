@@ -20,6 +20,9 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
 final class PlayerWarpServiceTest {
+    private static final UUID WORLD_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
+    private static final UUID MOVED_WORLD_ID = UUID.fromString("00000000-0000-0000-0000-000000000002");
+
     @Test
     void createsPublicListedWarp() {
         Fixture fixture = Fixture.create(HavenClaimsGateway.fixed(true, true));
@@ -110,12 +113,56 @@ final class PlayerWarpServiceTest {
         assertThat(fixture.service.ownerWarps(owner).getFirst().cost()).isEqualTo(CostSpec.money(12.5));
     }
 
+    @Test
+    void renamesWarpWithoutChangingSettings() {
+        Fixture fixture = Fixture.create(HavenClaimsGateway.fixed(true, true));
+        UUID owner = UUID.randomUUID();
+        fixture.service.setWarp(owner, "market", position(), false);
+        fixture.service.setAccess(owner, "market", AccessMode.TRUSTED);
+        fixture.service.setVisibility(owner, "market", VisibilityMode.HIDDEN);
+        fixture.service.setCost(owner, "market", CostSpec.money(12.5));
+
+        PlayerWarpResult result = fixture.service.rename(owner, "market", "bazaar");
+
+        assertThat(result.status()).isEqualTo(PlayerWarpResult.Status.UPDATED);
+        assertThat(fixture.service.resolveVisibleWarp(owner, "market")).isEmpty();
+        assertThat(fixture.service.ownerWarps(owner).getFirst().name()).isEqualTo("bazaar");
+        assertThat(fixture.service.ownerWarps(owner).getFirst().accessMode()).isEqualTo(AccessMode.TRUSTED);
+        assertThat(fixture.service.ownerWarps(owner).getFirst().visibilityMode()).isEqualTo(VisibilityMode.HIDDEN);
+        assertThat(fixture.service.ownerWarps(owner).getFirst().cost()).isEqualTo(CostSpec.money(12.5));
+    }
+
+    @Test
+    void relocateWarpPreservesSettingsAndUsesCreationPolicy() {
+        Fixture fixture = Fixture.create(HavenClaimsGateway.fixed(true, true));
+        UUID owner = UUID.randomUUID();
+        fixture.service.setWarp(owner, "market", position(), false);
+        fixture.service.setCost(owner, "market", CostSpec.xpLevels(5));
+
+        PlayerWarpResult result = fixture.service.relocate(owner, "market", movedPosition(), false);
+
+        assertThat(result.status()).isEqualTo(PlayerWarpResult.Status.UPDATED);
+        assertThat(fixture.service.ownerWarps(owner).getFirst().position()).isEqualTo(movedPosition());
+        assertThat(fixture.service.ownerWarps(owner).getFirst().cost()).isEqualTo(CostSpec.xpLevels(5));
+    }
+
+    @Test
+    void relocateWarpDeniesDestinationOutsideTrustedClaim() {
+        Fixture fixture = Fixture.create(HavenClaimsGateway.fixed(true, false));
+        UUID owner = UUID.randomUUID();
+        fixture.service.setWarp(owner, "market", position(), true);
+
+        PlayerWarpResult result = fixture.service.relocate(owner, "market", movedPosition(), false);
+
+        assertThat(result.status()).isEqualTo(PlayerWarpResult.Status.CLAIM_DENIED);
+    }
+
     private static SavedPosition position() {
-        return new SavedPosition(UUID.randomUUID(), "world", 1.0, 64.0, 2.0, 90.0f, 0.0f);
+        return new SavedPosition(WORLD_ID, "world", 1.0, 64.0, 2.0, 90.0f, 0.0f);
     }
 
     private static SavedPosition movedPosition() {
-        return new SavedPosition(UUID.randomUUID(), "world", 4.0, 70.0, 5.0, 180.0f, 10.0f);
+        return new SavedPosition(MOVED_WORLD_ID, "world", 4.0, 70.0, 5.0, 180.0f, 10.0f);
     }
 
     private record Fixture(PlayerWarpService service, LimitService limits) {

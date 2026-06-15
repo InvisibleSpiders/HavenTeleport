@@ -63,6 +63,38 @@ public final class LocationService {
         return repository.findByIdentity(owner, category, LocationName.normalize(name));
     }
 
+    public TeleportLocation replace(TeleportLocation existing, String name, SavedPosition position) {
+        Instant now = clock.get();
+        TeleportLocation updated = TeleportLocation.create(
+                existing.id(),
+                existing.category(),
+                existing.owner(),
+                name,
+                position,
+                existing.accessMode(),
+                existing.visibilityMode(),
+                existing.cost(),
+                existing.mainHome(),
+                existing.createdAt()
+        );
+        updated = new TeleportLocation(
+                updated.id(),
+                updated.category(),
+                updated.owner(),
+                updated.name(),
+                updated.normalizedName(),
+                updated.position(),
+                updated.accessMode(),
+                updated.visibilityMode(),
+                updated.cost(),
+                updated.mainHome(),
+                existing.createdAt(),
+                now
+        );
+        repository.save(updated);
+        return updated;
+    }
+
     public Optional<TeleportLocation> findById(UUID id) {
         return repository.findById(id);
     }
