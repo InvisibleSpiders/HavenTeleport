@@ -3,6 +3,8 @@ package com.nick.teleportlocations;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.Test;
 
@@ -34,5 +36,17 @@ final class PluginDescriptorTest {
         assertThat(descriptor).contains("teleportlocations.admin.teleportblock:");
         assertThat(descriptor).contains("teleportlocations.elevator:");
         assertThat(descriptor).contains("teleportlocations.elevator.particle.end_rod:");
+        assertThat(descriptor).contains("  - HavenClaims");
+        assertThat(descriptor).doesNotContain("HavenClaimsLegacy");
+    }
+
+    @Test
+    void buildUsesPublishedHavenApisInsteadOfCheckedInJars() throws IOException {
+        String build = Files.readString(Path.of("build.gradle.kts"));
+
+        assertThat(build).contains("dev.invisiblespiders.haven:haven-api");
+        assertThat(build).contains("com.invisiblespiders.havenclaims:havenclaims-api");
+        assertThat(build).doesNotContain("libs/haven-api.jar");
+        assertThat(build).doesNotContain("libs/havenclaims-api.jar");
     }
 }
