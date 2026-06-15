@@ -84,9 +84,9 @@ public final class LocationService {
                 updated.name(),
                 updated.normalizedName(),
                 updated.position(),
-                updated.accessMode(),
-                updated.visibilityMode(),
-                updated.cost(),
+                existing.accessMode(),
+                existing.visibilityMode(),
+                existing.cost(),
                 updated.mainHome(),
                 existing.createdAt(),
                 now

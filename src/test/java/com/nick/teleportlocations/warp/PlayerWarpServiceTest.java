@@ -133,6 +133,22 @@ final class PlayerWarpServiceTest {
     }
 
     @Test
+    void renameWarpRejectsMissingAndDuplicateNames() {
+        Fixture fixture = Fixture.create(HavenClaimsGateway.fixed(true, true));
+        UUID owner = UUID.randomUUID();
+        fixture.service.setWarp(owner, "market", position(), false);
+        fixture.service.setWarp(owner, "bazaar", movedPosition(), false);
+
+        PlayerWarpResult missing = fixture.service.rename(owner, "unknown", "new-name");
+        PlayerWarpResult duplicate = fixture.service.rename(owner, "market", "bazaar");
+
+        assertThat(missing.status()).isEqualTo(PlayerWarpResult.Status.NOT_FOUND);
+        assertThat(duplicate.status()).isEqualTo(PlayerWarpResult.Status.DUPLICATE_NAME);
+        assertThat(fixture.service.resolveVisibleWarp(owner, "market")).isPresent();
+        assertThat(fixture.service.resolveVisibleWarp(owner, "bazaar").orElseThrow().position()).isEqualTo(movedPosition());
+    }
+
+    @Test
     void relocateWarpPreservesSettingsAndUsesCreationPolicy() {
         Fixture fixture = Fixture.create(HavenClaimsGateway.fixed(true, true));
         UUID owner = UUID.randomUUID();

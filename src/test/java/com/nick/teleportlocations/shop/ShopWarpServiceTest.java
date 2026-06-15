@@ -90,6 +90,23 @@ final class ShopWarpServiceTest {
     }
 
     @Test
+    void renameShopRejectsMissingAndDuplicateNames() {
+        Fixture fixture = Fixture.create(HavenClaimsGateway.fixedOwned(true, true, true));
+        UUID owner = UUID.randomUUID();
+        fixture.limits.setLimit(owner, "shop", 2);
+        fixture.service.setShop(owner, "tools", position(), false);
+        fixture.service.setShop(owner, "gear", movedPosition(), false);
+
+        ShopWarpResult missing = fixture.service.rename(owner, "unknown", "new-name");
+        ShopWarpResult duplicate = fixture.service.rename(owner, "tools", "gear");
+
+        assertThat(missing.status()).isEqualTo(ShopWarpResult.Status.NOT_FOUND);
+        assertThat(duplicate.status()).isEqualTo(ShopWarpResult.Status.DUPLICATE_NAME);
+        assertThat(fixture.service.resolveVisibleShop(owner, "tools")).isPresent();
+        assertThat(fixture.service.resolveVisibleShop(owner, "gear").orElseThrow().position()).isEqualTo(movedPosition());
+    }
+
+    @Test
     void relocateShopRequiresOwnedPubliclyAccessibleClaim() {
         Fixture allowed = Fixture.create(HavenClaimsGateway.fixedOwned(true, true, true));
         UUID owner = UUID.randomUUID();
