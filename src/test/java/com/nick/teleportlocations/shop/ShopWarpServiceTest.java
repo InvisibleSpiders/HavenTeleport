@@ -107,6 +107,22 @@ final class ShopWarpServiceTest {
     }
 
     @Test
+    void renameShopAllowsSameNormalizedName() {
+        Fixture fixture = Fixture.create(HavenClaimsGateway.fixedOwned(true, true, true));
+        UUID owner = UUID.randomUUID();
+        fixture.service.setShop(owner, "tools", position(), false);
+
+        ShopWarpResult result = fixture.service.rename(owner, "tools", "Tools");
+
+        assertThat(result.status()).isEqualTo(ShopWarpResult.Status.UPDATED);
+        assertThat(fixture.service.resolveVisibleShop(owner, "tools")).isPresent();
+        assertThat(fixture.service.ownerShops(owner)).hasSize(1);
+        assertThat(fixture.service.ownerShops(owner).getFirst().name()).isEqualTo("Tools");
+        assertThat(fixture.service.ownerShops(owner).getFirst().accessMode()).isEqualTo(AccessMode.PUBLIC);
+        assertThat(fixture.service.ownerShops(owner).getFirst().visibilityMode()).isEqualTo(VisibilityMode.LISTED);
+    }
+
+    @Test
     void relocateShopRequiresOwnedPubliclyAccessibleClaim() {
         Fixture allowed = Fixture.create(HavenClaimsGateway.fixedOwned(true, true, true));
         UUID owner = UUID.randomUUID();
@@ -131,6 +147,30 @@ final class ShopWarpServiceTest {
         assertThat(unowned.service.relocate(owner, "tools", movedPosition(), false).status()).isEqualTo(ShopWarpResult.Status.CLAIM_DENIED);
         assertThat(privateClaim.service.relocate(owner, "tools", movedPosition(), false).status()).isEqualTo(ShopWarpResult.Status.CLAIM_DENIED);
         assertThat(wilderness.service.relocate(owner, "tools", movedPosition(), false).status()).isEqualTo(ShopWarpResult.Status.CLAIM_DENIED);
+    }
+
+    @Test
+    void relocateShopDeniesWhenHavenClaimsMissing() {
+        Fixture fixture = Fixture.create(HavenClaimsGateway.missing());
+        UUID owner = UUID.randomUUID();
+        fixture.service.setShop(owner, "tools", position(), true);
+
+        ShopWarpResult result = fixture.service.relocate(owner, "tools", movedPosition(), false);
+
+        assertThat(result.status()).isEqualTo(ShopWarpResult.Status.CLAIM_DENIED);
+        assertThat(result.messageKey()).isEqualTo("havenclaims-missing");
+    }
+
+    @Test
+    void relocateShopAllowsAdminBypassWhenClaimChecksFail() {
+        Fixture fixture = Fixture.create(HavenClaimsGateway.fixedOwned(false, false, false));
+        UUID owner = UUID.randomUUID();
+        fixture.service.setShop(owner, "tools", position(), true);
+
+        ShopWarpResult result = fixture.service.relocate(owner, "tools", movedPosition(), true);
+
+        assertThat(result.status()).isEqualTo(ShopWarpResult.Status.UPDATED);
+        assertThat(fixture.service.resolveVisibleShop(owner, "tools").orElseThrow().position()).isEqualTo(movedPosition());
     }
 
     private static SavedPosition position() {

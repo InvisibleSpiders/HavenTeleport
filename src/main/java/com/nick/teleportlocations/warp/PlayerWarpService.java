@@ -79,10 +79,12 @@ public final class PlayerWarpService {
         if (existing.isEmpty()) {
             return PlayerWarpResult.notFound();
         }
-        if (locations.find(owner, CATEGORY, newName).isPresent()) {
+        TeleportLocation warp = existing.orElseThrow();
+        Optional<TeleportLocation> duplicate = locations.find(owner, CATEGORY, newName)
+                .filter(location -> !location.id().equals(warp.id()));
+        if (duplicate.isPresent()) {
             return PlayerWarpResult.duplicateName();
         }
-        TeleportLocation warp = existing.orElseThrow();
         return PlayerWarpResult.updated(locations.replace(warp, newName, warp.position()));
     }
 

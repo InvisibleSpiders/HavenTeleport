@@ -81,10 +81,12 @@ public final class ShopWarpService {
         if (existing.isEmpty()) {
             return ShopWarpResult.notFound();
         }
-        if (locations.find(owner, CATEGORY, newName).isPresent()) {
+        TeleportLocation shop = existing.orElseThrow();
+        Optional<TeleportLocation> duplicate = locations.find(owner, CATEGORY, newName)
+                .filter(location -> !location.id().equals(shop.id()));
+        if (duplicate.isPresent()) {
             return ShopWarpResult.duplicateName();
         }
-        TeleportLocation shop = existing.orElseThrow();
         return ShopWarpResult.updated(locations.replace(shop, newName, shop.position()));
     }
 

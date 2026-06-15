@@ -149,6 +149,22 @@ final class PlayerWarpServiceTest {
     }
 
     @Test
+    void renameWarpAllowsSameNormalizedName() {
+        Fixture fixture = Fixture.create(HavenClaimsGateway.fixed(true, true));
+        UUID owner = UUID.randomUUID();
+        fixture.service.setWarp(owner, "market", position(), false);
+        fixture.service.setCost(owner, "market", CostSpec.money(12.5));
+
+        PlayerWarpResult result = fixture.service.rename(owner, "market", "Market");
+
+        assertThat(result.status()).isEqualTo(PlayerWarpResult.Status.UPDATED);
+        assertThat(fixture.service.resolveVisibleWarp(owner, "market")).isPresent();
+        assertThat(fixture.service.ownerWarps(owner)).hasSize(1);
+        assertThat(fixture.service.ownerWarps(owner).getFirst().name()).isEqualTo("Market");
+        assertThat(fixture.service.ownerWarps(owner).getFirst().cost()).isEqualTo(CostSpec.money(12.5));
+    }
+
+    @Test
     void relocateWarpPreservesSettingsAndUsesCreationPolicy() {
         Fixture fixture = Fixture.create(HavenClaimsGateway.fixed(true, true));
         UUID owner = UUID.randomUUID();
