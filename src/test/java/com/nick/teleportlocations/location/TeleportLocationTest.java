@@ -15,6 +15,13 @@ final class TeleportLocationTest {
     }
 
     @Test
+    void rejectsColonNamesForCommandKeys() {
+        assertThatThrownBy(() -> LocationName.normalize("market:west"))
+                .isInstanceOf(LocationValidationException.class)
+                .hasMessage("Location names cannot contain ':'.");
+    }
+
+    @Test
     void shopWarpIsForcedPublicListedAndFree() {
         TeleportLocation shop = TeleportLocation.create(
                 UUID.randomUUID(),
