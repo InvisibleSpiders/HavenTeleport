@@ -131,18 +131,42 @@ public final class DialogActionRouter {
             return DialogActionRouteResult.unknownAction();
         }
         return switch (parts[0]) {
-            case "teleport", "edit" -> routeLocationAction(viewerId, parts[0], parts[1], parts[2]);
-            case "set-main" -> setMainHome(viewerId, parts[1], parts[2]);
-            case "delete" -> deleteLocation(viewerId, parts[1], parts[2]);
-            case "show-delete-confirm" -> showDeleteConfirm(viewerId, parts[1], parts[2]);
-            case "confirm-delete" -> deleteLocation(viewerId, parts[1], parts[2]);
-            case "cancel-delete" -> showEditMenu(viewerId, parts[1], parts[2]);
-            case "show-access-menu" -> showPlayerWarpAccessMenu(viewerId, parts[1], parts[2]);
-            case "show-visibility-menu" -> showPlayerWarpVisibilityMenu(viewerId, parts[1], parts[2]);
-            case "show-cost-menu" -> showPlayerWarpCostMenu(viewerId, parts[1], parts[2]);
-            case "show-rename-menu" -> showRenameMenu(viewerId, parts[1], parts[2]);
-            case "rename-input" -> renameLocation(viewerId, parts[1], parts[2], inputValues);
-            case "relocate" -> relocateLocation(viewerId, parts[1], parts[2], currentPosition, adminBypassCreation);
+            case "teleport", "edit" -> parts.length == 3
+                    ? routeLocationAction(viewerId, parts[0], parts[1], parts[2])
+                    : DialogActionRouteResult.unknownAction();
+            case "set-main" -> parts.length == 3
+                    ? setMainHome(viewerId, parts[1], parts[2])
+                    : DialogActionRouteResult.unknownAction();
+            case "delete" -> parts.length == 3
+                    ? deleteLocation(viewerId, parts[1], parts[2])
+                    : DialogActionRouteResult.unknownAction();
+            case "show-delete-confirm" -> parts.length == 3
+                    ? showDeleteConfirm(viewerId, parts[1], parts[2])
+                    : DialogActionRouteResult.unknownAction();
+            case "confirm-delete" -> parts.length == 3
+                    ? deleteLocation(viewerId, parts[1], parts[2])
+                    : DialogActionRouteResult.unknownAction();
+            case "cancel-delete" -> parts.length == 3
+                    ? showEditMenu(viewerId, parts[1], parts[2])
+                    : DialogActionRouteResult.unknownAction();
+            case "show-access-menu" -> parts.length == 3
+                    ? showPlayerWarpAccessMenu(viewerId, parts[1], parts[2])
+                    : DialogActionRouteResult.unknownAction();
+            case "show-visibility-menu" -> parts.length == 3
+                    ? showPlayerWarpVisibilityMenu(viewerId, parts[1], parts[2])
+                    : DialogActionRouteResult.unknownAction();
+            case "show-cost-menu" -> parts.length == 3
+                    ? showPlayerWarpCostMenu(viewerId, parts[1], parts[2])
+                    : DialogActionRouteResult.unknownAction();
+            case "show-rename-menu" -> parts.length == 3
+                    ? showRenameMenu(viewerId, parts[1], parts[2])
+                    : DialogActionRouteResult.unknownAction();
+            case "rename-input" -> parts.length == 3
+                    ? renameLocation(viewerId, parts[1], parts[2], inputValues)
+                    : DialogActionRouteResult.unknownAction();
+            case "relocate" -> parts.length == 3
+                    ? relocateLocation(viewerId, parts[1], parts[2], currentPosition, adminBypassCreation)
+                    : DialogActionRouteResult.unknownAction();
             case "set-access" -> parts.length == 4
                     ? setPlayerWarpAccess(viewerId, parts[1], parts[2], parts[3])
                     : DialogActionRouteResult.unknownAction();

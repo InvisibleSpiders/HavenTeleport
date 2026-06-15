@@ -167,6 +167,71 @@ final class DialogActionRouterTest {
     }
 
     @Test
+    void malformedConfirmDeleteActionDoesNotDelete() {
+        Fixture fixture = Fixture.create();
+        UUID owner = UUID.randomUUID();
+        fixture.shops.setShop(owner, "tools", position(), true);
+
+        DialogActionRouteResult result = fixture.router.route(owner, "confirm-delete:shop:tools:anything");
+
+        assertThat(result.status()).isEqualTo(DialogActionRouteResult.Status.UNKNOWN_ACTION);
+        assertThat(fixture.shops.resolveVisibleShop(owner, "tools")).isPresent();
+    }
+
+    @Test
+    void malformedRenameInputActionDoesNotRename() {
+        Fixture fixture = Fixture.create();
+        UUID owner = UUID.randomUUID();
+        fixture.shops.setShop(owner, "tools", position(), true);
+
+        DialogActionRouteResult result = fixture.router.route(
+                owner,
+                "rename-input:shop:tools:anything",
+                textInput("name", "gear")
+        );
+
+        assertThat(result.status()).isEqualTo(DialogActionRouteResult.Status.UNKNOWN_ACTION);
+        assertThat(fixture.shops.resolveVisibleShop(owner, "tools")).isPresent();
+        assertThat(fixture.shops.resolveVisibleShop(owner, "gear")).isEmpty();
+    }
+
+    @Test
+    void malformedRelocateActionDoesNotMovePlayerWarp() {
+        Fixture fixture = Fixture.create();
+        UUID owner = UUID.randomUUID();
+        SavedPosition original = position();
+        fixture.warps.setWarp(owner, "market", original, true);
+
+        DialogActionRouteResult result = fixture.router.route(
+                owner,
+                "relocate:player_warp:market:anything",
+                DialogInputValues.empty(),
+                movedPosition(),
+                false
+        );
+
+        assertThat(result.status()).isEqualTo(DialogActionRouteResult.Status.UNKNOWN_ACTION);
+        assertThat(fixture.warps.resolveVisibleWarp(owner, "market").orElseThrow().position()).isEqualTo(original);
+    }
+
+    @Test
+    void nonOwnerDeleteConfirmationActionsDoNotDeleteTarget() {
+        Fixture fixture = Fixture.create();
+        UUID owner = UUID.randomUUID();
+        UUID visitor = UUID.randomUUID();
+        fixture.shops.setShop(owner, "tools", position(), true);
+
+        DialogActionRouteResult show = fixture.router.route(visitor, "show-delete-confirm:shop:tools");
+        DialogActionRouteResult cancel = fixture.router.route(visitor, "cancel-delete:shop:tools");
+        DialogActionRouteResult confirm = fixture.router.route(visitor, "confirm-delete:shop:tools");
+
+        assertThat(show.status()).isEqualTo(DialogActionRouteResult.Status.NOT_FOUND);
+        assertThat(cancel.status()).isEqualTo(DialogActionRouteResult.Status.NOT_FOUND);
+        assertThat(confirm.status()).isEqualTo(DialogActionRouteResult.Status.NOT_FOUND);
+        assertThat(fixture.shops.resolveVisibleShop(owner, "tools")).isPresent();
+    }
+
+    @Test
     void playerWarpSubmenuActionsReturnTheirMenus() {
         Fixture fixture = Fixture.create();
         UUID owner = UUID.randomUUID();
