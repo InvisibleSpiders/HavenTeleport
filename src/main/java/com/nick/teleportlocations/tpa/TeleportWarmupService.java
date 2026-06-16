@@ -1,8 +1,9 @@
 package com.nick.teleportlocations.tpa;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.minimessage.MiniMessage;
@@ -25,9 +26,14 @@ public final class TeleportWarmupService implements Listener {
     private final int barWidth;
     private final String cancelMessage;
 
-    private final Map<UUID, BukkitTask> warmups = new HashMap<>();
-    private final Map<UUID, BukkitTask> animationTasks = new HashMap<>();
-    private final Map<UUID, Long> startTimes = new HashMap<>();
+    private record WarmupState(
+            BukkitTask completionTask,
+            BukkitTask animationTask,
+            long startMs,
+            long durationMs,
+            AtomicBoolean done) {}
+
+    private final Map<UUID, WarmupState> activeWarmups = new ConcurrentHashMap<>();
 
     public TeleportWarmupService(Plugin plugin, int warmupSeconds, boolean cancelOnMove) {
         this(plugin, warmupSeconds, cancelOnMove, "█", "░", 10, "<red>Teleport cancelled.");
@@ -55,15 +61,23 @@ public final class TeleportWarmupService implements Listener {
             return;
         }
         UUID playerId = player.getUniqueId();
-        cancel(playerId, false);
+        cancelSilent(playerId);
 
         player.sendMessage(Component.text("Teleporting in " + warmupSeconds + "s. Do not move.", NamedTextColor.YELLOW));
 
         long startMs = System.currentTimeMillis();
         long durationMs = warmupSeconds * 1000L;
-        startTimes.put(playerId, startMs);
+        AtomicBoolean done = new AtomicBoolean(false);
+
+        // Placeholder — real state stored after both tasks are created.
+        // We use a single-element array to allow capture in lambdas.
+        WarmupState[] stateHolder = new WarmupState[1];
 
         BukkitTask animTask = plugin.getServer().getScheduler().runTaskTimer(plugin, () -> {
+            if (!player.isOnline()) return;
+            WarmupState state = stateHolder[0];
+            if (state == null || state.done().get()) return;
+
             long elapsed = System.currentTimeMillis() - startMs;
             double progress = Math.min(1.0, (double) elapsed / durationMs);
             int filled = (int) Math.round(progress * barWidth);
@@ -73,19 +87,20 @@ public final class TeleportWarmupService implements Listener {
             Component actionBar = Component.text("Teleporting " + bar + " " + secondsLeft + "s", NamedTextColor.YELLOW);
             player.sendActionBar(actionBar);
         }, 0L, 2L);
-        animationTasks.put(playerId, animTask);
 
         BukkitTask completionTask = plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-            warmups.remove(playerId);
-            startTimes.remove(playerId);
-            BukkitTask anim = animationTasks.remove(playerId);
-            if (anim != null) {
-                anim.cancel();
+            WarmupState state = activeWarmups.remove(playerId);
+            if (state != null) {
+                state.done().set(true);
+                state.animationTask().cancel();
             }
             player.sendActionBar(Component.empty());
             action.run();
         }, warmupSeconds * 20L);
-        warmups.put(playerId, completionTask);
+
+        WarmupState state = new WarmupState(completionTask, animTask, startMs, durationMs, done);
+        stateHolder[0] = state;
+        activeWarmups.put(playerId, state);
     }
 
     public void cancel(UUID playerId, boolean notify, Player player) {
@@ -106,38 +121,46 @@ public final class TeleportWarmupService implements Listener {
         }
     }
 
-    private void cancel(UUID playerId, boolean notify) {
-        cancelInternal(playerId);
+    /**
+     * Silently cancels any active warmup for the given player (used internally when
+     * begin() displaces a prior warmup). Clears the action bar via a server lookup so
+     * the displaced warmup's progress bar does not remain on screen.
+     */
+    private void cancelSilent(UUID playerId) {
+        boolean had = cancelInternal(playerId);
+        if (had) {
+            Player onlinePlayer = plugin.getServer().getPlayer(playerId);
+            if (onlinePlayer != null) {
+                onlinePlayer.sendActionBar(Component.empty());
+            }
+        }
     }
 
     /**
-     * Cancels warmup and animation tasks, clears action bar state.
+     * Cancels warmup and animation tasks.
      * Returns true if a warmup was active.
      */
     private boolean cancelInternal(UUID playerId) {
-        BukkitTask task = warmups.remove(playerId);
-        BukkitTask anim = animationTasks.remove(playerId);
-        startTimes.remove(playerId);
-        boolean active = task != null;
-        if (task != null) {
-            task.cancel();
-        }
-        if (anim != null) {
-            anim.cancel();
-        }
-        return active;
+        WarmupState state = activeWarmups.remove(playerId);
+        if (state == null) return false;
+        state.done().set(true);
+        state.completionTask().cancel();
+        state.animationTask().cancel();
+        return true;
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onMove(PlayerMoveEvent event) {
-        if (!cancelOnMove || event.getTo() == null || !warmups.containsKey(event.getPlayer().getUniqueId())) {
+        if (!cancelOnMove || event.getTo() == null || !activeWarmups.containsKey(event.getPlayer().getUniqueId())) {
             return;
         }
         if (changedBlock(event.getFrom(), event.getTo())) {
             Player player = event.getPlayer();
-            cancelInternal(player.getUniqueId());
-            player.sendActionBar(Component.empty());
-            player.sendMessage(MiniMessage.miniMessage().deserialize(cancelMessage));
+            boolean had = cancelInternal(player.getUniqueId());
+            if (had) {
+                player.sendActionBar(Component.empty());
+                player.sendMessage(MiniMessage.miniMessage().deserialize(cancelMessage));
+            }
         }
     }
 
