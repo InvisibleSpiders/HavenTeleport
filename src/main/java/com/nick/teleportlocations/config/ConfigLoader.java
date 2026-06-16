@@ -46,7 +46,10 @@ public final class ConfigLoader {
                 yaml.getInt("tpa.request-timeout-seconds", 60),
                 yaml.getInt("tpa.cooldown-seconds", 0),
                 yaml.getInt("tpa.warmup-seconds", 0),
-                yaml.getBoolean("tpa.cancel-warmup-on-move", true)
+                yaml.getBoolean("tpa.cancel-warmup-on-move", true),
+                yaml.getInt("upgrade-slots.homes-per-level", 2),
+                yaml.getInt("upgrade-slots.warps-per-level", 1),
+                yaml.getInt("upgrade-slots.shops-per-level", 1)
         );
     }
 

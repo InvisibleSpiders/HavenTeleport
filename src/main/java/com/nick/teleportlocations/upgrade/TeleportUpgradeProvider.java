@@ -17,7 +17,7 @@ import org.bukkit.configuration.ConfigurationSection;
 
 public final class TeleportUpgradeProvider implements UpgradeProvider {
 
-    private static final String PROVIDER_ID = "haven-teleport";
+    public static final String PROVIDER_ID = "haven-teleport";
     private static final String PROVIDER_DISPLAY_NAME = "Teleport";
 
     private static final UpgradeCategory PERSONAL_CATEGORY =
