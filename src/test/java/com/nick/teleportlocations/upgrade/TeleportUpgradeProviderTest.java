@@ -1,7 +1,9 @@
 package com.nick.teleportlocations.upgrade;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
+import dev.invisiblespiders.haven.api.service.HavenEconomyService;
 import dev.invisiblespiders.haven.api.upgrade.UpgradeDefinition;
 import dev.invisiblespiders.haven.api.upgrade.UpgradeLevel;
 import java.io.InputStream;
@@ -13,6 +15,23 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.jupiter.api.Test;
 
 final class TeleportUpgradeProviderTest {
+
+    private static final String CONFIG =
+            "upgrades:\n"
+            + "  home-slots:\n"
+            + "    names: [\"Home Slots I\", \"Home Slots II\", \"Home Slots III\", \"Home Slots IV\", \"Home Slots V\"]\n"
+            + "    costs: [10000.0, 25000.0, 50000.0, 100000.0, 200000.0]\n"
+            + "  warp-slots:\n"
+            + "    names: [\"Warp Slots I\", \"Warp Slots II\", \"Warp Slots III\", \"Warp Slots IV\", \"Warp Slots V\"]\n"
+            + "    costs: [10000.0, 25000.0, 50000.0, 100000.0, 200000.0]\n"
+            + "  shop-slots:\n"
+            + "    names: [\"Shop Slots I\", \"Shop Slots II\", \"Shop Slots III\", \"Shop Slots IV\", \"Shop Slots V\"]\n"
+            + "    costs: [10000.0, 25000.0, 50000.0, 100000.0, 200000.0]\n";
+
+    private static ConfigurationSection load(String yaml) {
+        YamlConfiguration config = parseYaml(yaml);
+        return config.getConfigurationSection("upgrades");
+    }
 
     private static TeleportUpgradeProvider providerFromResource() {
         YamlConfiguration yaml = loadResourceYaml("config.yml");
@@ -116,6 +135,19 @@ final class TeleportUpgradeProviderTest {
                         .as("level %d of %s should have no requirements when economy is null",
                                 level.level(), def.id())
                         .isEmpty();
+            }
+        }
+    }
+
+    @Test
+    void levelHasMoneyRequirementWhenEconomyIsPresent() {
+        HavenEconomyService mockEconomy = mock(HavenEconomyService.class);
+        TeleportUpgradeProvider p = new TeleportUpgradeProvider(load(CONFIG), mockEconomy);
+        for (UpgradeDefinition def : p.definitions()) {
+            for (UpgradeLevel level : def.levels()) {
+                assertThat(level.requirements()).hasSize(1)
+                        .as("Level %d of %s should have a money requirement", level.level(), def.id());
+                assertThat(level.requirements().get(0).type()).isEqualTo("money");
             }
         }
     }

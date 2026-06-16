@@ -4,14 +4,19 @@ import dev.invisiblespiders.haven.api.service.HavenEconomyService;
 import dev.invisiblespiders.haven.api.upgrade.UpgradeContext;
 import dev.invisiblespiders.haven.api.upgrade.UpgradeRequirement;
 import dev.invisiblespiders.haven.api.upgrade.UpgradeRequirementResult;
+import java.util.Objects;
+import java.util.logging.Logger;
 
 class MoneyRequirement implements UpgradeRequirement {
+
+    private static final Logger LOGGER = Logger.getLogger(MoneyRequirement.class.getName());
 
     private final HavenEconomyService economy;
     private final double cost;
 
     MoneyRequirement(HavenEconomyService economy, double cost) {
-        this.economy = economy;
+        this.economy = Objects.requireNonNull(economy, "economy");
+        if (cost < 0) throw new IllegalArgumentException("amount cannot be negative: " + cost);
         this.cost = cost;
     }
 
@@ -34,11 +39,18 @@ class MoneyRequirement implements UpgradeRequirement {
 
     @Override
     public void consume(UpgradeContext context) {
-        economy.withdraw(context.targetPlayerId(), cost);
+        boolean success = economy.withdraw(context.targetPlayerId(), cost);
+        if (!success) {
+            throw new IllegalStateException("money withdrawal failed for amount: " + cost);
+        }
     }
 
     @Override
     public void refund(UpgradeContext context) {
-        economy.deposit(context.targetPlayerId(), cost);
+        boolean success = economy.deposit(context.targetPlayerId(), cost);
+        if (!success) {
+            LOGGER.warning("money deposit (refund) failed for amount: " + cost
+                    + " — player " + context.targetPlayerId() + " may have lost funds");
+        }
     }
 }
