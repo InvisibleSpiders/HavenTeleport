@@ -85,7 +85,7 @@ public final class ShopWarpService {
     }
 
     private boolean reachedLimit(UUID ownerId, int existingShops) {
-        int limit = limits.resolveLimit(ownerId, CATEGORY);
+        int limit = limits.resolveEffectiveLimit(ownerId, CATEGORY);
         return limit >= 0 && existingShops >= limit;
     }
 }

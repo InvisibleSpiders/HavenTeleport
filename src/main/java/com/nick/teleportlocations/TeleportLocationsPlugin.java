@@ -52,6 +52,11 @@ public final class TeleportLocationsPlugin extends JavaPlugin {
                 BukkitHavenClaimsGateway.discover(getServer().getServicesManager()),
                 getClassLoader()
         );
+        services.limitService().setUpgradeSlots(
+                services.config().homeSlotsPerLevel(),
+                services.config().warpSlotsPerLevel(),
+                services.config().shopSlotsPerLevel()
+        );
         upgradeService = HavenAPI.optional(HavenUpgradeService.class).orElse(null);
         if (upgradeService != null) {
             HavenEconomyService economy = HavenAPI.optional(HavenEconomyService.class).orElse(null);

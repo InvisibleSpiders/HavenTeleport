@@ -11,6 +11,7 @@ public final class LimitService {
     private final Map<String, CategoryConfig> categories;
     private final LimitRepository repository;
     private volatile @Nullable HavenUpgradeService upgradeService;
+    private volatile Map<String, Integer> categorySlotPerLevel = Map.of();
 
     public LimitService(Map<String, CategoryConfig> categories, LimitRepository repository) {
         this.categories = Map.copyOf(categories);
@@ -19,6 +20,18 @@ public final class LimitService {
 
     public void setUpgradeService(@Nullable HavenUpgradeService upgradeService) {
         this.upgradeService = upgradeService;
+    }
+
+    public void setUpgradeSlots(int homesPerLevel, int warpsPerLevel, int shopsPerLevel) {
+        categorySlotPerLevel = Map.of(
+                "home", Math.max(0, homesPerLevel),
+                "player_warp", Math.max(0, warpsPerLevel),
+                "shop", Math.max(0, shopsPerLevel)
+        );
+    }
+
+    public int resolveEffectiveLimit(UUID playerId, String category) {
+        return resolveEffectiveLimit(playerId, category, categorySlotPerLevel.getOrDefault(category, 0));
     }
 
     public int resolveLimit(UUID playerId, String category) {
