@@ -2,6 +2,8 @@ package com.nick.teleportlocations.dialog;
 
 import com.nick.teleportlocations.admin.AdminBypassService;
 import com.nick.teleportlocations.bukkit.BukkitLocations;
+import com.nick.teleportlocations.home.HomeResult;
+import com.nick.teleportlocations.home.HomeService;
 import com.nick.teleportlocations.cost.ChargeResult;
 import com.nick.teleportlocations.location.TeleportLocation;
 import com.nick.teleportlocations.teleport.TeleportAccessResult;
@@ -28,6 +30,7 @@ public final class DialogActionExecutor implements DialogActionHandler {
     private final AdminBypassService bypass;
     private final ManagedTeleportService managedTeleports;
     private final ScheduledTeleportService scheduledTeleports;
+    private HomeService homes;
 
     public DialogActionExecutor(DialogActionRouter router, PaperDialogPresenter presenter, TeleportChargeService charges, TeleportAccessService access, TeleportSafetyService safety, AdminBypassService bypass) {
         this(
@@ -65,6 +68,10 @@ public final class DialogActionExecutor implements DialogActionHandler {
         this.scheduledTeleports = scheduledTeleports;
     }
 
+    public void setHomeService(HomeService homes) {
+        this.homes = homes;
+    }
+
     @Override
     public void handle(Player player, String actionKey, DialogInputValues inputValues) {
         DialogActionRouteResult result = router.route(player.getUniqueId(), actionKey, inputValues);
@@ -72,7 +79,43 @@ public final class DialogActionExecutor implements DialogActionHandler {
             case TELEPORT -> teleport(player, result.location().orElseThrow());
             case SHOW_MENU -> presenter.show(player, result.menu().orElseThrow());
             case MESSAGE -> player.sendMessage(Component.text(result.message(), NamedTextColor.GREEN));
+            case ADD_HOME -> addHome(player);
             case NOT_FOUND, ACCESS_DENIED, UNKNOWN_ACTION -> player.sendMessage(Component.text(result.message(), NamedTextColor.RED));
+        }
+    }
+
+    private void addHome(Player player) {
+        if (homes == null) {
+            player.sendMessage(Component.text("Home service unavailable.", NamedTextColor.RED));
+            return;
+        }
+        com.nick.teleportlocations.location.SavedPosition position =
+                com.nick.teleportlocations.bukkit.BukkitLocations.save(player.getLocation());
+        // Find next available auto-name: home-1, home-2, ...
+        java.util.List<com.nick.teleportlocations.location.TeleportLocation> existing = homes.listHomes(player.getUniqueId());
+        java.util.Set<String> usedNames = new java.util.HashSet<>();
+        for (com.nick.teleportlocations.location.TeleportLocation h : existing) {
+            usedNames.add(h.normalizedName());
+        }
+        String name = "home";
+        if (usedNames.contains("home")) {
+            int i = 1;
+            while (usedNames.contains("home-" + i)) {
+                i++;
+            }
+            name = "home-" + i;
+        }
+        HomeResult homeResult = homes.setHome(
+                player.getUniqueId(),
+                name,
+                position,
+                player.hasPermission("teleportlocations.admin.bypass.creation")
+        );
+        switch (homeResult.status()) {
+            case CREATED -> player.sendMessage(Component.text("Home \"" + name + "\" created.", NamedTextColor.GREEN));
+            case LIMIT_REACHED -> player.sendMessage(Component.text("You have reached your home limit.", NamedTextColor.RED));
+            case CLAIM_DENIED -> player.sendMessage(Component.text("You cannot create a home here.", NamedTextColor.RED));
+            default -> player.sendMessage(Component.text("Could not create home.", NamedTextColor.RED));
         }
     }
 

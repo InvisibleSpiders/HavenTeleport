@@ -6,6 +6,7 @@ import com.nick.teleportlocations.elevator.ElevatorResult;
 import com.nick.teleportlocations.elevator.ElevatorService;
 import com.nick.teleportlocations.home.HomeService;
 import com.nick.teleportlocations.home.HomeResult;
+import com.nick.teleportlocations.limit.LimitService;
 import com.nick.teleportlocations.location.AccessMode;
 import com.nick.teleportlocations.location.CostSpec;
 import com.nick.teleportlocations.location.LocationService;
@@ -20,6 +21,7 @@ import com.nick.teleportlocations.teleportblock.TeleportBlockResult;
 import com.nick.teleportlocations.teleportblock.TeleportBlockService;
 import com.nick.teleportlocations.warp.PlayerWarpService;
 import com.nick.teleportlocations.warp.PlayerWarpResult;
+import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
@@ -38,6 +40,8 @@ public final class DialogActionRouter {
     private final DialogMenuService menus;
     private final AdminBypassService bypass;
     private final BiPredicate<UUID, String> permissions;
+    private LimitService limits;
+    private int homeSlotsPerLevel = 0;
 
     public DialogActionRouter(
             HomeService homes,
@@ -103,6 +107,11 @@ public final class DialogActionRouter {
         this.permissions = Objects.requireNonNull(permissions, "permissions");
     }
 
+    public void setLimitService(LimitService limits, int homeSlotsPerLevel) {
+        this.limits = limits;
+        this.homeSlotsPerLevel = homeSlotsPerLevel;
+    }
+
     public DialogActionRouteResult route(UUID viewerId, String actionKey) {
         return route(viewerId, actionKey, DialogInputValues.empty());
     }
@@ -116,10 +125,17 @@ public final class DialogActionRouter {
                 default -> DialogActionRouteResult.unknownAction();
             };
         }
+        if (parts.length == 2) {
+            return switch (parts[0]) {
+                case "homes" -> routeHomesAction(viewerId, parts[1]);
+                default -> DialogActionRouteResult.unknownAction();
+            };
+        }
         if (parts.length < 3) {
             return DialogActionRouteResult.unknownAction();
         }
         return switch (parts[0]) {
+            case "view" -> parts.length == 3 ? routeViewAction(viewerId, parts[1], parts[2]) : DialogActionRouteResult.unknownAction();
             case "teleport", "edit" -> routeLocationAction(viewerId, parts[0], parts[1], parts[2]);
             case "set-main" -> setMainHome(viewerId, parts[1], parts[2]);
             case "delete" -> deleteLocation(viewerId, parts[1], parts[2]);
@@ -146,6 +162,32 @@ public final class DialogActionRouter {
                     : DialogActionRouteResult.unknownAction();
             default -> DialogActionRouteResult.unknownAction();
         };
+    }
+
+    private DialogActionRouteResult routeHomesAction(UUID viewerId, String subAction) {
+        return switch (subAction) {
+            case "back" -> {
+                List<TeleportLocation> homeList = homes.listHomes(viewerId);
+                int maxSlots = limits != null
+                        ? limits.resolveEffectiveLimit(viewerId, "home", homeSlotsPerLevel)
+                        : homeList.size();
+                yield DialogActionRouteResult.showMenu(menus.homesMenu(viewerId, homeList, maxSlots));
+            }
+            case "add" -> DialogActionRouteResult.addHome();
+            case "cap" -> DialogActionRouteResult.message("Home slots full. Upgrade via /upgrades.");
+            default -> DialogActionRouteResult.unknownAction();
+        };
+    }
+
+    private DialogActionRouteResult routeViewAction(UUID viewerId, String category, String name) {
+        if (!"home".equals(category)) {
+            return DialogActionRouteResult.unknownAction();
+        }
+        Optional<TeleportLocation> home = homes.resolveHome(viewerId, name);
+        if (home.isEmpty()) {
+            return DialogActionRouteResult.notFound();
+        }
+        return DialogActionRouteResult.showMenu(menus.homeSubMenu(viewerId, home.orElseThrow()));
     }
 
     private DialogActionRouteResult routeLocationAction(UUID viewerId, String action, String category, String name) {

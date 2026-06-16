@@ -5,6 +5,7 @@ import com.nick.teleportlocations.bukkit.BukkitLocations;
 import com.nick.teleportlocations.cost.ChargeResult;
 import com.nick.teleportlocations.dialog.DialogMenuService;
 import com.nick.teleportlocations.dialog.PaperDialogPresenter;
+import com.nick.teleportlocations.limit.LimitService;
 import com.nick.teleportlocations.home.HomeResult;
 import com.nick.teleportlocations.home.HomeService;
 import com.nick.teleportlocations.location.TeleportLocation;
@@ -52,6 +53,8 @@ public final class PlayerLocationCommand implements CommandExecutor {
     private final boolean hideInaccessibleDestinations;
     private final ManagedTeleportService managedTeleports;
     private final ScheduledTeleportService scheduledTeleports;
+    private LimitService limitService;
+    private int homeSlotsPerLevel = 0;
 
     public PlayerLocationCommand(HomeService homes, PlayerWarpService warps, ShopWarpService shops, OutpostService outposts, ServerWarpService serverWarps, SpawnService spawn, TeleportChargeService charges, TeleportAccessService access, TeleportSafetyService safety, AdminBypassService bypass, DialogMenuService dialogs, PaperDialogPresenter presenter, boolean hideInaccessibleDestinations) {
         this(
@@ -110,6 +113,11 @@ public final class PlayerLocationCommand implements CommandExecutor {
         this.scheduledTeleports = scheduledTeleports;
     }
 
+    public void setLimitService(LimitService limitService, int homeSlotsPerLevel) {
+        this.limitService = limitService;
+        this.homeSlotsPerLevel = homeSlotsPerLevel;
+    }
+
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!(sender instanceof Player player)) {
@@ -123,7 +131,13 @@ public final class PlayerLocationCommand implements CommandExecutor {
             case "home" -> teleportHome(player, args);
             case "delhome" -> deleteHome(player, args);
             case "mainhome" -> setMainHome(player, args);
-            case "homes" -> presenter.show(player, dialogs.homesMenu(player.getUniqueId(), homes.listHomes(player.getUniqueId())));
+            case "homes" -> {
+                java.util.List<TeleportLocation> homeList = homes.listHomes(player.getUniqueId());
+                int maxHomes = limitService != null
+                        ? limitService.resolveEffectiveLimit(player.getUniqueId(), "home", homeSlotsPerLevel)
+                        : homeList.size();
+                presenter.show(player, dialogs.homesMenu(player.getUniqueId(), homeList, maxHomes));
+            }
             case "setwarp" -> setWarp(player, args);
             case "warp" -> teleportWarp(player, args);
             case "delwarp" -> deleteWarp(player, args);

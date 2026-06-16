@@ -182,7 +182,8 @@ public final class TeleportLocationsPlugin extends JavaPlugin {
                 services.adminBypassService(),
                 this::hasOnlinePermission
         );
-        dialogPresenter.setActionHandler(new DialogActionExecutor(
+        dialogActions.setLimitService(services.limitService(), 1);
+        DialogActionExecutor dialogExecutor = new DialogActionExecutor(
                 dialogActions,
                 dialogPresenter,
                 services.teleportChargeService(),
@@ -191,7 +192,9 @@ public final class TeleportLocationsPlugin extends JavaPlugin {
                 services.adminBypassService(),
                 managedTeleports,
                 scheduledTeleports
-        ));
+        );
+        dialogExecutor.setHomeService(services.homeService());
+        dialogPresenter.setActionHandler(dialogExecutor);
         PlayerLocationCommand playerCommand = new PlayerLocationCommand(
                 services.homeService(),
                 services.playerWarpService(),
@@ -209,6 +212,7 @@ public final class TeleportLocationsPlugin extends JavaPlugin {
                 managedTeleports,
                 scheduledTeleports
         );
+        playerCommand.setLimitService(services.limitService(), 1);
         getCommand("home").setExecutor(playerCommand);
         getCommand("homes").setExecutor(playerCommand);
         getCommand("sethome").setExecutor(playerCommand);

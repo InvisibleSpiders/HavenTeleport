@@ -2,6 +2,7 @@ package com.nick.teleportlocations.dialog;
 
 import com.nick.teleportlocations.elevator.ElevatorBlock;
 import com.nick.teleportlocations.elevator.ElevatorParticle;
+import com.nick.teleportlocations.location.SavedPosition;
 import com.nick.teleportlocations.location.TeleportLocation;
 import com.nick.teleportlocations.teleportblock.TeleportBlock;
 import java.util.ArrayList;
@@ -10,18 +11,33 @@ import java.util.UUID;
 import java.util.function.Predicate;
 
 public final class DialogMenuService {
-    public DialogMenuModel homesMenu(UUID viewerId, List<TeleportLocation> homes) {
+    public DialogMenuModel homesMenu(UUID viewerId, List<TeleportLocation> homes, int maxSlots) {
         List<String> lines = new ArrayList<>();
         List<DialogActionModel> actions = new ArrayList<>();
+        lines.add("Homes (" + homes.size() + "/" + maxSlots + ")");
         for (TeleportLocation home : homes) {
-            String marker = home.mainHome() ? "Main" : "Home";
-            lines.add(marker + ": " + home.name());
-            actions.add(new DialogActionModel("teleport:home:" + home.normalizedName(), "Teleport"));
-            if (home.owner().playerIdOptional().filter(viewerId::equals).isPresent()) {
-                actions.add(new DialogActionModel("edit:home:" + home.normalizedName(), "Edit"));
-            }
+            String label = home.mainHome() ? "★ " + home.name() : home.name();
+            actions.add(new DialogActionModel("view:home:" + home.normalizedName(), label));
         }
+        String addKey = homes.size() >= maxSlots ? "homes:cap" : "homes:add";
+        actions.add(new DialogActionModel(addKey, "+ Add Home"));
         return new DialogMenuModel("Homes", List.copyOf(lines), List.copyOf(actions));
+    }
+
+    public DialogMenuModel homeSubMenu(UUID viewerId, TeleportLocation home) {
+        String body = formatPosition(home.position());
+        List<DialogActionModel> actions = new ArrayList<>();
+        actions.add(new DialogActionModel("teleport:home:" + home.normalizedName(), "Teleport"));
+        if (!home.mainHome()) {
+            actions.add(new DialogActionModel("set-main:home:" + home.normalizedName(), "Set as Main"));
+        }
+        actions.add(new DialogActionModel("delete:home:" + home.normalizedName(), "Delete"));
+        actions.add(new DialogActionModel("homes:back", "← Back"));
+        return new DialogMenuModel(home.name(), List.of(body), List.copyOf(actions));
+    }
+
+    private String formatPosition(SavedPosition pos) {
+        return pos.worldName() + " " + (int) pos.x() + ", " + (int) pos.y() + ", " + (int) pos.z();
     }
 
     public DialogMenuModel playerWarpsMenu(UUID viewerId, List<TeleportLocation> warps) {
