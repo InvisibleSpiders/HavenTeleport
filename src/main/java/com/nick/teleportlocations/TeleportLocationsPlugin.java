@@ -55,7 +55,7 @@ public final class TeleportLocationsPlugin extends JavaPlugin {
         upgradeService = HavenAPI.optional(HavenUpgradeService.class).orElse(null);
         if (upgradeService != null) {
             HavenEconomyService economy = HavenAPI.optional(HavenEconomyService.class).orElse(null);
-            upgradeService.registerProvider(new TeleportUpgradeProvider(getConfig(), economy));
+            upgradeService.registerProvider(new TeleportUpgradeProvider(getConfig().getConfigurationSection("upgrades"), economy));
             services.limitService().setUpgradeService(upgradeService);
             getLogger().info("Registered TeleportUpgradeProvider with HavenCore.");
         } else {
