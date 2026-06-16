@@ -10,7 +10,7 @@ import java.util.UUID;
 public final class LimitService {
     private final Map<String, CategoryConfig> categories;
     private final LimitRepository repository;
-    private @Nullable HavenUpgradeService upgradeService;
+    private volatile @Nullable HavenUpgradeService upgradeService;
 
     public LimitService(Map<String, CategoryConfig> categories, LimitRepository repository) {
         this.categories = Map.copyOf(categories);
@@ -58,8 +58,7 @@ public final class LimitService {
         if (upgradeService == null) return 0;
         String upgradeId = upgradeIdForCategory(category);
         if (upgradeId == null) return 0;
-        int level = upgradeService.currentLevel(playerId, upgradeId);
-        return level;
+        return Math.max(0, upgradeService.currentLevel(playerId, upgradeId));
     }
 
     public int resolveEffectiveLimit(UUID playerId, String category, int slotsPerLevel) {
