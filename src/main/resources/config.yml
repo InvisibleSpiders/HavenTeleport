@@ -166,3 +166,8 @@ upgrades:
   shop-slots:
     names: ["Shop Slots I", "Shop Slots II", "Shop Slots III", "Shop Slots IV", "Shop Slots V"]
     costs: [10000.0, 25000.0, 50000.0, 100000.0, 200000.0]
+
+upgrade-slots:
+  homes-per-level: 2
+  warps-per-level: 1
+  shops-per-level: 1
