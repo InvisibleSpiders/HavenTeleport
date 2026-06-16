@@ -105,6 +105,12 @@ teleport-blocks:
   # Cooldown after teleport block use to prevent rapid loops.
   cooldown-seconds: 3
 
+warmup-bar:
+  filled-char: "█"
+  empty-char: "░"
+  width: 10
+  cancel-message: "<red>Teleport cancelled."
+
 tpa:
   # Enables player-to-player teleport request commands.
   enabled: true
