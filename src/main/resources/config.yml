@@ -155,3 +155,14 @@ categories:
     default-access: public
     default-visibility: listed
     allows-cost: false
+
+upgrades:
+  home-slots:
+    names: ["Home Slots I", "Home Slots II", "Home Slots III", "Home Slots IV", "Home Slots V"]
+    costs: [10000.0, 25000.0, 50000.0, 100000.0, 200000.0]
+  warp-slots:
+    names: ["Warp Slots I", "Warp Slots II", "Warp Slots III", "Warp Slots IV", "Warp Slots V"]
+    costs: [10000.0, 25000.0, 50000.0, 100000.0, 200000.0]
+  shop-slots:
+    names: ["Shop Slots I", "Shop Slots II", "Shop Slots III", "Shop Slots IV", "Shop Slots V"]
+    costs: [10000.0, 25000.0, 50000.0, 100000.0, 200000.0]
