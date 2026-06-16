@@ -40,8 +40,8 @@ public final class DialogActionRouter {
     private final DialogMenuService menus;
     private final AdminBypassService bypass;
     private final BiPredicate<UUID, String> permissions;
-    private LimitService limits;
-    private int homeSlotsPerLevel = 0;
+    private volatile LimitService limits;
+    private volatile int homeSlotsPerLevel = 0;
 
     public DialogActionRouter(
             HomeService homes,

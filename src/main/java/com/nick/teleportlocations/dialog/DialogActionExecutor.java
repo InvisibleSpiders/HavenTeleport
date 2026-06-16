@@ -30,7 +30,9 @@ public final class DialogActionExecutor implements DialogActionHandler {
     private final AdminBypassService bypass;
     private final ManagedTeleportService managedTeleports;
     private final ScheduledTeleportService scheduledTeleports;
-    private HomeService homes;
+    private volatile HomeService homes;
+    private final java.util.Set<java.util.UUID> addingHome =
+            java.util.Collections.newSetFromMap(new java.util.concurrent.ConcurrentHashMap<>());
 
     public DialogActionExecutor(DialogActionRouter router, PaperDialogPresenter presenter, TeleportChargeService charges, TeleportAccessService access, TeleportSafetyService safety, AdminBypassService bypass) {
         this(
@@ -89,6 +91,17 @@ public final class DialogActionExecutor implements DialogActionHandler {
             player.sendMessage(Component.text("Home service unavailable.", NamedTextColor.RED));
             return;
         }
+        if (!addingHome.add(player.getUniqueId())) {
+            return;
+        }
+        try {
+            addHomeInternal(player);
+        } finally {
+            addingHome.remove(player.getUniqueId());
+        }
+    }
+
+    private void addHomeInternal(Player player) {
         com.nick.teleportlocations.location.SavedPosition position =
                 com.nick.teleportlocations.bukkit.BukkitLocations.save(player.getLocation());
         // Find next available auto-name: home-1, home-2, ...
