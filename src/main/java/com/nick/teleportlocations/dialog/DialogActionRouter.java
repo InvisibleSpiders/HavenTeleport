@@ -10,6 +10,7 @@ import com.nick.teleportlocations.limit.LimitService;
 import com.nick.teleportlocations.location.AccessMode;
 import com.nick.teleportlocations.location.CostSpec;
 import com.nick.teleportlocations.location.LocationService;
+import com.nick.teleportlocations.location.SavedPosition;
 import com.nick.teleportlocations.location.TeleportLocation;
 import com.nick.teleportlocations.location.VisibilityMode;
 import com.nick.teleportlocations.outpost.OutpostService;
@@ -117,6 +118,16 @@ public final class DialogActionRouter {
     }
 
     public DialogActionRouteResult route(UUID viewerId, String actionKey, DialogInputValues inputValues) {
+        return route(viewerId, actionKey, inputValues, null, false);
+    }
+
+    public DialogActionRouteResult route(
+            UUID viewerId,
+            String actionKey,
+            DialogInputValues inputValues,
+            SavedPosition currentPosition,
+            boolean adminBypassCreation
+    ) {
         String[] parts = actionKey.split(":");
         if (parts.length == 1) {
             return switch (parts[0]) {
@@ -135,10 +146,45 @@ public final class DialogActionRouter {
             return DialogActionRouteResult.unknownAction();
         }
         return switch (parts[0]) {
-            case "view" -> parts.length == 3 ? routeViewAction(viewerId, parts[1], parts[2]) : DialogActionRouteResult.unknownAction();
-            case "teleport", "edit" -> routeLocationAction(viewerId, parts[0], parts[1], parts[2]);
-            case "set-main" -> setMainHome(viewerId, parts[1], parts[2]);
-            case "delete" -> deleteLocation(viewerId, parts[1], parts[2]);
+            case "view" -> parts.length == 3
+                    ? routeViewAction(viewerId, parts[1], parts[2])
+                    : DialogActionRouteResult.unknownAction();
+            case "teleport", "edit" -> parts.length == 3
+                    ? routeLocationAction(viewerId, parts[0], parts[1], parts[2])
+                    : DialogActionRouteResult.unknownAction();
+            case "set-main" -> parts.length == 3
+                    ? setMainHome(viewerId, parts[1], parts[2])
+                    : DialogActionRouteResult.unknownAction();
+            case "delete" -> parts.length == 3
+                    ? deleteLocation(viewerId, parts[1], parts[2])
+                    : DialogActionRouteResult.unknownAction();
+            case "show-delete-confirm" -> parts.length == 3
+                    ? showDeleteConfirm(viewerId, parts[1], parts[2])
+                    : DialogActionRouteResult.unknownAction();
+            case "confirm-delete" -> parts.length == 3
+                    ? deleteLocation(viewerId, parts[1], parts[2])
+                    : DialogActionRouteResult.unknownAction();
+            case "cancel-delete" -> parts.length == 3
+                    ? showEditMenu(viewerId, parts[1], parts[2])
+                    : DialogActionRouteResult.unknownAction();
+            case "show-access-menu" -> parts.length == 3
+                    ? showPlayerWarpAccessMenu(viewerId, parts[1], parts[2])
+                    : DialogActionRouteResult.unknownAction();
+            case "show-visibility-menu" -> parts.length == 3
+                    ? showPlayerWarpVisibilityMenu(viewerId, parts[1], parts[2])
+                    : DialogActionRouteResult.unknownAction();
+            case "show-cost-menu" -> parts.length == 3
+                    ? showPlayerWarpCostMenu(viewerId, parts[1], parts[2])
+                    : DialogActionRouteResult.unknownAction();
+            case "show-rename-menu" -> parts.length == 3
+                    ? showRenameMenu(viewerId, parts[1], parts[2])
+                    : DialogActionRouteResult.unknownAction();
+            case "rename-input" -> parts.length == 3
+                    ? renameLocation(viewerId, parts[1], parts[2], inputValues)
+                    : DialogActionRouteResult.unknownAction();
+            case "relocate" -> parts.length == 3
+                    ? relocateLocation(viewerId, parts[1], parts[2], currentPosition, adminBypassCreation)
+                    : DialogActionRouteResult.unknownAction();
             case "set-access" -> parts.length == 4
                     ? setPlayerWarpAccess(viewerId, parts[1], parts[2], parts[3])
                     : DialogActionRouteResult.unknownAction();
@@ -224,6 +270,87 @@ public final class DialogActionRouter {
             case "player_warp" -> warpDeleteResult(warps.deleteWarp(viewerId, name), name);
             case "shop" -> shopDeleteResult(shops.deleteShop(viewerId, name), name);
             case "outpost" -> outpostDeleteResult(outposts.deleteOutpost(viewerId, name), name);
+            default -> DialogActionRouteResult.unknownAction();
+        };
+    }
+
+    private DialogActionRouteResult showDeleteConfirm(UUID viewerId, String category, String name) {
+        Optional<TeleportLocation> location = resolveOwned(viewerId, category, name);
+        return location
+                .map(resolved -> DialogActionRouteResult.showMenu(menus.deleteConfirmMenu(resolved)))
+                .orElseGet(DialogActionRouteResult::notFound);
+    }
+
+    private DialogActionRouteResult showEditMenu(UUID viewerId, String category, String name) {
+        Optional<TeleportLocation> location = resolveOwned(viewerId, category, name);
+        return location
+                .map(resolved -> DialogActionRouteResult.showMenu(menus.editMenu(resolved)))
+                .orElseGet(DialogActionRouteResult::notFound);
+    }
+
+    private DialogActionRouteResult showPlayerWarpAccessMenu(UUID viewerId, String category, String name) {
+        if (!"player_warp".equals(category)) {
+            return DialogActionRouteResult.unknownAction();
+        }
+        Optional<TeleportLocation> location = resolveOwned(viewerId, category, name);
+        return location
+                .map(resolved -> DialogActionRouteResult.showMenu(menus.accessMenu(resolved)))
+                .orElseGet(DialogActionRouteResult::notFound);
+    }
+
+    private DialogActionRouteResult showPlayerWarpVisibilityMenu(UUID viewerId, String category, String name) {
+        if (!"player_warp".equals(category)) {
+            return DialogActionRouteResult.unknownAction();
+        }
+        Optional<TeleportLocation> location = resolveOwned(viewerId, category, name);
+        return location
+                .map(resolved -> DialogActionRouteResult.showMenu(menus.visibilityMenu(resolved)))
+                .orElseGet(DialogActionRouteResult::notFound);
+    }
+
+    private DialogActionRouteResult showPlayerWarpCostMenu(UUID viewerId, String category, String name) {
+        if (!"player_warp".equals(category)) {
+            return DialogActionRouteResult.unknownAction();
+        }
+        Optional<TeleportLocation> location = resolveOwned(viewerId, category, name);
+        return location
+                .map(resolved -> DialogActionRouteResult.showMenu(menus.costMenu(resolved)))
+                .orElseGet(DialogActionRouteResult::notFound);
+    }
+
+    private DialogActionRouteResult showRenameMenu(UUID viewerId, String category, String name) {
+        if (!"player_warp".equals(category) && !"shop".equals(category)) {
+            return DialogActionRouteResult.unknownAction();
+        }
+        Optional<TeleportLocation> location = resolveOwned(viewerId, category, name);
+        return location
+                .map(resolved -> DialogActionRouteResult.showMenu(menus.renameMenu(resolved)))
+                .orElseGet(DialogActionRouteResult::notFound);
+    }
+
+    private DialogActionRouteResult renameLocation(UUID viewerId, String category, String name, DialogInputValues inputValues) {
+        String newName = inputValues.getText("name");
+        if (newName == null || newName.isBlank()) {
+            return switch (category) {
+                case "player_warp" -> namedUnknownAction("That warp name is invalid.");
+                case "shop" -> namedUnknownAction("That shop name is invalid.");
+                default -> DialogActionRouteResult.unknownAction();
+            };
+        }
+        return switch (category) {
+            case "player_warp" -> warpRenameResult(warps.rename(viewerId, name, newName.strip()), newName.strip());
+            case "shop" -> shopRenameResult(shops.rename(viewerId, name, newName.strip()), newName.strip());
+            default -> DialogActionRouteResult.unknownAction();
+        };
+    }
+
+    private DialogActionRouteResult relocateLocation(UUID viewerId, String category, String name, SavedPosition currentPosition, boolean adminBypassCreation) {
+        if (currentPosition == null) {
+            return DialogActionRouteResult.unknownAction();
+        }
+        return switch (category) {
+            case "player_warp" -> warpRelocateResult(warps.relocate(viewerId, name, currentPosition, adminBypassCreation), name);
+            case "shop" -> shopRelocateResult(shops.relocate(viewerId, name, currentPosition, adminBypassCreation), name);
             default -> DialogActionRouteResult.unknownAction();
         };
     }
@@ -410,10 +537,61 @@ public final class DialogActionRouter {
                 : DialogActionRouteResult.notFound();
     }
 
+    private DialogActionRouteResult warpRenameResult(PlayerWarpResult result, String newName) {
+        return switch (result.status()) {
+            case UPDATED -> DialogActionRouteResult.message("Warp renamed to " + result.location().map(TeleportLocation::name).orElse(newName) + ".");
+            case NOT_FOUND -> DialogActionRouteResult.notFound();
+            case DUPLICATE_NAME -> namedUnknownAction("That warp name is already in use.");
+            case INVALID_NAME -> namedUnknownAction("That warp name is invalid.");
+            case CLAIM_DENIED -> DialogActionRouteResult.accessDenied();
+            default -> DialogActionRouteResult.unknownAction();
+        };
+    }
+
+    private DialogActionRouteResult shopRenameResult(ShopWarpResult result, String newName) {
+        return switch (result.status()) {
+            case UPDATED -> DialogActionRouteResult.message("Shop renamed to " + result.location().map(TeleportLocation::name).orElse(newName) + ".");
+            case NOT_FOUND -> DialogActionRouteResult.notFound();
+            case DUPLICATE_NAME -> namedUnknownAction("That shop name is already in use.");
+            case INVALID_NAME -> namedUnknownAction("That shop name is invalid.");
+            case CLAIM_DENIED -> DialogActionRouteResult.accessDenied();
+            default -> DialogActionRouteResult.unknownAction();
+        };
+    }
+
+    private DialogActionRouteResult warpRelocateResult(PlayerWarpResult result, String name) {
+        return switch (result.status()) {
+            case UPDATED -> DialogActionRouteResult.message("Warp " + name + " relocated.");
+            case NOT_FOUND -> DialogActionRouteResult.notFound();
+            case CLAIM_DENIED -> DialogActionRouteResult.accessDenied();
+            case DUPLICATE_NAME, INVALID_NAME -> DialogActionRouteResult.unknownAction();
+            default -> DialogActionRouteResult.unknownAction();
+        };
+    }
+
+    private DialogActionRouteResult shopRelocateResult(ShopWarpResult result, String name) {
+        return switch (result.status()) {
+            case UPDATED -> DialogActionRouteResult.message("Shop " + name + " relocated.");
+            case NOT_FOUND -> DialogActionRouteResult.notFound();
+            case CLAIM_DENIED -> DialogActionRouteResult.accessDenied();
+            case DUPLICATE_NAME, INVALID_NAME -> DialogActionRouteResult.unknownAction();
+            default -> DialogActionRouteResult.unknownAction();
+        };
+    }
+
     private DialogActionRouteResult outpostDeleteResult(OutpostResult result, String name) {
         return result.status() == OutpostResult.Status.DELETED
                 ? DialogActionRouteResult.message("Deleted outpost " + name + ".")
                 : DialogActionRouteResult.notFound();
+    }
+
+    private DialogActionRouteResult namedUnknownAction(String message) {
+        return new DialogActionRouteResult(
+                DialogActionRouteResult.Status.UNKNOWN_ACTION,
+                Optional.empty(),
+                Optional.empty(),
+                message
+        );
     }
 
     private Optional<TeleportLocation> resolve(UUID viewerId, String category, String name) {
@@ -425,5 +603,10 @@ public final class DialogActionRouter {
             case "outpost" -> outposts.resolveOutpost(viewerId, name);
             default -> Optional.empty();
         };
+    }
+
+    private Optional<TeleportLocation> resolveOwned(UUID viewerId, String category, String name) {
+        return resolve(viewerId, category, name)
+                .filter(location -> location.owner().playerIdOptional().filter(viewerId::equals).isPresent());
     }
 }

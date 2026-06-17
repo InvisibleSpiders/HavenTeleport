@@ -8,6 +8,7 @@ import com.nick.teleportlocations.dialog.PaperDialogPresenter;
 import com.nick.teleportlocations.limit.LimitService;
 import com.nick.teleportlocations.home.HomeResult;
 import com.nick.teleportlocations.home.HomeService;
+import com.nick.teleportlocations.location.LocationValidationException;
 import com.nick.teleportlocations.location.TeleportLocation;
 import com.nick.teleportlocations.outpost.OutpostResult;
 import com.nick.teleportlocations.outpost.OutpostService;
@@ -126,41 +127,45 @@ public final class PlayerLocationCommand implements CommandExecutor {
         }
 
         String commandName = command.getName().toLowerCase(Locale.ROOT);
-        switch (commandName) {
-            case "sethome" -> setHome(player, args);
-            case "home" -> teleportHome(player, args);
-            case "delhome" -> deleteHome(player, args);
-            case "mainhome" -> setMainHome(player, args);
-            case "homes" -> {
-                java.util.List<TeleportLocation> homeList = homes.listHomes(player.getUniqueId());
-                int maxHomes = limitService != null
-                        ? limitService.resolveEffectiveLimit(player.getUniqueId(), "home", homeSlotsPerLevel)
-                        : homeList.size();
-                presenter.show(player, dialogs.homesMenu(player.getUniqueId(), homeList, maxHomes));
+        try {
+            switch (commandName) {
+                case "sethome" -> setHome(player, args);
+                case "home" -> teleportHome(player, args);
+                case "delhome" -> deleteHome(player, args);
+                case "mainhome" -> setMainHome(player, args);
+                case "homes" -> {
+                    java.util.List<TeleportLocation> homeList = homes.listHomes(player.getUniqueId());
+                    int maxHomes = limitService != null
+                            ? limitService.resolveEffectiveLimit(player.getUniqueId(), "home", homeSlotsPerLevel)
+                            : homeList.size();
+                    presenter.show(player, dialogs.homesMenu(player.getUniqueId(), homeList, maxHomes));
+                }
+                case "setwarp" -> setWarp(player, args);
+                case "warp" -> teleportWarp(player, args);
+                case "delwarp" -> deleteWarp(player, args);
+                case "warps" -> presenter.show(player, dialogs.warpsMenu(
+                        player.getUniqueId(),
+                        serverWarps.visibleWarps(),
+                        warps.visibleWarps(player.getUniqueId()),
+                        location -> canEnter(player, location, false),
+                        hideInaccessibleDestinations
+                ));
+                case "setshop" -> setShop(player, args);
+                case "delshop" -> deleteShop(player, args);
+                case "shops" -> presenter.show(player, dialogs.shopWarpsMenu(
+                        player.getUniqueId(),
+                        shops.visibleShops(player.getUniqueId()),
+                        location -> canEnter(player, location, false),
+                        hideInaccessibleDestinations
+                ));
+                case "setoutpost" -> setOutpost(player, args);
+                case "outpost" -> teleportOutpost(player, args);
+                case "deloutpost" -> deleteOutpost(player, args);
+                case "spawn" -> teleportSpawn(player);
+                default -> player.sendMessage(Component.text(CommandMessages.playerUsage(), NamedTextColor.YELLOW));
             }
-            case "setwarp" -> setWarp(player, args);
-            case "warp" -> teleportWarp(player, args);
-            case "delwarp" -> deleteWarp(player, args);
-            case "warps" -> presenter.show(player, dialogs.warpsMenu(
-                    player.getUniqueId(),
-                    serverWarps.visibleWarps(),
-                    warps.visibleWarps(player.getUniqueId()),
-                    location -> canEnter(player, location, false),
-                    hideInaccessibleDestinations
-            ));
-            case "setshop" -> setShop(player, args);
-            case "delshop" -> deleteShop(player, args);
-            case "shops" -> presenter.show(player, dialogs.shopWarpsMenu(
-                    player.getUniqueId(),
-                    shops.visibleShops(player.getUniqueId()),
-                    location -> canEnter(player, location, false),
-                    hideInaccessibleDestinations
-            ));
-            case "setoutpost" -> setOutpost(player, args);
-            case "outpost" -> teleportOutpost(player, args);
-            case "deloutpost" -> deleteOutpost(player, args);
-            case "spawn" -> teleportSpawn(player);
-            default -> player.sendMessage(Component.text(CommandMessages.playerUsage(), NamedTextColor.YELLOW));
+        } catch (LocationValidationException exception) {
+            player.sendMessage(Component.text(exception.getMessage(), NamedTextColor.RED));
         }
         return true;
     }
@@ -378,6 +383,8 @@ public final class PlayerLocationCommand implements CommandExecutor {
             case DELETED -> player.sendMessage(Component.text("Warp " + name + " deleted.", NamedTextColor.GREEN));
             case NOT_FOUND -> player.sendMessage(Component.text("Warp " + name + " was not found.", NamedTextColor.RED));
             case LIMIT_REACHED -> player.sendMessage(Component.text("You have reached your player warp limit.", NamedTextColor.RED));
+            case DUPLICATE_NAME -> player.sendMessage(Component.text("Warp " + name + " already exists.", NamedTextColor.RED));
+            case INVALID_NAME -> player.sendMessage(Component.text("Location names cannot contain ':'.", NamedTextColor.RED));
             case CLAIM_DENIED -> player.sendMessage(Component.text("You cannot create a warp here.", NamedTextColor.RED));
         }
     }
@@ -389,6 +396,8 @@ public final class PlayerLocationCommand implements CommandExecutor {
             case DELETED -> player.sendMessage(Component.text("Shop " + name + " deleted.", NamedTextColor.GREEN));
             case NOT_FOUND -> player.sendMessage(Component.text("Shop " + name + " was not found.", NamedTextColor.RED));
             case LIMIT_REACHED -> player.sendMessage(Component.text("You have reached your shop warp limit.", NamedTextColor.RED));
+            case DUPLICATE_NAME -> player.sendMessage(Component.text("Shop " + name + " already exists.", NamedTextColor.RED));
+            case INVALID_NAME -> player.sendMessage(Component.text("Location names cannot contain ':'.", NamedTextColor.RED));
             case CLAIM_DENIED -> player.sendMessage(Component.text("You cannot create a shop warp here.", NamedTextColor.RED));
         }
     }

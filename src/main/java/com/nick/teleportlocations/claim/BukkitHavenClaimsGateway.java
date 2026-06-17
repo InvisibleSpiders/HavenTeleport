@@ -68,6 +68,12 @@ public final class BukkitHavenClaimsGateway implements HavenClaimsGateway {
                 .orElse(false);
     }
 
+    @Override
+    public boolean canVisitorsEnter(SavedPosition position) {
+        Location location = toLocation(position);
+        return location != null && api.canVisitorsEnter(location);
+    }
+
     private static Location toLocation(SavedPosition position) {
         Objects.requireNonNull(position, "position");
         World world = Bukkit.getWorld(position.worldId());

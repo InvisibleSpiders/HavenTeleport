@@ -35,6 +35,14 @@ final class LocationServiceTest {
         assertThat(service.mainHome(playerId)).isPresent();
     }
 
+    @Test
+    void findWithColonNameReturnsEmptyInsteadOfThrowing() {
+        UUID playerId = UUID.randomUUID();
+        LocationService service = new LocationService(new InMemoryLocationRepository(), () -> Instant.EPOCH);
+
+        assertThat(service.find(OwnerRef.player(playerId), "home", "market:west")).isEmpty();
+    }
+
     private static CreateLocationRequest request(UUID playerId, String category, String name, boolean mainHome) {
         return new CreateLocationRequest(
                 category,

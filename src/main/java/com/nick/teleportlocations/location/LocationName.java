@@ -10,4 +10,10 @@ public final class LocationName {
         String trimmed = input == null ? "" : input.trim().toLowerCase(Locale.ROOT);
         return trimmed.replaceAll("\\s+", "_");
     }
+
+    public static void validateForStorage(String normalizedName) {
+        if (normalizedName.contains(":")) {
+            throw new LocationValidationException("Location names cannot contain ':'.");
+        }
+    }
 }

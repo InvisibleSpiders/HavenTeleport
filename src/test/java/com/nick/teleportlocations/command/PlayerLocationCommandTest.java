@@ -2,6 +2,7 @@ package com.nick.teleportlocations.command;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.nick.teleportlocations.bukkit.BukkitLocations;
@@ -31,11 +32,14 @@ import com.nick.teleportlocations.teleport.TeleportSafetyService;
 import com.nick.teleportlocations.warp.PlayerWarpService;
 import java.time.Instant;
 import java.util.UUID;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.command.Command;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 final class PlayerLocationCommandTest {
     @Test
@@ -69,6 +73,23 @@ final class PlayerLocationCommandTest {
         fixture.command.onCommand(player, command, "setwarp", new String[] {"market"});
 
         assertThat(fixture.warps.ownerWarps(playerId)).extracting("name").containsExactly("market");
+    }
+
+    @Test
+    void setWarpCommandRejectsColonNameWithCleanMessage() {
+        Fixture fixture = Fixture.create();
+        UUID playerId = UUID.randomUUID();
+        World world = world("world");
+        Player player = playerAt(playerId, new Location(world, 1.0, 64.0, 2.0, 90.0f, 10.0f));
+        Command command = command("setwarp");
+
+        fixture.command.onCommand(player, command, "setwarp", new String[] {"market:west"});
+
+        assertThat(fixture.warps.ownerWarps(playerId)).isEmpty();
+        ArgumentCaptor<Component> message = ArgumentCaptor.forClass(Component.class);
+        verify(player).sendMessage(message.capture());
+        assertThat(PlainTextComponentSerializer.plainText().serialize(message.getValue()))
+                .isEqualTo("Location names cannot contain ':'.");
     }
 
     @Test

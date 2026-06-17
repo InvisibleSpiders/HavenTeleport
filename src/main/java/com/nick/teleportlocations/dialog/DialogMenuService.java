@@ -7,6 +7,7 @@ import com.nick.teleportlocations.location.TeleportLocation;
 import com.nick.teleportlocations.teleportblock.TeleportBlock;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 import java.util.function.Predicate;
 
@@ -117,6 +118,35 @@ public final class DialogMenuService {
     }
 
     public DialogMenuModel editMenu(TeleportLocation location) {
+        if ("player_warp".equals(location.category())) {
+            List<String> lines = List.of(
+                    "Name: " + location.name(),
+                    "Access: " + title(location.accessMode().name()),
+                    "Visibility: " + title(location.visibilityMode().name()),
+                    "Cost: " + title(location.cost().type().name())
+            );
+            List<DialogActionModel> actions = List.of(
+                    new DialogActionModel("show-access-menu:player_warp:" + location.normalizedName(), "Access"),
+                    new DialogActionModel("show-visibility-menu:player_warp:" + location.normalizedName(), "Visibility"),
+                    new DialogActionModel("show-cost-menu:player_warp:" + location.normalizedName(), "Cost"),
+                    new DialogActionModel("show-rename-menu:player_warp:" + location.normalizedName(), "Rename"),
+                    new DialogActionModel("relocate:player_warp:" + location.normalizedName(), "Relocate"),
+                    new DialogActionModel("show-delete-confirm:player_warp:" + location.normalizedName(), "Delete")
+            );
+            return new DialogMenuModel("Edit Player Warp", lines, actions);
+        }
+        if ("shop".equals(location.category())) {
+            List<String> lines = List.of(
+                    "Name: " + location.name(),
+                    "Location: " + locationSummary(location)
+            );
+            List<DialogActionModel> actions = List.of(
+                    new DialogActionModel("show-rename-menu:shop:" + location.normalizedName(), "Rename"),
+                    new DialogActionModel("relocate:shop:" + location.normalizedName(), "Relocate"),
+                    new DialogActionModel("show-delete-confirm:shop:" + location.normalizedName(), "Delete")
+            );
+            return new DialogMenuModel("Edit Shop", lines, actions);
+        }
         List<String> lines = new ArrayList<>();
         List<DialogActionModel> actions = new ArrayList<>();
         lines.add("Name: " + location.name());
@@ -126,27 +156,61 @@ public final class DialogMenuService {
         if ("home".equals(location.category())) {
             actions.add(new DialogActionModel("set-main:home:" + location.normalizedName(), "Set Main"));
         }
-        if ("player_warp".equals(location.category())) {
-            actions.add(new DialogActionModel("set-access:player_warp:" + location.normalizedName() + ":public", "Public"));
-            actions.add(new DialogActionModel("set-access:player_warp:" + location.normalizedName() + ":trusted", "Trusted"));
-            actions.add(new DialogActionModel("set-access:player_warp:" + location.normalizedName() + ":private", "Private"));
-            actions.add(new DialogActionModel("set-visibility:player_warp:" + location.normalizedName() + ":listed", "Listed"));
-            actions.add(new DialogActionModel("set-visibility:player_warp:" + location.normalizedName() + ":unlisted", "Unlisted"));
-            actions.add(new DialogActionModel("set-visibility:player_warp:" + location.normalizedName() + ":hidden", "Hidden"));
-            actions.add(new DialogActionModel("set-cost:player_warp:" + location.normalizedName() + ":free:0", "Free"));
-            actions.add(new DialogActionModel("set-cost:player_warp:" + location.normalizedName() + ":money:10", "$10"));
-            actions.add(new DialogActionModel("set-cost:player_warp:" + location.normalizedName() + ":money:50", "$50"));
-            actions.add(new DialogActionModel("set-cost:player_warp:" + location.normalizedName() + ":money:100", "$100"));
-            actions.add(new DialogActionModel("set-cost:player_warp:" + location.normalizedName() + ":xp-levels:5", "5 Levels"));
-            actions.add(new DialogActionModel("set-cost:player_warp:" + location.normalizedName() + ":xp-levels:10", "10 Levels"));
-            actions.add(new DialogActionModel("set-cost:player_warp:" + location.normalizedName() + ":xp-points:100", "100 XP"));
-            actions.add(new DialogActionModel("set-cost:player_warp:" + location.normalizedName() + ":xp-points:500", "500 XP"));
-            actions.add(new DialogActionModel("show-cost-editor:player_warp:" + location.normalizedName() + ":money", "Custom Money"));
-            actions.add(new DialogActionModel("show-cost-editor:player_warp:" + location.normalizedName() + ":xp-levels", "Custom Levels"));
-            actions.add(new DialogActionModel("show-cost-editor:player_warp:" + location.normalizedName() + ":xp-points", "Custom XP"));
-        }
         actions.add(new DialogActionModel("delete:" + location.category() + ":" + location.normalizedName(), "Delete"));
         return new DialogMenuModel("Edit " + title(location.category()), List.copyOf(lines), List.copyOf(actions));
+    }
+
+    public DialogMenuModel accessMenu(TeleportLocation location) {
+        List<String> lines = List.of(
+                "Name: " + location.name(),
+                "Access: " + title(location.accessMode().name())
+        );
+        List<DialogActionModel> actions = List.of(
+                new DialogActionModel("set-access:player_warp:" + location.normalizedName() + ":public", "Public"),
+                new DialogActionModel("set-access:player_warp:" + location.normalizedName() + ":trusted", "Trusted"),
+                new DialogActionModel("set-access:player_warp:" + location.normalizedName() + ":private", "Private")
+        );
+        return new DialogMenuModel("Access", lines, actions);
+    }
+
+    public DialogMenuModel visibilityMenu(TeleportLocation location) {
+        List<String> lines = List.of(
+                "Name: " + location.name(),
+                "Visibility: " + title(location.visibilityMode().name())
+        );
+        List<DialogActionModel> actions = List.of(
+                new DialogActionModel("set-visibility:player_warp:" + location.normalizedName() + ":listed", "Listed"),
+                new DialogActionModel("set-visibility:player_warp:" + location.normalizedName() + ":unlisted", "Unlisted"),
+                new DialogActionModel("set-visibility:player_warp:" + location.normalizedName() + ":hidden", "Hidden")
+        );
+        return new DialogMenuModel("Visibility", lines, actions);
+    }
+
+    public DialogMenuModel costMenu(TeleportLocation location) {
+        List<String> lines = List.of(
+                "Name: " + location.name(),
+                "Cost: " + title(location.cost().type().name())
+        );
+        return new DialogMenuModel("Cost", lines, costActions(location));
+    }
+
+    public DialogMenuModel renameMenu(TeleportLocation location) {
+        List<String> lines = List.of("Name: " + location.name());
+        List<DialogActionModel> actions = List.of(new DialogActionModel(
+                "rename-input:" + location.category() + ":" + location.normalizedName(),
+                "Rename"
+        ));
+        List<DialogInputModel> inputs = List.of(DialogInputModel.text("name", "Name", location.name(), 32));
+        return new DialogMenuModel("Rename " + title(location.category()), lines, actions, inputs);
+    }
+
+    public DialogMenuModel deleteConfirmMenu(TeleportLocation location) {
+        List<String> lines = List.of("Name: " + location.name());
+        List<DialogActionModel> actions = List.of(
+                new DialogActionModel("confirm-delete:" + location.category() + ":" + location.normalizedName(), "Confirm Delete"),
+                new DialogActionModel("cancel-delete:" + location.category() + ":" + location.normalizedName(), "Cancel")
+        );
+        return new DialogMenuModel("Delete " + title(location.category()), lines, actions);
     }
 
     public DialogMenuModel customCostMenu(TeleportLocation location, String costType) {
@@ -230,6 +294,34 @@ public final class DialogMenuService {
             case "xp-points" -> new DialogInputModel("amount", "XP Points", 0.0f, 100000.0f, 1.0f, 100.0f, "%.0f XP");
             default -> new DialogInputModel("amount", "Amount", 0.0f, 100000.0f, 1.0f, 0.0f, "%.0f");
         };
+    }
+
+    private List<DialogActionModel> costActions(TeleportLocation location) {
+        String normalizedName = location.normalizedName();
+        return List.of(
+                new DialogActionModel("set-cost:player_warp:" + normalizedName + ":free:0", "Free"),
+                new DialogActionModel("set-cost:player_warp:" + normalizedName + ":money:10", "$10"),
+                new DialogActionModel("set-cost:player_warp:" + normalizedName + ":money:50", "$50"),
+                new DialogActionModel("set-cost:player_warp:" + normalizedName + ":money:100", "$100"),
+                new DialogActionModel("set-cost:player_warp:" + normalizedName + ":xp-levels:5", "5 Levels"),
+                new DialogActionModel("set-cost:player_warp:" + normalizedName + ":xp-levels:10", "10 Levels"),
+                new DialogActionModel("set-cost:player_warp:" + normalizedName + ":xp-points:100", "100 XP"),
+                new DialogActionModel("set-cost:player_warp:" + normalizedName + ":xp-points:500", "500 XP"),
+                new DialogActionModel("show-cost-editor:player_warp:" + normalizedName + ":money", "Custom Money"),
+                new DialogActionModel("show-cost-editor:player_warp:" + normalizedName + ":xp-levels", "Custom Levels"),
+                new DialogActionModel("show-cost-editor:player_warp:" + normalizedName + ":xp-points", "Custom XP")
+        );
+    }
+
+    private String locationSummary(TeleportLocation location) {
+        return String.format(
+                Locale.ROOT,
+                "%s (%.0f, %.0f, %.0f)",
+                location.position().worldName(),
+                location.position().x(),
+                location.position().y(),
+                location.position().z()
+        );
     }
 
     private String title(String value) {

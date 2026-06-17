@@ -38,6 +38,18 @@ public final class CreationPolicyService {
         return ClaimAccess.allow();
     }
 
+    public ClaimAccess canCreatePublicShop(UUID playerId, SavedPosition position, boolean adminBypass) {
+        if (adminBypass) {
+            return ClaimAccess.allow();
+        }
+        if (!havenClaims.available()) {
+            return ClaimAccess.deny("havenclaims-missing");
+        }
+        return havenClaims.ownsClaimAt(playerId, position) && havenClaims.canVisitorsEnter(position)
+                ? ClaimAccess.allow()
+                : ClaimAccess.deny("claim-denied");
+    }
+
     private ClaimAccess handleMissing(CreationZone zone) {
         if (missingPolicy == MissingHavenClaimsPolicy.ALLOW) {
             return ClaimAccess.allow();

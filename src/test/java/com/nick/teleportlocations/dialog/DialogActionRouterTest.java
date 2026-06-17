@@ -1,8 +1,12 @@
 package com.nick.teleportlocations.dialog;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.nick.teleportlocations.admin.AdminBypassService;
+import com.nick.teleportlocations.bukkit.BukkitLocations;
 import com.nick.teleportlocations.claim.CreationPolicyService;
 import com.nick.teleportlocations.claim.HavenClaimsGateway;
 import com.nick.teleportlocations.claim.MissingHavenClaimsPolicy;
@@ -24,14 +28,24 @@ import com.nick.teleportlocations.outpost.OutpostService;
 import com.nick.teleportlocations.serverwarp.ServerWarpService;
 import com.nick.teleportlocations.shop.ShopWarpService;
 import com.nick.teleportlocations.storage.InMemoryLocationRepository;
+import com.nick.teleportlocations.teleport.ManagedTeleportService;
+import com.nick.teleportlocations.teleport.ScheduledTeleportService;
+import com.nick.teleportlocations.teleport.TeleportAccessService;
+import com.nick.teleportlocations.teleport.TeleportChargeService;
+import com.nick.teleportlocations.teleport.TeleportSafetyService;
 import com.nick.teleportlocations.teleportblock.InMemoryTeleportBlockRepository;
 import com.nick.teleportlocations.teleportblock.TeleportBlock;
 import com.nick.teleportlocations.teleportblock.TeleportBlockService;
 import com.nick.teleportlocations.warp.PlayerWarpService;
 import java.time.Instant;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import org.bukkit.Location;
+import org.bukkit.World;
+import org.bukkit.entity.Player;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 final class DialogActionRouterTest {
     @Test
@@ -106,6 +120,285 @@ final class DialogActionRouterTest {
 
         assertThat(result.status()).isEqualTo(DialogActionRouteResult.Status.MESSAGE);
         assertThat(fixture.shops.resolveVisibleShop(owner, "tools")).isEmpty();
+    }
+
+    @Test
+    void showDeleteConfirmActionDoesNotDeleteAndReturnsConfirmAndCancelActions() {
+        Fixture fixture = Fixture.create();
+        UUID owner = UUID.randomUUID();
+        fixture.shops.setShop(owner, "tools", position(), true);
+
+        DialogActionRouteResult result = fixture.router.route(owner, "show-delete-confirm:shop:tools");
+
+        assertThat(result.status()).isEqualTo(DialogActionRouteResult.Status.SHOW_MENU);
+        assertThat(result.menu()).isPresent();
+        assertThat(result.menu().orElseThrow().title()).isEqualTo("Delete Shop");
+        assertThat(actionKeys(result.menu().orElseThrow())).containsExactly(
+                "confirm-delete:shop:tools",
+                "cancel-delete:shop:tools"
+        );
+        assertThat(fixture.shops.resolveVisibleShop(owner, "tools")).isPresent();
+    }
+
+    @Test
+    void cancelDeleteActionDoesNotDeleteAndReturnsEditMenu() {
+        Fixture fixture = Fixture.create();
+        UUID owner = UUID.randomUUID();
+        fixture.shops.setShop(owner, "tools", position(), true);
+
+        DialogActionRouteResult result = fixture.router.route(owner, "cancel-delete:shop:tools");
+
+        assertThat(result.status()).isEqualTo(DialogActionRouteResult.Status.SHOW_MENU);
+        assertThat(result.menu()).isPresent();
+        assertThat(result.menu().orElseThrow().title()).isEqualTo("Edit Shop");
+        assertThat(fixture.shops.resolveVisibleShop(owner, "tools")).isPresent();
+    }
+
+    @Test
+    void confirmDeleteActionRemovesOwnedShop() {
+        Fixture fixture = Fixture.create();
+        UUID owner = UUID.randomUUID();
+        fixture.shops.setShop(owner, "tools", position(), true);
+
+        DialogActionRouteResult result = fixture.router.route(owner, "confirm-delete:shop:tools");
+
+        assertThat(result.status()).isEqualTo(DialogActionRouteResult.Status.MESSAGE);
+        assertThat(fixture.shops.resolveVisibleShop(owner, "tools")).isEmpty();
+    }
+
+    @Test
+    void malformedConfirmDeleteActionDoesNotDelete() {
+        Fixture fixture = Fixture.create();
+        UUID owner = UUID.randomUUID();
+        fixture.shops.setShop(owner, "tools", position(), true);
+
+        DialogActionRouteResult result = fixture.router.route(owner, "confirm-delete:shop:tools:anything");
+
+        assertThat(result.status()).isEqualTo(DialogActionRouteResult.Status.UNKNOWN_ACTION);
+        assertThat(fixture.shops.resolveVisibleShop(owner, "tools")).isPresent();
+    }
+
+    @Test
+    void malformedRenameInputActionDoesNotRename() {
+        Fixture fixture = Fixture.create();
+        UUID owner = UUID.randomUUID();
+        fixture.shops.setShop(owner, "tools", position(), true);
+
+        DialogActionRouteResult result = fixture.router.route(
+                owner,
+                "rename-input:shop:tools:anything",
+                textInput("name", "gear")
+        );
+
+        assertThat(result.status()).isEqualTo(DialogActionRouteResult.Status.UNKNOWN_ACTION);
+        assertThat(fixture.shops.resolveVisibleShop(owner, "tools")).isPresent();
+        assertThat(fixture.shops.resolveVisibleShop(owner, "gear")).isEmpty();
+    }
+
+    @Test
+    void malformedRelocateActionDoesNotMovePlayerWarp() {
+        Fixture fixture = Fixture.create();
+        UUID owner = UUID.randomUUID();
+        SavedPosition original = position();
+        fixture.warps.setWarp(owner, "market", original, true);
+
+        DialogActionRouteResult result = fixture.router.route(
+                owner,
+                "relocate:player_warp:market:anything",
+                DialogInputValues.empty(),
+                movedPosition(),
+                false
+        );
+
+        assertThat(result.status()).isEqualTo(DialogActionRouteResult.Status.UNKNOWN_ACTION);
+        assertThat(fixture.warps.resolveVisibleWarp(owner, "market").orElseThrow().position()).isEqualTo(original);
+    }
+
+    @Test
+    void nonOwnerDeleteConfirmationActionsDoNotDeleteTarget() {
+        Fixture fixture = Fixture.create();
+        UUID owner = UUID.randomUUID();
+        UUID visitor = UUID.randomUUID();
+        fixture.shops.setShop(owner, "tools", position(), true);
+
+        DialogActionRouteResult show = fixture.router.route(visitor, "show-delete-confirm:shop:tools");
+        DialogActionRouteResult cancel = fixture.router.route(visitor, "cancel-delete:shop:tools");
+        DialogActionRouteResult confirm = fixture.router.route(visitor, "confirm-delete:shop:tools");
+
+        assertThat(show.status()).isEqualTo(DialogActionRouteResult.Status.NOT_FOUND);
+        assertThat(cancel.status()).isEqualTo(DialogActionRouteResult.Status.NOT_FOUND);
+        assertThat(confirm.status()).isEqualTo(DialogActionRouteResult.Status.NOT_FOUND);
+        assertThat(fixture.shops.resolveVisibleShop(owner, "tools")).isPresent();
+    }
+
+    @Test
+    void playerWarpSubmenuActionsReturnTheirMenus() {
+        Fixture fixture = Fixture.create();
+        UUID owner = UUID.randomUUID();
+        fixture.warps.setWarp(owner, "market", position(), true);
+
+        DialogActionRouteResult access = fixture.router.route(owner, "show-access-menu:player_warp:market");
+        DialogActionRouteResult visibility = fixture.router.route(owner, "show-visibility-menu:player_warp:market");
+        DialogActionRouteResult cost = fixture.router.route(owner, "show-cost-menu:player_warp:market");
+        DialogActionRouteResult rename = fixture.router.route(owner, "show-rename-menu:player_warp:market");
+
+        assertThat(access.status()).isEqualTo(DialogActionRouteResult.Status.SHOW_MENU);
+        assertThat(access.menu().orElseThrow().title()).isEqualTo("Access");
+        assertThat(visibility.status()).isEqualTo(DialogActionRouteResult.Status.SHOW_MENU);
+        assertThat(visibility.menu().orElseThrow().title()).isEqualTo("Visibility");
+        assertThat(cost.status()).isEqualTo(DialogActionRouteResult.Status.SHOW_MENU);
+        assertThat(cost.menu().orElseThrow().title()).isEqualTo("Cost");
+        assertThat(rename.status()).isEqualTo(DialogActionRouteResult.Status.SHOW_MENU);
+        assertThat(rename.menu().orElseThrow().title()).isEqualTo("Rename Player Warp");
+    }
+
+    @Test
+    void renameInputRenamesPlayerWarpAndShopFromTextInput() {
+        Fixture fixture = Fixture.create();
+        UUID owner = UUID.randomUUID();
+        fixture.warps.setWarp(owner, "market", position(), true);
+        fixture.shops.setShop(owner, "tools", position(), true);
+
+        DialogActionRouteResult warpResult = fixture.router.route(owner, "rename-input:player_warp:market", textInput("name", "bazaar"));
+        DialogActionRouteResult shopResult = fixture.router.route(owner, "rename-input:shop:tools", textInput("name", "gear"));
+
+        assertThat(warpResult.status()).isEqualTo(DialogActionRouteResult.Status.MESSAGE);
+        assertThat(warpResult.message()).isEqualTo("Warp renamed to bazaar.");
+        assertThat(shopResult.status()).isEqualTo(DialogActionRouteResult.Status.MESSAGE);
+        assertThat(shopResult.message()).isEqualTo("Shop renamed to gear.");
+        assertThat(fixture.warps.resolveVisibleWarp(owner, "bazaar")).isPresent();
+        assertThat(fixture.warps.resolveVisibleWarp(owner, "market")).isEmpty();
+        assertThat(fixture.shops.resolveVisibleShop(owner, "gear")).isPresent();
+        assertThat(fixture.shops.resolveVisibleShop(owner, "tools")).isEmpty();
+    }
+
+    @Test
+    void renameInputReportsDuplicateAndInvalidNames() {
+        Fixture fixture = Fixture.create();
+        UUID owner = UUID.randomUUID();
+        fixture.limits.setLimit(owner, "player_warp", 2);
+        fixture.limits.setLimit(owner, "shop", 2);
+        fixture.warps.setWarp(owner, "market", position(), true);
+        fixture.warps.setWarp(owner, "bazaar", position(), true);
+        fixture.shops.setShop(owner, "tools", position(), true);
+        fixture.shops.setShop(owner, "gear", position(), true);
+
+        DialogActionRouteResult duplicateWarp = fixture.router.route(owner, "rename-input:player_warp:market", textInput("name", "bazaar"));
+        DialogActionRouteResult invalidWarp = fixture.router.route(owner, "rename-input:player_warp:market", textInput("name", "market:west"));
+        DialogActionRouteResult duplicateShop = fixture.router.route(owner, "rename-input:shop:tools", textInput("name", "gear"));
+        DialogActionRouteResult invalidShop = fixture.router.route(owner, "rename-input:shop:tools", textInput("name", "tools:west"));
+
+        assertThat(duplicateWarp.status()).isEqualTo(DialogActionRouteResult.Status.UNKNOWN_ACTION);
+        assertThat(duplicateWarp.message()).isEqualTo("That warp name is already in use.");
+        assertThat(invalidWarp.status()).isEqualTo(DialogActionRouteResult.Status.UNKNOWN_ACTION);
+        assertThat(invalidWarp.message()).isEqualTo("That warp name is invalid.");
+        assertThat(duplicateShop.status()).isEqualTo(DialogActionRouteResult.Status.UNKNOWN_ACTION);
+        assertThat(duplicateShop.message()).isEqualTo("That shop name is already in use.");
+        assertThat(invalidShop.status()).isEqualTo(DialogActionRouteResult.Status.UNKNOWN_ACTION);
+        assertThat(invalidShop.message()).isEqualTo("That shop name is invalid.");
+    }
+
+    @Test
+    void relocatePlayerWarpUsesProvidedCurrentPosition() {
+        Fixture fixture = Fixture.create();
+        UUID owner = UUID.randomUUID();
+        SavedPosition moved = movedPosition();
+        fixture.warps.setWarp(owner, "market", position(), true);
+
+        DialogActionRouteResult result = fixture.router.route(
+                owner,
+                "relocate:player_warp:market",
+                DialogInputValues.empty(),
+                moved,
+                false
+        );
+
+        assertThat(result.status()).isEqualTo(DialogActionRouteResult.Status.MESSAGE);
+        assertThat(result.message()).isEqualTo("Warp market relocated.");
+        assertThat(fixture.warps.resolveVisibleWarp(owner, "market").orElseThrow().position()).isEqualTo(moved);
+    }
+
+    @Test
+    void relocateShopRequiresOwnedPublicClaimPolicy() {
+        UUID owner = UUID.randomUUID();
+        SavedPosition original = position();
+        SavedPosition moved = movedPosition();
+        Fixture allowed = Fixture.create(HavenClaimsGateway.fixedOwned(true, true, true));
+        allowed.shops.setShop(owner, "tools", original, true);
+        Fixture denied = Fixture.create(HavenClaimsGateway.fixedOwned(true, true, false));
+        denied.shops.setShop(owner, "tools", original, true);
+
+        DialogActionRouteResult allowedResult = allowed.router.route(
+                owner,
+                "relocate:shop:tools",
+                DialogInputValues.empty(),
+                moved,
+                false
+        );
+        DialogActionRouteResult deniedResult = denied.router.route(
+                owner,
+                "relocate:shop:tools",
+                DialogInputValues.empty(),
+                moved,
+                false
+        );
+
+        assertThat(allowedResult.status()).isEqualTo(DialogActionRouteResult.Status.MESSAGE);
+        assertThat(allowed.shops.resolveVisibleShop(owner, "tools").orElseThrow().position()).isEqualTo(moved);
+        assertThat(deniedResult.status()).isEqualTo(DialogActionRouteResult.Status.ACCESS_DENIED);
+        assertThat(denied.shops.resolveVisibleShop(owner, "tools").orElseThrow().position()).isEqualTo(original);
+    }
+
+    @Test
+    void executorRoutesWithPlayerCurrentPositionAndCreationBypassPermission() {
+        DialogActionRouter router = mock(DialogActionRouter.class);
+        PaperDialogPresenter presenter = mock(PaperDialogPresenter.class);
+        Player player = mock(Player.class);
+        Location location = mock(Location.class);
+        World world = mock(World.class);
+        UUID playerId = UUID.randomUUID();
+        UUID worldId = UUID.randomUUID();
+        when(player.getUniqueId()).thenReturn(playerId);
+        when(player.getLocation()).thenReturn(location);
+        when(player.hasPermission("teleportlocations.admin.bypass.creation")).thenReturn(true);
+        when(location.getWorld()).thenReturn(world);
+        when(world.getUID()).thenReturn(worldId);
+        when(world.getName()).thenReturn("world");
+        when(location.getX()).thenReturn(4.0);
+        when(location.getY()).thenReturn(70.0);
+        when(location.getZ()).thenReturn(5.0);
+        when(location.getYaw()).thenReturn(180.0f);
+        when(location.getPitch()).thenReturn(10.0f);
+        DialogInputValues inputValues = DialogInputValues.empty();
+        when(router.route(
+                org.mockito.Mockito.eq(playerId),
+                org.mockito.Mockito.eq("relocate:player_warp:market"),
+                org.mockito.Mockito.eq(inputValues),
+                org.mockito.Mockito.any(),
+                org.mockito.Mockito.eq(true)
+        )).thenReturn(DialogActionRouteResult.unknownAction());
+        DialogActionExecutor executor = new DialogActionExecutor(
+                router,
+                presenter,
+                mock(TeleportChargeService.class),
+                mock(TeleportAccessService.class),
+                mock(TeleportSafetyService.class),
+                new AdminBypassService(),
+                mock(ManagedTeleportService.class),
+                mock(ScheduledTeleportService.class)
+        );
+
+        executor.handle(player, "relocate:player_warp:market", inputValues);
+
+        ArgumentCaptor<SavedPosition> position = ArgumentCaptor.forClass(SavedPosition.class);
+        verify(router).route(
+                org.mockito.Mockito.eq(playerId),
+                org.mockito.Mockito.eq("relocate:player_warp:market"),
+                org.mockito.Mockito.eq(inputValues),
+                position.capture(),
+                org.mockito.Mockito.eq(true)
+        );
+        assertThat(position.getValue()).isEqualTo(BukkitLocations.save(location));
     }
 
     @Test
@@ -314,6 +607,28 @@ final class DialogActionRouterTest {
         return new SavedPosition(UUID.randomUUID(), "world", 1.0, 64.0, 2.0, 90.0f, 0.0f);
     }
 
+    private static SavedPosition movedPosition() {
+        return new SavedPosition(UUID.randomUUID(), "world", 4.0, 70.0, 5.0, 180.0f, 10.0f);
+    }
+
+    private static List<String> actionKeys(DialogMenuModel menu) {
+        return menu.actions().stream().map(DialogActionModel::key).toList();
+    }
+
+    private static DialogInputValues textInput(String inputKey, String value) {
+        return new DialogInputValues() {
+            @Override
+            public Float getFloat(String key) {
+                return null;
+            }
+
+            @Override
+            public String getText(String key) {
+                return inputKey.equals(key) ? value : null;
+            }
+        };
+    }
+
     private record Fixture(
             DialogActionRouter router,
             HomeService homes,
@@ -323,6 +638,7 @@ final class DialogActionRouterTest {
             ServerWarpService serverWarps,
             ElevatorService elevators,
             TeleportBlockService teleportBlocks,
+            LimitService limits,
             AdminBypassService bypass
     ) {
         private static Fixture create() {
@@ -330,13 +646,21 @@ final class DialogActionRouterTest {
         }
 
         private static Fixture create(Set<String> permissions) {
+            return create(permissions, HavenClaimsGateway.fixed(false, true));
+        }
+
+        private static Fixture create(HavenClaimsGateway havenClaims) {
+            return create(Set.of(), havenClaims);
+        }
+
+        private static Fixture create(Set<String> permissions, HavenClaimsGateway havenClaims) {
             PluginConfig config = ConfigLoader.fromResources();
             InMemoryLocationRepository locations = new InMemoryLocationRepository();
             LocationService locationService = new LocationService(locations, () -> Instant.EPOCH);
             LimitService limitService = new LimitService(config.categories(), new InMemoryLimitRepository());
             CreationPolicyService creationPolicy = new CreationPolicyService(
                     config.categories(),
-                    HavenClaimsGateway.fixed(false, true),
+                    havenClaims,
                     MissingHavenClaimsPolicy.DENY_CLAIM_REQUIRED
             );
             HomeService homeService = new HomeService(locationService, limitService, creationPolicy);
@@ -377,6 +701,7 @@ final class DialogActionRouterTest {
                     serverWarpService,
                     elevatorService,
                     teleportBlockService,
+                    limitService,
                     bypassService
             );
         }

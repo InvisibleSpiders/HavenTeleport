@@ -20,6 +20,9 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
 final class ShopWarpServiceTest {
+    private static final UUID WORLD_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
+    private static final UUID MOVED_WORLD_ID = UUID.fromString("00000000-0000-0000-0000-000000000002");
+
     @Test
     void createsFreePublicListedShopWarp() {
         Fixture fixture = Fixture.create(HavenClaimsGateway.fixed(true, true));
@@ -60,6 +63,21 @@ final class ShopWarpServiceTest {
     }
 
     @Test
+    void rejectsInvalidShopNamesWithoutThrowing() {
+        Fixture fixture = Fixture.create(HavenClaimsGateway.fixedOwned(true, true, true));
+        UUID owner = UUID.randomUUID();
+        fixture.service.setShop(owner, "tools", position(), false);
+
+        ShopWarpResult create = fixture.service.setShop(owner, "tools:west", movedPosition(), false);
+        ShopWarpResult rename = fixture.service.rename(owner, "tools", "tools:west");
+
+        assertThat(create.status()).isEqualTo(ShopWarpResult.Status.INVALID_NAME);
+        assertThat(rename.status()).isEqualTo(ShopWarpResult.Status.INVALID_NAME);
+        assertThat(fixture.service.ownerShops(owner)).extracting("name").containsExactly("tools");
+        assertThat(fixture.service.resolveVisibleShop(owner, "tools:west")).isEmpty();
+    }
+
+    @Test
     void resolvesVisibleShopAndDeletesOwnShop() {
         Fixture fixture = Fixture.create(HavenClaimsGateway.fixed(true, true));
         UUID owner = UUID.randomUUID();
@@ -71,12 +89,111 @@ final class ShopWarpServiceTest {
         assertThat(fixture.service.resolveVisibleShop(viewer, "tools")).isEmpty();
     }
 
+    @Test
+    void renamesShopWithoutChangingForcedSettings() {
+        Fixture fixture = Fixture.create(HavenClaimsGateway.fixedOwned(true, true, true));
+        UUID owner = UUID.randomUUID();
+        fixture.service.setShop(owner, "tools", position(), false);
+
+        ShopWarpResult result = fixture.service.rename(owner, "tools", "gear");
+
+        assertThat(result.status()).isEqualTo(ShopWarpResult.Status.UPDATED);
+        assertThat(fixture.service.resolveVisibleShop(owner, "tools")).isEmpty();
+        assertThat(fixture.service.resolveVisibleShop(owner, "gear")).isPresent();
+        assertThat(fixture.service.resolveVisibleShop(owner, "gear").orElseThrow().accessMode()).isEqualTo(AccessMode.PUBLIC);
+        assertThat(fixture.service.resolveVisibleShop(owner, "gear").orElseThrow().visibilityMode()).isEqualTo(VisibilityMode.LISTED);
+    }
+
+    @Test
+    void renameShopRejectsMissingAndDuplicateNames() {
+        Fixture fixture = Fixture.create(HavenClaimsGateway.fixedOwned(true, true, true));
+        UUID owner = UUID.randomUUID();
+        fixture.limits.setLimit(owner, "shop", 2);
+        fixture.service.setShop(owner, "tools", position(), false);
+        fixture.service.setShop(owner, "gear", movedPosition(), false);
+
+        ShopWarpResult missing = fixture.service.rename(owner, "unknown", "new-name");
+        ShopWarpResult duplicate = fixture.service.rename(owner, "tools", "gear");
+
+        assertThat(missing.status()).isEqualTo(ShopWarpResult.Status.NOT_FOUND);
+        assertThat(duplicate.status()).isEqualTo(ShopWarpResult.Status.DUPLICATE_NAME);
+        assertThat(fixture.service.resolveVisibleShop(owner, "tools")).isPresent();
+        assertThat(fixture.service.resolveVisibleShop(owner, "gear").orElseThrow().position()).isEqualTo(movedPosition());
+    }
+
+    @Test
+    void renameShopAllowsSameNormalizedName() {
+        Fixture fixture = Fixture.create(HavenClaimsGateway.fixedOwned(true, true, true));
+        UUID owner = UUID.randomUUID();
+        fixture.service.setShop(owner, "tools", position(), false);
+
+        ShopWarpResult result = fixture.service.rename(owner, "tools", "Tools");
+
+        assertThat(result.status()).isEqualTo(ShopWarpResult.Status.UPDATED);
+        assertThat(fixture.service.resolveVisibleShop(owner, "tools")).isPresent();
+        assertThat(fixture.service.ownerShops(owner)).hasSize(1);
+        assertThat(fixture.service.ownerShops(owner).getFirst().name()).isEqualTo("Tools");
+        assertThat(fixture.service.ownerShops(owner).getFirst().accessMode()).isEqualTo(AccessMode.PUBLIC);
+        assertThat(fixture.service.ownerShops(owner).getFirst().visibilityMode()).isEqualTo(VisibilityMode.LISTED);
+    }
+
+    @Test
+    void relocateShopRequiresOwnedPubliclyAccessibleClaim() {
+        Fixture allowed = Fixture.create(HavenClaimsGateway.fixedOwned(true, true, true));
+        UUID owner = UUID.randomUUID();
+        allowed.service.setShop(owner, "tools", position(), false);
+
+        ShopWarpResult result = allowed.service.relocate(owner, "tools", movedPosition(), false);
+
+        assertThat(result.status()).isEqualTo(ShopWarpResult.Status.UPDATED);
+        assertThat(allowed.service.resolveVisibleShop(owner, "tools").orElseThrow().position()).isEqualTo(movedPosition());
+    }
+
+    @Test
+    void relocateShopRejectsUnownedOrPrivateClaimAndWilderness() {
+        UUID owner = UUID.randomUUID();
+        Fixture unowned = Fixture.create(HavenClaimsGateway.fixedOwned(true, true, false));
+        unowned.service.setShop(owner, "tools", position(), true);
+        Fixture privateClaim = Fixture.create(HavenClaimsGateway.fixedOwned(true, false, true));
+        privateClaim.service.setShop(owner, "tools", position(), true);
+        Fixture wilderness = Fixture.create(HavenClaimsGateway.fixedOwned(false, false, false));
+        wilderness.service.setShop(owner, "tools", position(), true);
+
+        assertThat(unowned.service.relocate(owner, "tools", movedPosition(), false).status()).isEqualTo(ShopWarpResult.Status.CLAIM_DENIED);
+        assertThat(privateClaim.service.relocate(owner, "tools", movedPosition(), false).status()).isEqualTo(ShopWarpResult.Status.CLAIM_DENIED);
+        assertThat(wilderness.service.relocate(owner, "tools", movedPosition(), false).status()).isEqualTo(ShopWarpResult.Status.CLAIM_DENIED);
+    }
+
+    @Test
+    void relocateShopDeniesWhenHavenClaimsMissing() {
+        Fixture fixture = Fixture.create(HavenClaimsGateway.missing());
+        UUID owner = UUID.randomUUID();
+        fixture.service.setShop(owner, "tools", position(), true);
+
+        ShopWarpResult result = fixture.service.relocate(owner, "tools", movedPosition(), false);
+
+        assertThat(result.status()).isEqualTo(ShopWarpResult.Status.CLAIM_DENIED);
+        assertThat(result.messageKey()).isEqualTo("havenclaims-missing");
+    }
+
+    @Test
+    void relocateShopAllowsAdminBypassWhenClaimChecksFail() {
+        Fixture fixture = Fixture.create(HavenClaimsGateway.fixedOwned(false, false, false));
+        UUID owner = UUID.randomUUID();
+        fixture.service.setShop(owner, "tools", position(), true);
+
+        ShopWarpResult result = fixture.service.relocate(owner, "tools", movedPosition(), true);
+
+        assertThat(result.status()).isEqualTo(ShopWarpResult.Status.UPDATED);
+        assertThat(fixture.service.resolveVisibleShop(owner, "tools").orElseThrow().position()).isEqualTo(movedPosition());
+    }
+
     private static SavedPosition position() {
-        return new SavedPosition(UUID.randomUUID(), "world", 1.0, 64.0, 2.0, 90.0f, 0.0f);
+        return new SavedPosition(WORLD_ID, "world", 1.0, 64.0, 2.0, 90.0f, 0.0f);
     }
 
     private static SavedPosition movedPosition() {
-        return new SavedPosition(UUID.randomUUID(), "world", 4.0, 70.0, 5.0, 180.0f, 10.0f);
+        return new SavedPosition(MOVED_WORLD_ID, "world", 4.0, 70.0, 5.0, 180.0f, 10.0f);
     }
 
     private record Fixture(ShopWarpService service, LimitService limits) {
