@@ -18,13 +18,13 @@ tasks.withType<JavaCompile>().configureEach {
 
 dependencies {
     compileOnly("io.papermc.paper:paper-api:26.1.2.build.69-stable")
-    compileOnly("dev.invisiblespiders.haven:haven-api:1.0.2")
+    compileOnly("dev.invisiblespiders.haven:haven-api:1.0.3")
     compileOnly("com.invisiblespiders:havenclaims-api:1.7.0-SNAPSHOT")
 
     testImplementation("org.junit.jupiter:junit-jupiter:5.12.2")
     testImplementation("org.assertj:assertj-core:3.27.3")
     testImplementation("org.mockito:mockito-core:5.18.0")
-    testImplementation("dev.invisiblespiders.haven:haven-api:1.0.2")
+    testImplementation("dev.invisiblespiders.haven:haven-api:1.0.3")
     testImplementation("com.invisiblespiders:havenclaims-api:1.7.0-SNAPSHOT")
     testImplementation("io.papermc.paper:paper-api:26.1.2.build.69-stable")
     testRuntimeOnly("org.xerial:sqlite-jdbc:3.49.1.0")
