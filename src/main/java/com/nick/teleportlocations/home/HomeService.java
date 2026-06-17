@@ -95,7 +95,7 @@ public final class HomeService {
     }
 
     private boolean reachedLimit(UUID playerId, int existingHomes) {
-        int limit = limits.resolveLimit(playerId, CATEGORY);
+        int limit = limits.resolveEffectiveLimit(playerId, CATEGORY);
         return limit >= 0 && existingHomes >= limit;
     }
 }

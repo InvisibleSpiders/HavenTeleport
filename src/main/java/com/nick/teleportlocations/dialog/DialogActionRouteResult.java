@@ -13,6 +13,7 @@ public record DialogActionRouteResult(
         TELEPORT,
         SHOW_MENU,
         MESSAGE,
+        ADD_HOME,
         NOT_FOUND,
         ACCESS_DENIED,
         UNKNOWN_ACTION
@@ -28,6 +29,10 @@ public record DialogActionRouteResult(
 
     public static DialogActionRouteResult message(String message) {
         return new DialogActionRouteResult(Status.MESSAGE, Optional.empty(), Optional.empty(), message);
+    }
+
+    public static DialogActionRouteResult addHome() {
+        return new DialogActionRouteResult(Status.ADD_HOME, Optional.empty(), Optional.empty(), "");
     }
 
     public static DialogActionRouteResult notFound() {

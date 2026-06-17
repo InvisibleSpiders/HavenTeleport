@@ -6,6 +6,7 @@ import com.nick.teleportlocations.elevator.ElevatorBlock;
 import com.nick.teleportlocations.elevator.ElevatorParticle;
 import com.nick.teleportlocations.location.AccessMode;
 import com.nick.teleportlocations.location.CostSpec;
+import com.nick.teleportlocations.location.LocationName;
 import com.nick.teleportlocations.location.OwnerRef;
 import com.nick.teleportlocations.location.SavedPosition;
 import com.nick.teleportlocations.location.TeleportLocation;
@@ -18,14 +19,96 @@ import org.junit.jupiter.api.Test;
 
 final class DialogMenuServiceTest {
     @Test
-    void homesMenuIncludesTeleportAndEditForOwner() {
+    void homesMenuShowsTitleAndViewActionPerHome() {
         UUID owner = UUID.randomUUID();
         DialogMenuService service = new DialogMenuService();
 
-        DialogMenuModel model = service.homesMenu(owner, List.of(location(owner)));
+        DialogMenuModel model = service.homesMenu(owner, List.of(location(owner)), 5);
 
         assertThat(model.title()).isEqualTo("Homes");
-        assertThat(model.actions()).extracting(DialogActionModel::key).contains("teleport:home:base", "edit:home:base");
+        assertThat(model.actions()).extracting(DialogActionModel::key).contains("view:home:base");
+    }
+
+    @Test
+    void homesMenuBodyShowsSlotCount() {
+        UUID owner = UUID.randomUUID();
+        DialogMenuService service = new DialogMenuService();
+        List<TeleportLocation> twoHomes = List.of(location(owner), location(owner, "home", "cave"));
+
+        DialogMenuModel model = service.homesMenu(owner, twoHomes, 5);
+
+        assertThat(model.lines()).contains("Homes (2/5)");
+    }
+
+    @Test
+    void mainHomeHasStarPrefix() {
+        UUID owner = UUID.randomUUID();
+        DialogMenuService service = new DialogMenuService();
+        TeleportLocation main = mainHome(owner, "castle");
+
+        DialogMenuModel model = service.homesMenu(owner, List.of(main), 5);
+
+        assertThat(model.actions()).extracting(DialogActionModel::label)
+                .anyMatch(label -> label.contains("★") && label.contains("castle"));
+    }
+
+    @Test
+    void nonMainHomeHasNoStar() {
+        UUID owner = UUID.randomUUID();
+        DialogMenuService service = new DialogMenuService();
+        TeleportLocation home = nonMainHome(owner, "mine");
+
+        DialogMenuModel model = service.homesMenu(owner, List.of(home), 5);
+
+        assertThat(model.actions()).extracting(DialogActionModel::label)
+                .filteredOn(label -> label.equals("mine"))
+                .isNotEmpty();
+        assertThat(model.actions()).extracting(DialogActionModel::label)
+                .noneMatch(label -> label.contains("★") && label.contains("mine"));
+    }
+
+    @Test
+    void addHomeButtonAlwaysPresent() {
+        UUID owner = UUID.randomUUID();
+        DialogMenuService service = new DialogMenuService();
+
+        DialogMenuModel model = service.homesMenu(owner, List.of(), 5);
+
+        assertThat(model.actions()).extracting(DialogActionModel::label)
+                .anyMatch(label -> label.contains("Add Home"));
+    }
+
+    @Test
+    void addHomeButtonIsCapWhenFull() {
+        UUID owner = UUID.randomUUID();
+        DialogMenuService service = new DialogMenuService();
+        List<TeleportLocation> homes = List.of(
+                mainHome(owner, "home-1"),
+                nonMainHome(owner, "home-2"),
+                nonMainHome(owner, "home-3")
+        );
+
+        DialogMenuModel model = service.homesMenu(owner, homes, 3);
+
+        assertThat(model.actions()).extracting(DialogActionModel::key)
+                .filteredOn(key -> key.equals("homes:cap"))
+                .isNotEmpty();
+    }
+
+    @Test
+    void addHomeButtonIsAddWhenNotFull() {
+        UUID owner = UUID.randomUUID();
+        DialogMenuService service = new DialogMenuService();
+        List<TeleportLocation> homes = List.of(
+                mainHome(owner, "home-1"),
+                nonMainHome(owner, "home-2")
+        );
+
+        DialogMenuModel model = service.homesMenu(owner, homes, 3);
+
+        assertThat(model.actions()).extracting(DialogActionModel::key)
+                .filteredOn(key -> key.equals("homes:add"))
+                .isNotEmpty();
     }
 
     @Test
@@ -352,16 +435,52 @@ final class DialogMenuServiceTest {
     }
 
     private static TeleportLocation location(UUID owner, String category) {
+        return location(owner, category, "base");
+    }
+
+    private static TeleportLocation location(UUID owner, String category, String name) {
         return TeleportLocation.create(
                 UUID.randomUUID(),
                 category,
                 OwnerRef.player(owner),
-                "base",
+                name,
                 new SavedPosition(UUID.randomUUID(), "world", 0.0, 64.0, 0.0, 0.0f, 0.0f),
                 AccessMode.PRIVATE,
                 VisibilityMode.HIDDEN,
                 CostSpec.free(),
                 "home".equals(category),
+                Instant.EPOCH
+        );
+    }
+
+    private static TeleportLocation mainHome(UUID owner, String name) {
+        return TeleportLocation.create(
+                UUID.randomUUID(),
+                "home",
+                OwnerRef.player(owner),
+                name,
+                new SavedPosition(UUID.randomUUID(), "world", 0.0, 64.0, 0.0, 0.0f, 0.0f),
+                AccessMode.PRIVATE,
+                VisibilityMode.HIDDEN,
+                CostSpec.free(),
+                true,
+                Instant.EPOCH
+        );
+    }
+
+    private static TeleportLocation nonMainHome(UUID owner, String name) {
+        return new TeleportLocation(
+                UUID.randomUUID(),
+                "home",
+                OwnerRef.player(owner),
+                name,
+                LocationName.normalize(name),
+                new SavedPosition(UUID.randomUUID(), "world", 0.0, 64.0, 0.0, 0.0f, 0.0f),
+                AccessMode.PRIVATE,
+                VisibilityMode.HIDDEN,
+                CostSpec.free(),
+                false,
+                Instant.EPOCH,
                 Instant.EPOCH
         );
     }

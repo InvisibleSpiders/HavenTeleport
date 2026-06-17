@@ -176,7 +176,7 @@ public final class PlayerWarpService {
     }
 
     private boolean reachedLimit(UUID ownerId, int existingWarps) {
-        int limit = limits.resolveLimit(ownerId, CATEGORY);
+        int limit = limits.resolveEffectiveLimit(ownerId, CATEGORY);
         return limit >= 0 && existingWarps >= limit;
     }
 

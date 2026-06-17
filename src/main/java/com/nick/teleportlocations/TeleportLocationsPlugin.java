@@ -22,10 +22,12 @@ import com.nick.teleportlocations.teleport.ManagedTeleportService;
 import com.nick.teleportlocations.teleport.ScheduledTeleportService;
 import com.nick.teleportlocations.teleport.effect.BukkitTeleportEffectService;
 import com.nick.teleportlocations.tpa.TeleportWarmupService;
+import com.nick.teleportlocations.upgrade.TeleportUpgradeProvider;
 import dev.invisiblespiders.haven.api.HavenAPI;
 import dev.invisiblespiders.haven.api.service.HavenDataSource;
 import dev.invisiblespiders.haven.api.service.HavenEconomyService;
 import dev.invisiblespiders.haven.api.service.HavenWarpService;
+import dev.invisiblespiders.haven.api.upgrade.HavenUpgradeService;
 import java.io.File;
 import java.time.Instant;
 import org.bukkit.entity.Player;
@@ -37,6 +39,7 @@ public final class TeleportLocationsPlugin extends JavaPlugin {
     private RuntimeServices services;
     private BukkitTask elevatorParticleTask;
     private ManagedTeleportService managedTeleports;
+    private HavenUpgradeService upgradeService;
 
     @Override
     public void onEnable() {
@@ -49,6 +52,20 @@ public final class TeleportLocationsPlugin extends JavaPlugin {
                 BukkitHavenClaimsGateway.discover(getServer().getServicesManager()),
                 getClassLoader()
         );
+        services.limitService().setUpgradeSlots(
+                services.config().homeSlotsPerLevel(),
+                services.config().warpSlotsPerLevel(),
+                services.config().shopSlotsPerLevel()
+        );
+        upgradeService = HavenAPI.optional(HavenUpgradeService.class).orElse(null);
+        if (upgradeService != null) {
+            HavenEconomyService economy = HavenAPI.optional(HavenEconomyService.class).orElse(null);
+            upgradeService.registerProvider(new TeleportUpgradeProvider(getConfig().getConfigurationSection("upgrades"), economy));
+            services.limitService().setUpgradeService(upgradeService);
+            getLogger().info("Registered TeleportUpgradeProvider with HavenCore.");
+        } else {
+            getLogger().warning("HavenUpgradeService not found — upgrade slots disabled.");
+        }
         getServer().getServicesManager().register(
                 HavenWarpService.class,
                 new HavenTeleportWarpService(services.shopWarpService()),
@@ -73,6 +90,10 @@ public final class TeleportLocationsPlugin extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (upgradeService != null) {
+            upgradeService.unregisterProvider(TeleportUpgradeProvider.PROVIDER_ID);
+            upgradeService = null;
+        }
         if (elevatorParticleTask != null) {
             elevatorParticleTask.cancel();
             elevatorParticleTask = null;
@@ -182,7 +203,8 @@ public final class TeleportLocationsPlugin extends JavaPlugin {
                 services.adminBypassService(),
                 this::hasOnlinePermission
         );
-        dialogPresenter.setActionHandler(new DialogActionExecutor(
+        dialogActions.setLimitService(services.limitService(), services.config().homeSlotsPerLevel());
+        DialogActionExecutor dialogExecutor = new DialogActionExecutor(
                 dialogActions,
                 dialogPresenter,
                 services.teleportChargeService(),
@@ -191,7 +213,9 @@ public final class TeleportLocationsPlugin extends JavaPlugin {
                 services.adminBypassService(),
                 managedTeleports,
                 scheduledTeleports
-        ));
+        );
+        dialogExecutor.setHomeService(services.homeService());
+        dialogPresenter.setActionHandler(dialogExecutor);
         PlayerLocationCommand playerCommand = new PlayerLocationCommand(
                 services.homeService(),
                 services.playerWarpService(),
@@ -209,6 +233,7 @@ public final class TeleportLocationsPlugin extends JavaPlugin {
                 managedTeleports,
                 scheduledTeleports
         );
+        playerCommand.setLimitService(services.limitService(), services.config().homeSlotsPerLevel());
         getCommand("home").setExecutor(playerCommand);
         getCommand("homes").setExecutor(playerCommand);
         getCommand("sethome").setExecutor(playerCommand);
